@@ -2,11 +2,11 @@
   <div class="record-view">
     <header class="header">
       <button @click="$router.back()" class="back-btn">← 뒤로</button>
-      <h1>식사 기록</h1>
+      <h1>체중 기록</h1>
     </header>
     
     <div class="content">
-      <p>식사 기록 기능 준비 중...</p>
+      <p>체중 기록 기능 준비 중...</p>
     </div>
   </div>
 </template>

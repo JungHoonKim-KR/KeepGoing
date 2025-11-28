@@ -97,6 +97,8 @@
     <section class="page water-page">
       <div class="page-content">
         <div class="record-card" @click="goToWaterRecord">
+                  <h1 class="page-title">물 마시기</h1>
+
           <div class="record-icon">💧</div>
           <div class="water-progress">
             <div class="water-amount">1.5L</div>
@@ -115,8 +117,9 @@
     <!-- 페이지 4: 체중 기록 -->
     <section class="page weight-page">
       <div class="page-content">
-        <h1 class="page-title">체중 관리</h1>
         <div class="record-card weight-record-card" @click="goToWeightRecord">
+                  <h1 class="page-title">체중 관리</h1>
+
           <div class="record-icon">⚖️</div>
           <div class="weight-display">
             <span class="weight-value">70.0</span>
@@ -129,10 +132,10 @@
           <button class="record-btn">체중 기록</button>
         </div>
         
-        <div class="weight-chart">
+        <!-- <div class="weight-chart">
           <h3>주간 변화</h3>
           <div class="chart-placeholder">📊</div>
-        </div>
+        </div> -->
       </div>
     </section>
 
@@ -212,7 +215,7 @@ const goToWeightRecord = () => {
 
 .page-title {
   font-size: 1.75rem;
-  font-weight: 700;
+  font-weight: 500;
   text-align: center;
   margin: 0;
   letter-spacing: -0.02em;
@@ -316,7 +319,6 @@ const goToWeightRecord = () => {
 .character-container {
   display: flex;
   justify-content: center;
-  margin: 1rem 0;
   min-height: 200px;
   align-items: center;
 }
@@ -331,7 +333,7 @@ const goToWeightRecord = () => {
 /* 영양소 상세 */
 .nutrition-detail {
   background: rgba(255, 255, 255, 0.15);
-  padding: 1.25rem;
+  padding: 0.5rem;
   border-radius: 1.5rem;
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
@@ -469,7 +471,7 @@ const goToWeightRecord = () => {
   font-size: 0.9rem;
 }
 
-.record-btn {
+/* .record-btn {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   border: none;
@@ -483,12 +485,46 @@ const goToWeightRecord = () => {
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
   box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+} */
+
+
+
+
+.record-btn {
+  width: 80%;
+    padding: 1rem 2rem;
+    
+    font-size: 1rem;
+    font-weight: 600;
+    color: white;
+    
+    /* 유리 효과 핵심 설정 */
+    background: rgba(255, 255, 255, 0.1); /* 아주 옅은 흰색 배경 */
+    backdrop-filter: blur(5px); /* 뒤 배경 흐리게 */
+    -webkit-backdrop-filter: blur(5px);
+    
+    /* 테두리를 반투명하게 설정하여 더 자연스럽게 */
+    border: 1.5px solid rgba(255, 255, 255, 0.6); 
+    border-radius: 3rem;
+    
+    cursor: pointer;
+    transition: transform 0.2s ease, background 0.2s ease;
+    
+    /* 터치 및 탭 설정 */
+    -webkit-tap-highlight-color: transparent;
+}
+.record-btn[data-v-b4e148ca]:hover {
+    background: white;       /* 배경을 흰색으로 채움 */
+    color: #667eea;          /* 글자색을 기존 테마색(보라/파랑)으로 변경 */
+    transform: translateY(-3px); /* 버튼이 살짝 위로 떠오르는 효과 */
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1); /* 그림자 추가 */
 }
 
 .record-btn:active {
-  transform: scale(0.97);
+  transform: scale(0.95);
+    background: rgba(255, 255, 255, 0.3); /* 누르면 유리가 더 불투명해짐 */
+    border-color: rgba(255, 255, 255, 1); /* 테두리는 선명해짐 */
 }
-
 /* 최근 식사 */
 .recent-meals {
   background: rgba(255, 255, 255, 0.2);
@@ -645,19 +681,31 @@ const goToWeightRecord = () => {
 
 /* 하단 네비게이션 */
 .bottom-nav {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  display: flex;
-  justify-content: space-around;
-  box-shadow: 0 -2px 20px rgba(0, 0, 0, 0.08);
-  z-index: 1000;
-  border-top: 1px solid rgba(0, 0, 0, 0.05);
-    padding: 0.75rem 1rem;
-
+ position: fixed;
+    bottom: 24px; /* 바닥에서 띄우기 */
+    left: 20px;   /* 왼쪽 여백 */
+    right: 20px;  /* 오른쪽 여백 */
+    
+    /* 둥근 모서리 */
+    border-radius: 24px; 
+    
+    /* 유리 같은 반투명 배경 효과 */
+    background: rgba(255, 255, 255, 0.85); 
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    
+    /* 레이아웃 */
+    display: flex;
+    justify-content: space-around;
+    align-items: center; /* 아이콘 수직 중앙 정렬 */
+    padding: 0.5rem;
+    
+    /* 부드러운 그림자 */
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    
+    /* 테두리는 제거하거나 아주 얇은 흰색 선으로 빛 반사 효과 */
+    border: 1px solid rgba(255, 255, 255, 0.4);
 }
 
 .nav-btn {
@@ -755,7 +803,7 @@ const goToWeightRecord = () => {
   }
   
   .nutrition-detail {
-    padding: 1rem;
+    padding: 0.5rem;
   }
   
   .nutrition-status {
