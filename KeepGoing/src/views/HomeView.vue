@@ -3,7 +3,9 @@
     <!-- 페이지 1: 오늘의 지표 -->
     <section class="page daily-page">
       <div class="page-content">
-        <p class="date">{{ currentDate }}</p>
+        <div class="date">
+          <div>{{ currentDate }}</div>
+          </div>
         
         <!-- 칼로리 메인 표시 -->
         <div class="calorie-main">
@@ -34,12 +36,6 @@
 
         <!-- 영양소 상세 -->
         <div class="nutrition-detail">
-          <div class="nutrition-status">
-            <span class="status-icon">🔥</span>
-            <span class="status-text">308kcal 소모</span>
-            <span class="status-divider">|</span>
-            <span class="status-good">✅ 저녁은 칼국수</span>
-          </div>
 
           <div class="nutrition-grid">
             <div class="nutrition-card">
@@ -76,7 +72,6 @@
     <!-- 페이지 2: 식사 기록 -->
     <section class="page meal-page">
       <div class="page-content">
-        <h1 class="page-title">식사 기록</h1>
         <div class="record-card" @click="goToMealRecord">
           <div class="record-icon">🍽️</div>
           <h2>오늘의 식사를 기록하세요</h2>
@@ -101,7 +96,6 @@
     <!-- 페이지 3: 물 기록 -->
     <section class="page water-page">
       <div class="page-content">
-        <h1 class="page-title">물 섭취</h1>
         <div class="record-card" @click="goToWaterRecord">
           <div class="record-icon">💧</div>
           <div class="water-progress">
@@ -114,10 +108,7 @@
           <button class="record-btn">물 마시기 기록</button>
         </div>
         
-        <div class="water-tips">
-          <h3>💡 물 섭취 팁</h3>
-          <p>하루 권장 섭취량은 약 2리터입니다</p>
-        </div>
+      
       </div>
     </section>
 
@@ -444,7 +435,7 @@ const goToWeightRecord = () => {
 
 /* 기록 카드 */
 .record-card {
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 0.2);
   padding: 2rem 1.5rem;
   border-radius: 1.75rem;
   text-align: center;
@@ -584,6 +575,7 @@ const goToWeightRecord = () => {
   padding: 1.5rem 1.25rem;
 }
 
+
 .weight-display {
   display: flex;
   align-items: baseline;
@@ -664,6 +656,8 @@ const goToWeightRecord = () => {
   box-shadow: 0 -2px 20px rgba(0, 0, 0, 0.08);
   z-index: 1000;
   border-top: 1px solid rgba(0, 0, 0, 0.05);
+    padding: 0.75rem 1rem;
+
 }
 
 .nav-btn {
