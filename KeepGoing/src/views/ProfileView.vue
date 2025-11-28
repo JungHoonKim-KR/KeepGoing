@@ -9,10 +9,10 @@
     </div>
 
     <nav class="bottom-nav">
-      <button @click="$router.push('/')" class="nav-btn">🏠 홈</button>
-      <button @click="$router.push('/calendar')" class="nav-btn">📅 캘린더</button>
-      <button @click="$router.push('/ai-analysis')" class="nav-btn">🤖 AI 분석</button>
-      <button @click="$router.push('/profile')" class="nav-btn active">👤 마이페이지</button>
+      <button @click="$router.push('/')" class="nav-btn">🏠</button>
+      <button @click="$router.push('/calendar')" class="nav-btn">📅</button>
+      <button @click="$router.push('/ai-analysis')" class="nav-btn">🤖</button>
+      <button @click="$router.push('/profile')" class="nav-btn active">👤</button>
     </nav>
   </div>
 </template>
