@@ -508,7 +508,7 @@ const goToWeightRecord = () => {
     border-radius: 3rem;
     
     cursor: pointer;
-    transition: transform 0.2s ease, background 0.2s ease;
+    transition: transform 0.2s ease; background: 0.2s ease;
     
     /* 터치 및 탭 설정 */
     -webkit-tap-highlight-color: transparent;
