@@ -600,12 +600,7 @@ watch(
   width: 20px;
   height: 20px;
   margin-right: 15px;
-  filter: invert(0);
   transition: filter 0.2s;
-}
-
-.color-option-btn.is-active .color-option-icon {
-  filter: invert(1);
 }
 
 .color-option-btn.is-active::after {
