@@ -1,9 +1,9 @@
 <script setup>
-import { ref, computed } from "vue";
-import { useRouter } from "vue-router";
-import { watch } from "vue"; // watch 함수 import 추가
+import { ref, computed, watch } from "vue";
+import { useRouter, useRoute } from "vue-router";
 
 const router = useRouter();
+const route = useRoute();
 
 // ----------------------------------------------------
 // 1. 상태 관리 및 Long Press 로직
@@ -19,19 +19,37 @@ const isLongPress = ref(false);
 const isColorModalOpen = ref(false);
 const modalTargetDay = ref(null);
 
-// 트래킹 상태 정의 (water 항목 제거됨)
+// 트래킹 상태 정의 (emoji 속성 제거, icon 경로 수정)
 const trackingStates = ref([
-  { key: "ate", label: "먹었어요", color: "#4CAF50", icon: "/assets/images/stickers/jinji.png" },
-  { key: "burned", label: "태웠어요", color: "#FF69B4", icon: "/assets/images/stickers/sad.png" },
-  { key: "weight", label: "몸무게", color: "#FF9800", icon: "assets/images/stickers/smile.png" },
+  {
+    key: "ate",
+    label: "식사",
+    color: "#4CAF50",
+    // 💡 수정된 icon 경로: new URL() 패턴 사용
+    icon: new URL("/src/assets/images/stickers/jinji.png", import.meta.url).href,
+  },
+  {
+    key: "burned",
+    label: "운동",
+    color: "#FF69B4",
+    // 💡 수정된 icon 경로
+    icon: new URL("/src/assets/images/stickers/sad.png", import.meta.url).href,
+  },
+  {
+    key: "weight",
+    label: "몸무게",
+    color: "#FF9800",
+    // 💡 수정된 icon 경로
+    icon: new URL("/src/assets/images/stickers/smile.png", import.meta.url).href,
+  },
 ]);
 
-// 임시 데이터 (water 기록 제거됨)
+// 임시 데이터
 const dailyRecords = ref({
-  "2025-11-16": ["ate", "weight"],
-  "2025-11-22": ["ate", "burned"], // water 제거
-  "2025-11-28": ["ate", "weight"],
-  "2025-12-05": ["weight"],
+  "2025-11-16": ["ate"],
+  "2025-11-22": ["burned"],
+  "2025-11-28": ["weight"],
+  "2025-12-05": ["ate"],
 });
 
 // ----------------------------------------------------
@@ -158,29 +176,36 @@ const selectColorForRecord = (recordKey) => {
   if (modalTargetDay.value && modalTargetDay.value.dateKey) {
     const dateKey = modalTargetDay.value.dateKey;
 
-    const currentRecords = dailyRecords.value[dateKey] ? [...dailyRecords.value[dateKey]] : [];
-    const index = currentRecords.indexOf(recordKey);
+    const currentRecords = dailyRecords.value[dateKey] || [];
+    const isCurrentlySelected = currentRecords.includes(recordKey);
 
-    if (index > -1) {
-      currentRecords.splice(index, 1);
+    if (isCurrentlySelected) {
+      dailyRecords.value[dateKey] = [];
     } else {
-      currentRecords.push(recordKey);
+      dailyRecords.value[dateKey] = [recordKey];
     }
 
-    dailyRecords.value = {
-      ...dailyRecords.value,
-      [dateKey]: currentRecords,
-    };
+    dailyRecords.value = { ...dailyRecords.value };
 
     closeColorModal();
     selectDayAndNavigate(modalTargetDay.value);
   }
 };
 
+// 💡 수정된 부분: 레코드 키를 받아 해당 아이콘 URL을 반환
+const getRecordIconUrl = (records) => {
+  if (records && records.length > 0) {
+    const recordKey = records[0];
+    const state = trackingStates.value.find((s) => s.key === recordKey);
+    // icon 속성은 이제 URL 문자열을 포함합니다.
+    return state ? state.icon : "";
+  }
+  return "";
+};
+
 // ----------------------------------------------------
-// 4. 오류 방지 watch (라우트 변경 시 모달 강제 닫기)
+// 4. 오류 방지 watch
 // ----------------------------------------------------
-// 라우트가 변경될 때 모달이 열려 있으면 닫아서 렌더링 충돌을 방지합니다.
 watch(
   () => router.currentRoute.value.path,
   () => {
@@ -228,6 +253,7 @@ watch(
               {
                 'is-today': day.isToday,
                 'is-selected': day.isSelected,
+                'has-icon': day.records.length > 0, // 아이콘 덮어쓰기 여부
               },
             ]"
             @mousedown.prevent="startPress(day)"
@@ -238,17 +264,15 @@ watch(
             @touchcancel.prevent="cancelPress"
             :aria-label="`${displayMonth} ${day.day}일`"
           >
-            {{ day.day }}
-
-            <div class="record-indicators">
-              <span
-                v-for="recordKey in day.records"
-                :key="recordKey"
-                class="record-dot"
-                :style="{ backgroundColor: trackingStates.find((s) => s.key === recordKey)?.color }"
-                :title="trackingStates.find((s) => s.key === recordKey)?.label"
-              ></span>
-            </div>
+            <img
+              v-if="day.records.length > 0"
+              :src="getRecordIconUrl(day.records)"
+              :alt="`기록 아이콘`"
+              class="date-content date-icon-overlay"
+            />
+            <span v-else class="date-content date-number">
+              {{ day.day }}
+            </span>
           </button>
           <span v-else class="empty-cell"></span>
         </div>
@@ -266,8 +290,8 @@ watch(
   <Teleport to="body">
     <div v-if="isColorModalOpen" class="modal-overlay" @click.self="closeColorModal">
       <div class="color-modal">
-        <h2>{{ modalTargetDay?.day }}일 기록 선택</h2>
-        <p class="modal-info">추가할 트래킹 상태를 선택하거나 해제하세요.</p>
+        <h2>{{ modalTargetDay?.day }}일 기록 선택 (단일)</h2>
+        <p class="modal-info">선택 시, 이전 상태는 해제되고 새로운 상태가 기록됩니다.</p>
 
         <div class="color-options">
           <button
@@ -381,8 +405,6 @@ watch(
 .state-chip-icon {
   width: 16px;
   height: 16px;
-  /* SVG 색상을 흰색으로 변경하여 칩 배경색 위에서 보이게 함 */
-  filter: invert(1);
 }
 
 /* --- 요일 헤더 --- */
@@ -420,7 +442,6 @@ watch(
   width: 40px;
   height: 40px;
   display: flex;
-  flex-direction: column;
   justify-content: center;
   align-items: center;
   background: none;
@@ -429,7 +450,7 @@ watch(
   font-weight: 500;
   cursor: pointer;
   position: relative;
-  padding-top: 5px;
+  padding: 0;
   color: var(--color-text-default);
 }
 
@@ -450,23 +471,31 @@ watch(
   border: 2px solid white;
 }
 
-/* --- 기록 도트 스타일 --- */
-.record-indicators {
+/* 💡 아이콘/날짜 오버레이 스타일 */
+.date-content {
   position: absolute;
-  bottom: -5px;
-  left: 50%;
-  transform: translateX(-50%);
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   display: flex;
-  gap: 2px;
+  justify-content: center;
+  align-items: center;
 }
 
-.record-dot {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  display: inline-block;
+/* 날짜 숫자가 표시될 때의 스타일 */
+.date-number {
+  font-size: 1rem;
+  line-height: 1;
 }
 
+/* 아이콘이 표시될 때의 스타일 */
+.date-icon-overlay {
+  width: 100%; /* 아이콘을 셀 크기의 70%로 확대 */
+  height: 100%;
+}
+
+/* --- 기록 도트 스타일 (삭제됨) --- */
 .empty-cell {
   visibility: hidden;
 }
@@ -500,7 +529,6 @@ watch(
 }
 
 /* --- 모달 스타일 --- */
-
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -568,20 +596,13 @@ watch(
   font-weight: bold;
 }
 
-/* 템플릿 수정 B 관련 스타일: 아이콘 스타일 */
 .color-option-icon {
   width: 20px;
   height: 20px;
   margin-right: 15px;
-  filter: invert(0); /* 기본 상태 (아이콘 색상 유지) */
   transition: filter 0.2s;
 }
 
-.color-option-btn.is-active .color-option-icon {
-  filter: invert(1); /* 활성화 시 아이콘을 흰색으로 변경 */
-}
-
-/* 활성화 상태일 때 체크 표시 */
 .color-option-btn.is-active::after {
   content: "✓";
   position: absolute;
