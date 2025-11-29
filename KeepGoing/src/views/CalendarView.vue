@@ -19,27 +19,30 @@ const isLongPress = ref(false);
 const isColorModalOpen = ref(false);
 const modalTargetDay = ref(null);
 
-// 트래킹 상태 정의 (emoji 속성 제거, icon 경로 수정)
+// 💡 년/월 선택 모달 상태
+const isYearMonthModalOpen = ref(false);
+const tempSelectedYear = ref(currentDate.value.getFullYear());
+const tempSelectedMonth = ref(currentDate.value.getMonth()); // 0부터 시작 (0: 1월)
+
+
+// 트래킹 상태 정의
 const trackingStates = ref([
   {
     key: "ate",
     label: "식사",
     color: "#4CAF50",
-    // 💡 수정된 icon 경로: new URL() 패턴 사용
     icon: new URL("/src/assets/images/stickers/jinji.png", import.meta.url).href,
   },
   {
     key: "burned",
     label: "운동",
     color: "#FF69B4",
-    // 💡 수정된 icon 경로
     icon: new URL("/src/assets/images/stickers/sad.png", import.meta.url).href,
   },
   {
     key: "weight",
     label: "몸무게",
     color: "#FF9800",
-    // 💡 수정된 icon 경로
     icon: new URL("/src/assets/images/stickers/smile.png", import.meta.url).href,
   },
 ]);
@@ -55,6 +58,17 @@ const dailyRecords = ref({
 // ----------------------------------------------------
 // 2. 날짜 로직 및 Computed 속성
 // ----------------------------------------------------
+
+// 💡 선택 가능한 년도와 월 목록
+const availableYears = computed(() => {
+  const currentYear = new Date().getFullYear();
+  return Array.from({ length: 11 }, (_, i) => currentYear - 5 + i);
+});
+
+const availableMonths = computed(() => {
+  return Array.from({ length: 12 }, (_, i) => i);
+});
+
 
 const displayMonth = computed(() => {
   return currentDate.value.toLocaleDateString("ko-KR", {
@@ -115,9 +129,10 @@ const changeMonth = (delta) => {
 };
 
 const selectToday = () => {
-  currentDate.value = new Date();
-  selectedDate.value = new Date().toDateString();
-  selectDayAndNavigate({ dateKey: new Date().toISOString().slice(0, 10) });
+  const today = new Date();
+  currentDate.value = today;
+  selectedDate.value = today.toDateString();
+  selectDayAndNavigate({ dateKey: today.toISOString().slice(0, 10) });
 };
 
 const startPress = (day) => {
@@ -192,16 +207,40 @@ const selectColorForRecord = (recordKey) => {
   }
 };
 
-// 💡 수정된 부분: 레코드 키를 받아 해당 아이콘 URL을 반환
 const getRecordIconUrl = (records) => {
   if (records && records.length > 0) {
     const recordKey = records[0];
     const state = trackingStates.value.find((s) => s.key === recordKey);
-    // icon 속성은 이제 URL 문자열을 포함합니다.
     return state ? state.icon : "";
   }
   return "";
 };
+
+// 💡 추가된 년/월 모달 함수
+const openYearMonthModal = () => {
+  // 현재 달력의 년/월로 임시 상태 초기화
+  tempSelectedYear.value = currentDate.value.getFullYear();
+  tempSelectedMonth.value = currentDate.value.getMonth();
+  isYearMonthModalOpen.value = true;
+};
+
+const closeYearMonthModal = () => {
+  isYearMonthModalOpen.value = false;
+};
+
+const applyYearMonth = () => {
+  const currentDayOfMonth = currentDate.value.getDate();
+  let newDate = new Date(tempSelectedYear.value, tempSelectedMonth.value, currentDayOfMonth);
+
+  // 날짜가 다음 달로 넘어갔다면 해당 월의 마지막 날로 조정
+  if (newDate.getMonth() !== tempSelectedMonth.value) {
+    newDate = new Date(tempSelectedYear.value, tempSelectedMonth.value + 1, 0);
+  }
+
+  currentDate.value = newDate;
+  closeYearMonthModal();
+};
+
 
 // ----------------------------------------------------
 // 4. 오류 방지 watch
@@ -221,9 +260,13 @@ watch(
     <header class="header">
       <div class="month-header">
         <button @click="changeMonth(-1)" class="month-btn">◀</button>
-        <h1 class="month-display">{{ displayMonth }}</h1>
+        <h1 class="month-display">
+          {{ displayMonth }}
+          <span class="dropdown-icon" @click.stop="openYearMonthModal">▼</span>
+        </h1>
+        
         <button @click="changeMonth(1)" class="month-btn">▶</button>
-        <button @click="selectToday" class="today-btn">오늘 선택</button>
+      <!--  <button @click="selectToday" class="today-btn">오늘 선택</button> -->
       </div>
     </header>
 
@@ -314,6 +357,37 @@ watch(
       </div>
     </div>
   </Teleport>
+
+  <Teleport to="body">
+    <div v-if="isYearMonthModalOpen" class="modal-overlay" @click.self="closeYearMonthModal">
+      <div class="year-month-modal">
+        <h2>날짜 선택</h2>
+
+        <div class="select-group">
+          <label for="year-select">년도</label>
+          <select id="year-select" v-model.number="tempSelectedYear" class="date-select">
+            <option v-for="year in availableYears" :key="year" :value="year">
+              {{ year }}년
+            </option>
+          </select>
+        </div>
+
+        <div class="select-group">
+          <label for="month-select">월</label>
+          <select id="month-select" v-model.number="tempSelectedMonth" class="date-select">
+            <option v-for="month in availableMonths" :key="month" :value="month">
+              {{ month + 1 }}월
+            </option>
+          </select>
+        </div>
+
+        <div class="modal-actions">
+          <button @click="closeYearMonthModal" class="cancel-btn">취소</button>
+          <button @click="applyYearMonth" class="apply-btn">적용</button>
+        </div>
+      </div>
+    </div>
+  </Teleport>
 </template>
 
 <style scoped>
@@ -324,6 +398,7 @@ watch(
   --color-text-default: #333;
   --color-text-secondary: #555;
   --color-red: #ff3b30;
+  --color-green: #4CAF50;
 }
 
 /* --- 캘린더 전체 레이아웃 --- */
@@ -346,12 +421,19 @@ watch(
   margin-bottom: 1rem;
 }
 
+/* 월 표시 영역은 클릭 기능 없음 */
 .month-display {
   font-size: 1.5rem;
   font-weight: bold;
   margin: 0;
   flex-grow: 1;
   text-align: center;
+}
+
+/* 💡 드롭다운 아이콘에만 커서 추가 */
+.dropdown-icon {
+    cursor: pointer;
+    margin-left: 5px; 
 }
 
 .month-btn {
@@ -528,7 +610,7 @@ watch(
   font-weight: bold;
 }
 
-/* --- 모달 스타일 --- */
+/* --- 모달 스타일 (기록/색상) --- */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -621,5 +703,77 @@ watch(
   border-radius: 8px;
   cursor: pointer;
   font-size: 1rem;
+}
+
+/* ---------------------------------------------------- */
+/* 💡 년/월 선택 모달 스타일 */
+/* ---------------------------------------------------- */
+
+.year-month-modal {
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  width: 90%;
+  max-width: 400px;
+}
+
+.year-month-modal h2 {
+  font-size: 1.5rem;
+  margin-bottom: 1.5rem;
+  color: var(--color-primary);
+  text-align: center;
+}
+
+.select-group {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 1rem;
+}
+
+.select-group label {
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+  color: var(--color-text-default);
+}
+
+.date-select {
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 1rem;
+  appearance: none;
+  background-color: #f9f9f9;
+  cursor: pointer;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 2rem;
+  gap: 10px;
+}
+
+.cancel-btn {
+  flex: 1;
+  padding: 10px;
+  background-color: #ccc;
+  color: #333;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.apply-btn {
+  flex: 1;
+  padding: 10px;
+  background-color: var(--color-primary);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: bold;
 }
 </style>
