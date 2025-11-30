@@ -5,7 +5,7 @@ import { ref } from "vue";
 // 1. 상태 관리
 // ----------------------------------------------------
 const profile = ref({
-  name: "홍길동", // 예시 이름 (실제로는 로그인 정보에서 가져와야 함)
+  name: "홍길동", 
   age: 30,
   gender: "male",
   height: 175,
@@ -100,7 +100,7 @@ const cancelEdit = () => {
         
         <template v-else>
           <div class="form-group">
-            <label for="age">나이 (만)</label>
+            <label for="age">나이</label>
             <input id="age" type="number" v-model.number="profile.age" min="1" />
           </div>
           
