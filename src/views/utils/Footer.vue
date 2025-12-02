@@ -17,50 +17,81 @@
 
 <script>
 export default {
-  name: 'Footer', // 컴포넌트 이름 지정
-  // Vue Router를 사용하고 있으므로 별도의 데이터나 로직은 필요 없습니다.
-  // 이 컴포넌트는 App.vue나 레이아웃 컴포넌트에 import 되어 사용됩니다.
+  name: 'Footer', 
 };
 </script>
 
 <style scoped>
-/*
-  이곳에 .bottom-nav, .nav-btn, .nav-icon 등에 대한 CSS 스타일을 작성합니다.
-  'scoped' 속성을 사용하여 스타일이 이 컴포넌트에만 적용되도록 합니다.
-*/
+
+/* 하단 네비게이션 */
 .bottom-nav {
-  position: fixed; /* 하단 고정 */
-  bottom: 0;
-  left: 0;
-  height: 60px; /* 원하는 높이 설정 */
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
-  background-color: #ffffff; /* 배경색 */
-  box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1); /* 상단 그림자 */
-  z-index: 1000;
+ position: fixed;
+    bottom: 24px; /* 바닥에서 띄우기 */
+    left: 20px;   /* 왼쪽 여백 */
+    right: 20px;  /* 오른쪽 여백 */
+    
+    /* 둥근 모서리 */
+    border-radius: 24px; 
+    
+    /* 유리 같은 반투명 배경 효과 */
+    background: rgba(255, 255, 255, 0.85); 
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    
+    /* 레이아웃 */
+    display: flex;
+    justify-content: space-around;
+    align-items: center; /* 아이콘 수직 중앙 정렬 */
+    padding: 0.5rem;
+    
+    /* 부드러운 그림자 */
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    
+    /* 테두리는 제거하거나 아주 얇은 흰색 선으로 빛 반사 효과 */
+    border: 1px solid rgba(255, 255, 255, 0.4);
 }
 
 .nav-btn {
-  flex-grow: 1; /* 버튼이 공간을 균등하게 차지 */
-  height: 100%;
-  border: none;
   background: none;
+  border: none;
+  padding: 0.4rem 0.5rem;
   cursor: pointer;
+  color: var(--color-text-secondary);
+  transition: all 0.2s ease-out;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
   align-items: center;
-  padding: 0;
+  gap: 0.2rem;
+  flex: 1;
+  max-width: 70px;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  user-select: none;
 }
 
 .nav-icon {
-  font-size: 24px; /* 아이콘 크기 */
-  opacity: 0.5; /* 비활성 상태 */
-  transition: opacity 0.3s;
+  font-size: 1.35rem;
+  transition: transform 0.2s ease-out;
+  display: block;
+}
+
+.nav-label {
+  font-size: 0.625rem;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+.nav-btn.active {
+  color: var(--color-primary);
 }
 
 .nav-btn.active .nav-icon {
-  opacity: 1; /* 활성 상태 */
-  transform: scale(1.1); /* 활성 상태일 때 약간 확대 */
+  transform: scale(1.1);
+}
+
+.nav-btn:active {
+  transform: scale(0.92);
+  opacity: 0.7;
 }
 </style>

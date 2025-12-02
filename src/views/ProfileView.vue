@@ -1,6 +1,6 @@
 <script setup>
 import { ref } from "vue";
-
+import Footer from './utils/Footer.vue'
 // ----------------------------------------------------
 // 1. 상태 관리
 // ----------------------------------------------------
@@ -163,12 +163,7 @@ const cancelEdit = () => {
       </div>
     </div>
 
-    <nav class="bottom-nav">
-      <button @click="$router.push('/')" class="nav-btn">🏠 홈</button>
-      <button @click="$router.push('/calendar')" class="nav-btn">📅 캘린더</button>
-      <button @click="$router.push('/ai-analysis')" class="nav-btn">🤖 AI 분석</button>
-      <button @click="$router.push('/profile')" class="nav-btn active">👤 마이페이지</button>
-    </nav>
+    <Footer></Footer>
   </div>
 </template>
 
@@ -363,32 +358,4 @@ const cancelEdit = () => {
     color: var(--color-text-default);
 }
 
-
-/* --- 하단 네비게이션 (캘린더 뷰와 동일) --- */
-.bottom-nav {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: white;
-  display: flex;
-  justify-content: space-around;
-  padding: 1rem;
-  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
-  z-index: 10;
-}
-
-.nav-btn {
-  background: none;
-  border: none;
-  padding: 0.5rem;
-  font-size: 0.75rem;
-  cursor: pointer;
-  color: var(--color-text-secondary);
-}
-
-.nav-btn.active {
-  color: var(--color-primary);
-  font-weight: bold;
-}
 </style>
