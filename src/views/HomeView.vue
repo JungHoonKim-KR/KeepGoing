@@ -5,8 +5,8 @@
       <div class="page-content">
         <div class="date">
           <div>{{ currentDate }}</div>
-          </div>
-        
+        </div>
+
         <!-- 칼로리 메인 표시 -->
         <div class="calorie-main">
           <div class="calorie-value">912</div>
@@ -36,7 +36,6 @@
 
         <!-- 영양소 상세 -->
         <div class="nutrition-detail">
-
           <div class="nutrition-grid">
             <div class="nutrition-card">
               <div class="nutrition-label">탄수화물</div>
@@ -61,11 +60,6 @@
             </div>
           </div>
         </div>
-
-        <!-- <div class="scroll-hint">
-          <span>아래로 스크롤</span>
-          <div class="arrow">↓</div>
-        </div> -->
       </div>
     </section>
 
@@ -78,7 +72,7 @@
           <p>아침, 점심, 저녁, 간식</p>
           <button class="record-btn">기록하기</button>
         </div>
-        
+
         <div class="recent-meals">
           <h3>최근 식사</h3>
           <div class="meal-item">
@@ -97,8 +91,7 @@
     <section class="page water-page">
       <div class="page-content">
         <div class="record-card" @click="goToWaterRecord">
-                  <h1 class="page-title">물 마시기</h1>
-
+          <h1 class="page-title">물 마시기</h1>
           <div class="record-icon">💧</div>
           <div class="water-progress">
             <div class="water-amount">1.5L</div>
@@ -109,17 +102,14 @@
           </div>
           <button class="record-btn">물 마시기 기록</button>
         </div>
-        
-      
       </div>
     </section>
 
     <!-- 페이지 4: 체중 기록 -->
     <section class="page weight-page">
       <div class="page-content">
-        <div class="record-card weight-record-card" @click="goToWeightRecord">
-                  <h1 class="page-title">체중 관리</h1>
-
+        <div class="record-card weight-record-card" @click="openWeightModal">
+          <h1 class="page-title">체중 관리</h1>
           <div class="record-icon">⚖️</div>
           <div class="weight-display">
             <span class="weight-value">70.0</span>
@@ -131,69 +121,77 @@
           </div>
           <button class="record-btn">체중 기록</button>
         </div>
-        
-        <!-- <div class="weight-chart">
-          <h3>주간 변화</h3>
-          <div class="chart-placeholder">📊</div>
-        </div> -->
       </div>
     </section>
 
-    <Footer></Footer>
+    <Footer />
+
+    <!-- 체중 기록 모달 -->
+    <WeightRecordModal v-if="showWeightModal" @close="closeWeightModal" />
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue'
-import { useRouter } from 'vue-router'
-import dayjs from 'dayjs'
-import characterImage from '../assets/images/characters/test.gif'
-import Footer from './utils/Footer.vue'
+import { ref, computed } from "vue";
+import { useRouter } from "vue-router";
+import dayjs from "dayjs";
+import characterImage from "../assets/images/characters/test.gif";
+import Footer from "./utils/Footer.vue";
+import WeightRecordModal from "../components/record/WeightRecordModal.vue";
 
-
-const router = useRouter()
+const router = useRouter();
+const showWeightModal = ref(false);
 
 const currentDate = computed(() => {
-  return dayjs().format('YYYY년 M월 D일')
-})
+  return dayjs().format("YYYY년 M월 D일");
+});
 
 const goToMealRecord = () => {
-  router.push('/record/meal')
-}
+  router.push("/record/meal");
+};
 
 const goToWaterRecord = () => {
-  router.push('/record/water')
-}
+  router.push("/record/water");
+};
 
-const goToWeightRecord = () => {
-  router.push('/record/weight')
-}
+const openWeightModal = () => {
+  showWeightModal.value = true;
+};
+
+const closeWeightModal = () => {
+  showWeightModal.value = false;
+};
 </script>
 
 <style scoped>
 .home-view {
   height: 100vh;
-  height: 100dvh; /* 동적 뷰포트 높이 - 모바일 주소창 고려 */
+  height: 100dvh;
   overflow-y: scroll;
   scroll-snap-type: y mandatory;
   -webkit-overflow-scrolling: touch;
-  overscroll-behavior-y: contain; /* 바운스 효과 제거 */
+  overscroll-behavior-y: contain;
+  scroll-behavior: smooth;
 }
 
 .page {
   height: 100vh;
   height: 100dvh;
+  min-height: 100vh;
+  min-height: 100dvh;
   scroll-snap-align: start;
+  scroll-snap-stop: always;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: max(env(safe-area-inset-top), 1rem) 1rem calc(env(safe-area-inset-bottom) + 80px) 1rem;
+  padding: max(env(safe-area-inset-top), 1rem) 1rem
+    calc(env(safe-area-inset-bottom) + 100px) 1rem;
   position: relative;
 }
 
 .page-content {
   width: 100%;
-  max-width: 420px; /* 모바일 최적화 */
+  max-width: 420px;
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
@@ -221,21 +219,21 @@ const goToWeightRecord = () => {
 }
 
 .meal-page {
-  background: linear-gradient(135deg, #98D8C8 0%, #6FAFAA 100%);
+  background: linear-gradient(135deg, #98d8c8 0%, #6fafaa 100%);
   color: white;
 }
 
 .water-page {
-  background: linear-gradient(135deg, #89CFF0 0%, #5DADE2 100%);
+  background: linear-gradient(135deg, #89cff0 0%, #5dade2 100%);
   color: white;
 }
 
 .weight-page {
-  background: linear-gradient(135deg, #B39CD0 0%, #8E7CC3 100%);
+  background: linear-gradient(135deg, #b39cd0 0%, #8e7cc3 100%);
   color: white;
 }
 
-/* 오늘의 지표 - 새로운 디자인 */
+/* 오늘의 지표 */
 .calorie-main {
   display: flex;
   justify-content: center;
@@ -284,15 +282,15 @@ const goToWeightRecord = () => {
 }
 
 .ratio-icon.carb {
-  background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%);
+  background: linear-gradient(135deg, #ff6b6b 0%, #ff8e53 100%);
 }
 
 .ratio-icon.protein {
-  background: linear-gradient(135deg, #4ECDC4 0%, #44A08D 100%);
+  background: linear-gradient(135deg, #4ecdc4 0%, #44a08d 100%);
 }
 
 .ratio-icon.fat {
-  background: linear-gradient(135deg, #4A90E2 0%, #357ABD 100%);
+  background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
 }
 
 .ratio-value {
@@ -323,34 +321,6 @@ const goToWeightRecord = () => {
   border-radius: 1.5rem;
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-}
-
-.nutrition-status {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-  font-size: 0.9rem;
-  flex-wrap: wrap;
-}
-
-.status-icon {
-  font-size: 1.1rem;
-}
-
-.status-text {
-  color: white;
-  font-weight: 500;
-}
-
-.status-divider {
-  color: rgba(255, 255, 255, 0.5);
-}
-
-.status-good {
-  color: white;
-  font-weight: 500;
 }
 
 .nutrition-grid {
@@ -391,36 +361,6 @@ const goToWeightRecord = () => {
   color: rgba(255, 255, 255, 0.8);
 }
 
-/* 스크롤 힌트 */
-.scroll-hint {
-  text-align: center;
-  margin-top: 2rem;
-  animation: bounce 2s infinite;
-}
-
-.scroll-hint span {
-  display: block;
-  font-size: 0.9rem;
-  opacity: 0.8;
-  margin-bottom: 0.5rem;
-}
-
-.arrow {
-  font-size: 1.5rem;
-}
-
-@keyframes bounce {
-  0%, 20%, 50%, 80%, 100% {
-    transform: translateY(0);
-  }
-  40% {
-    transform: translateY(-10px);
-  }
-  60% {
-    transform: translateY(-5px);
-  }
-}
-
 /* 기록 카드 */
 .record-card {
   background: rgba(255, 255, 255, 0.2);
@@ -445,72 +385,47 @@ const goToWeightRecord = () => {
 }
 
 .record-card h2 {
-  color: var(--color-text-primary);
+  color: white;
   font-size: 1.2rem;
   margin-bottom: 0.5rem;
   font-weight: 600;
 }
 
 .record-card p {
-  color: var(--color-text-secondary);
+  color: rgba(255, 255, 255, 0.85);
   margin-bottom: 1.5rem;
   font-size: 0.9rem;
 }
 
-/* .record-btn {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border: none;
-  padding: 1rem 2rem;
-  border-radius: 3rem;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  width: 100%;
-  transition: transform 0.15s ease-out;
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
-  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
-} */
-
-
-
-
 .record-btn {
   width: 80%;
-    padding: 1rem 2rem;
-    
-    font-size: 1rem;
-    font-weight: 600;
-    color: white;
-    
-    /* 유리 효과 핵심 설정 */
-    background: rgba(255, 255, 255, 0.1); /* 아주 옅은 흰색 배경 */
-    backdrop-filter: blur(5px); /* 뒤 배경 흐리게 */
-    -webkit-backdrop-filter: blur(5px);
-    
-    /* 테두리를 반투명하게 설정하여 더 자연스럽게 */
-    border: 1.5px solid rgba(255, 255, 255, 0.6); 
-    border-radius: 3rem;
-    
-    cursor: pointer;
-    transition: transform 0.2s ease; background: 0.2s ease;
-    
-    /* 터치 및 탭 설정 */
-    -webkit-tap-highlight-color: transparent;
+  padding: 1rem 2rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: white;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  border: 1.5px solid rgba(255, 255, 255, 0.6);
+  border-radius: 3rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
 }
-.record-btn[data-v-b4e148ca]:hover {
-    background: white;       /* 배경을 흰색으로 채움 */
-    color: #667eea;          /* 글자색을 기존 테마색(보라/파랑)으로 변경 */
-    transform: translateY(-3px); /* 버튼이 살짝 위로 떠오르는 효과 */
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1); /* 그림자 추가 */
+
+.record-btn:hover {
+  background: white;
+  color: #667eea;
+  transform: translateY(-3px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
 }
 
 .record-btn:active {
   transform: scale(0.95);
-    background: rgba(255, 255, 255, 0.3); /* 누르면 유리가 더 불투명해짐 */
-    border-color: rgba(255, 255, 255, 1); /* 테두리는 선명해짐 */
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 1);
 }
+
 /* 최근 식사 */
 .recent-meals {
   background: rgba(255, 255, 255, 0.2);
@@ -558,18 +473,18 @@ const goToWeightRecord = () => {
 .water-amount {
   font-size: 3rem;
   font-weight: bold;
-  color: var(--color-primary);
+  color: white;
 }
 
 .water-goal {
   font-size: 1.5rem;
-  color: var(--color-text-secondary);
+  color: rgba(255, 255, 255, 0.85);
 }
 
 .progress-bar {
   width: 100%;
   height: 12px;
-  background: #E5E7EB;
+  background: rgba(255, 255, 255, 0.2);
   border-radius: 1rem;
   overflow: hidden;
   margin: 1.5rem 0;
@@ -577,26 +492,14 @@ const goToWeightRecord = () => {
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #3B82F6 0%, #60A5FA 100%);
+  background: linear-gradient(90deg, #3b82f6 0%, #60a5fa 100%);
   transition: width 0.3s;
-}
-
-.water-tips {
-  background: rgba(255, 255, 255, 0.2);
-  padding: 1.5rem;
-  border-radius: 1.5rem;
-  backdrop-filter: blur(10px);
-}
-
-.water-tips h3 {
-  margin-bottom: 0.5rem;
 }
 
 /* 체중 */
 .weight-record-card {
   padding: 1.5rem 1.25rem;
 }
-
 
 .weight-display {
   display: flex;
@@ -609,12 +512,12 @@ const goToWeightRecord = () => {
 .weight-value {
   font-size: 3rem;
   font-weight: bold;
-  color: var(--color-primary);
+  color: white;
 }
 
 .weight-unit {
   font-size: 1.25rem;
-  color: var(--color-text-secondary);
+  color: rgba(255, 255, 255, 0.85);
 }
 
 .weight-change {
@@ -627,7 +530,7 @@ const goToWeightRecord = () => {
 }
 
 .change-label {
-  color: var(--color-text-secondary);
+  color: rgba(255, 255, 255, 0.85);
 }
 
 .change-value {
@@ -636,36 +539,12 @@ const goToWeightRecord = () => {
 }
 
 .change-value.positive {
-  color: #10B981;
+  color: #10b981;
 }
 
 .change-value.negative {
-  color: #EF4444;
+  color: #ef4444;
 }
-
-.weight-chart {
-  background: rgba(255, 255, 255, 0.2);
-  padding: 1rem;
-  border-radius: 1.25rem;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-}
-
-.weight-chart h3 {
-  margin-bottom: 0.75rem;
-  font-size: 0.95rem;
-  font-weight: 600;
-}
-
-.chart-placeholder {
-  background: rgba(255, 255, 255, 0.3);
-  padding: 2rem 1rem;
-  border-radius: 0.875rem;
-  text-align: center;
-  font-size: 2rem;
-}
-
-
 
 /* 스크롤바 숨기기 */
 .home-view::-webkit-scrollbar {
@@ -679,79 +558,59 @@ const goToWeightRecord = () => {
 
 /* 모바일 환경 최적화 */
 @media (max-width: 390px) {
-  .page-title {
-    font-size: 1.5rem;
-  }
-  
   .page-content {
     gap: 1rem;
   }
-  
+
   .calorie-value {
     font-size: 3.5rem;
   }
-  
+
   .calorie-goal {
     font-size: 1rem;
   }
-  
+
   .nutrition-ratio {
     gap: 1rem;
   }
-  
+
   .ratio-icon {
     width: 28px;
     height: 28px;
     font-size: 0.75rem;
   }
-  
+
   .ratio-value {
     font-size: 0.9rem;
   }
-  
+
   .character-gif {
     width: 150px;
     height: 150px;
   }
-  
+
   .character-container {
     min-height: 170px;
   }
-  
+
   .nutrition-detail {
     padding: 0.5rem;
   }
-  
-  .nutrition-status {
-    font-size: 0.85rem;
-  }
-  
+
   .nutrition-value .current {
     font-size: 1.3rem;
   }
-  
+
   .record-icon {
     font-size: 3rem;
   }
-  
+
   .record-card h2 {
     font-size: 1.1rem;
   }
-  
-  .weight-record-card {
-    padding: 1.25rem 1rem;
-  }
-  
+
   .weight-value {
     font-size: 2.5rem;
-  }
-  
-  .weight-chart {
-    padding: 0.875rem;
-  }
-  
-  .chart-placeholder {
-    padding: 1.5rem 1rem;
   }
 }
 
@@ -759,7 +618,7 @@ const goToWeightRecord = () => {
 @supports (padding: max(0px)) {
   .page {
     padding-top: max(env(safe-area-inset-top), 1rem);
-    padding-bottom: calc(env(safe-area-inset-bottom) + 70px);
+    padding-bottom: calc(env(safe-area-inset-bottom) + 100px);
   }
 }
 </style>
