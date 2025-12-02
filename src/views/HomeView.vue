@@ -139,21 +139,7 @@
       </div>
     </section>
 
-    <!-- 하단 네비게이션 -->
-    <nav class="bottom-nav">
-      <button @click="$router.push('/')" class="nav-btn active">
-        <span class="nav-icon">🏠</span>
-      </button>
-      <button @click="$router.push('/calendar')" class="nav-btn">
-        <span class="nav-icon">📅</span>
-      </button>
-      <button @click="$router.push('/ai-analysis')" class="nav-btn">
-        <span class="nav-icon">🤖</span>
-      </button>
-      <button @click="$router.push('/profile')" class="nav-btn">
-        <span class="nav-icon">👤</span>
-      </button>
-    </nav>
+    <Footer></Footer>
   </div>
 </template>
 
@@ -162,7 +148,7 @@ import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import dayjs from 'dayjs'
 import characterImage from '../assets/images/characters/test.gif'
-
+import Footer from './utils/Footer.vue'
 
 
 const router = useRouter()
