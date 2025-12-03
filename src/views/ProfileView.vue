@@ -170,7 +170,7 @@ const cancelEdit = () => {
 <style scoped>
 /* --- 기본 변수 정의 (캘린더 뷰와 통일) --- */
 :root {
-  --color-primary: #667eea;
+  --color-primary: #8E7CC3 ;
   --color-secondary: #764ba2;
   --color-text-default: #333;
   --color-text-secondary: #555;
@@ -187,7 +187,7 @@ const cancelEdit = () => {
 }
 
 .header {
-  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+  background: linear-gradient(135deg, #B39CD0 0%, #8E7CC3 100%);
   color: white;
   padding: 2rem 1.5rem 1rem;
 }
@@ -318,7 +318,7 @@ const cancelEdit = () => {
 }
 
 .radio-group input[type="radio"]:checked + label {
-    background-color: var(--color-primary);
+    background-color: #8E7CC3 ;
     color: white;
     border-color: var(--color-primary);
     font-weight: 600;
@@ -349,7 +349,7 @@ const cancelEdit = () => {
 }
 
 .save-btn {
-    background-color: var(--color-primary);
+    background-color: #8E7CC3 ;
     color: white;
 }
 

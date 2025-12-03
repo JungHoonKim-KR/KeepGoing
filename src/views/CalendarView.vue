@@ -388,25 +388,36 @@ watch(
 <style scoped>
 /* --- 기본 변수 정의 --- */
 :root {
-  --color-primary: #667eea;
-  --color-secondary: #764ba2;
-  --color-text-default: #333;
-  --color-text-secondary: #555;
-  --color-red: #ff3b30;
+  --color-primary: #8E7CC3 ;
+  --color-primary-dark: #6abfa8;
+  --color-primary-light: #a8e6dd;
+  --color-accent: #FF6B9D;
+  --color-accent-light: #FFB6D3;
+  --color-warning: #FFA726;
+  --color-success: #66BB6A;
+  --color-text-default: #2C3E50;
+  --color-text-secondary: #7F8C8D;
+  --color-text-muted: #95A5A6;
+  --color-red: #E74C3C;
   --color-green: #4CAF50;
+  --color-bg-light: #f8fffe;
+  --color-bg-mint: #f0faf8;
+  --color-border: #d4ebe5;
 }
 
 /* --- 캘린더 전체 레이아웃 --- */
 .calendar-view {
   min-height: 100vh;
   padding-bottom: 80px;
-  background-color: #f7f7f7;
+  
+  background: #F9FAFB;
 }
 
 .header {
-  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+  background: linear-gradient(135deg, #7dd3c0 0%, #6abfa8 100%);
   color: white;
   padding: 2rem 1.5rem 1rem;
+  box-shadow: 0 2px 8px rgba(111, 175, 170, 0.15);
 }
 
 .month-header {
@@ -416,7 +427,6 @@ watch(
   margin-bottom: 1rem;
 }
 
-/* 월 표시 영역은 클릭 기능 없음 */
 .month-display {
   font-size: 1.5rem;
   font-weight: bold;
@@ -425,23 +435,34 @@ watch(
   text-align: center;
 }
 
-/* 💡 드롭다운 아이콘에만 커서 추가 */
 .dropdown-icon {
-    cursor: pointer;
-    margin-left: 5px; 
+  cursor: pointer;
+  margin-left: 5px;
+  opacity: 0.9;
+  transition: opacity 0.2s;
+}
+
+.dropdown-icon:hover {
+  opacity: 1;
 }
 
 .month-btn {
-  background: none;
+  background: rgba(255, 255, 255, 0.25);
   border: none;
   color: white;
   font-size: 1.2rem;
   cursor: pointer;
-  padding: 0 10px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+
+.month-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
 }
 
 .today-btn {
-  background-color: rgba(255, 255, 255, 0.2);
+  background-color: rgba(255, 255, 255, 0.25);
   color: white;
   border: none;
   border-radius: 20px;
@@ -449,6 +470,11 @@ watch(
   font-size: 0.8rem;
   font-weight: 500;
   cursor: pointer;
+  transition: background 0.2s;
+}
+
+.today-btn:hover {
+  background-color: rgba(255, 255, 255, 0.35);
 }
 
 /* --- 트래킹 상태 칩 스타일 --- */
@@ -461,27 +487,33 @@ watch(
   gap: 0.5rem;
   overflow-x: auto;
   white-space: nowrap;
-  border-bottom: 1px solid #eee;
-  background-color: white;
+  background-color: #f8fffe;
   padding: 1rem 1.5rem;
   margin: 0 -1.5rem 1rem;
+  border-bottom: 2px solid var(--color-border);
 }
 
 .state-chip {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 0.4rem 0.8rem;
+  padding: 0.5rem 1rem;
   border-radius: 20px;
   color: white;
-  font-size: 0.75rem;
-  font-weight: 500;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  font-size: 0.85rem;
+  font-weight: 600;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.state-chip:active {
+  transform: translateY(1px);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
 }
 
 .state-chip-icon {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
 }
 
 /* --- 요일 헤더 --- */
@@ -489,14 +521,20 @@ watch(
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   text-align: center;
-  font-weight: bold;
-  color: var(--color-text-secondary);
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid #ddd;
+  font-weight: 600;
+  color: black;
+  padding-bottom: 0.75rem;
+  padding-top: 1rem;
+  border-bottom: 2px solid var(--color-border);
+  font-size: 0.9rem;
 }
 
 .weekday-header:first-child {
   color: var(--color-red);
+}
+
+.weekday-header:last-child {
+  color: var(--color-primary-dark);
 }
 
 /* --- 날짜 그리드 --- */
@@ -504,48 +542,52 @@ watch(
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   text-align: center;
-  gap: 5px 0;
-  padding-top: 10px;
+  gap: 8px 0;
+  padding: 1rem 0;
 }
 
 .date-cell-wrapper {
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 5px 0;
+  padding: 4px 0;
 }
 
 .date-cell {
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   display: flex;
   justify-content: center;
   align-items: center;
-  background: none;
-  border: none;
+  background: #F9FAFB;
+  border: 2px solid transparent;
   font-size: 1rem;
   font-weight: 500;
   cursor: pointer;
   position: relative;
   padding: 0;
   color: var(--color-text-default);
+  border-radius: 12px;
+  transition: all 0.2s ease;
 }
 
-.is-selected {
-  background-color: var(--color-primary);
-  color: white !important;
-  border-radius: 50%;
-  font-weight: bold;
+.date-cell:hover {
+  background-color: #e0f0ed;
+  transform: scale(1.08);
 }
+
+/* .is-selected {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+  color: white !important;
+  font-weight: bold;
+  box-shadow: 0 4px 12px rgba(109, 188, 170, 0.3);
+} */
 
 .is-today {
-  border: 2px solid var(--color-primary);
+  background-color: #7dd3c0  ;
+  color: var(--color-primary-dark);
   border-radius: 50%;
-  color: var(--color-primary);
-}
-
-.is-selected.is-today {
-  border: 2px solid white;
+  font-weight: 600;
 }
 
 /* 💡 아이콘/날짜 오버레이 스타일 */
@@ -558,21 +600,19 @@ watch(
   display: flex;
   justify-content: center;
   align-items: center;
+  border-radius: 12px;
 }
 
-/* 날짜 숫자가 표시될 때의 스타일 */
+.has-icon .date-content {
+  background: linear-gradient(135deg, rgba(152, 216, 200, 0.15) 0%, rgba(111, 175, 170, 0.15) 100%);
+}
+
 .date-number {
   font-size: 1rem;
   line-height: 1;
 }
 
-/* 아이콘이 표시될 때의 스타일 */
-.date-icon-overlay {
-  width: 100%; /* 아이콘을 셀 크기의 70%로 확대 */
-  height: 100%;
-}
 
-/* --- 기록 도트 스타일 (삭제됨) --- */
 .empty-cell {
   visibility: hidden;
 }
@@ -584,18 +624,19 @@ watch(
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(44, 62, 80, 0.6);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 1000;
+  backdrop-filter: blur(2px);
 }
 
 .color-modal {
   background: white;
   padding: 2rem;
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
   width: 90%;
   max-width: 400px;
 }
@@ -603,7 +644,8 @@ watch(
 .color-modal h2 {
   font-size: 1.5rem;
   margin-bottom: 0.5rem;
-  color: var(--color-primary);
+  color: var(--color-primary-dark);
+  font-weight: 700;
 }
 
 .modal-info {
@@ -624,31 +666,36 @@ watch(
   align-items: center;
   justify-content: flex-start;
   padding: 1rem;
-  border: 2px solid #eee;
-  background: #f9f9f9;
-  border-radius: 8px;
+  border: 2px solid var(--color-border);
+  background: white;
+  border-radius: 12px;
   font-size: 1rem;
   cursor: pointer;
   transition: all 0.2s;
   position: relative;
   color: var(--color-text-default);
+  font-weight: 500;
 }
 
 .color-option-btn:hover {
-  background: #f0f0f0;
+  background: var(--color-bg-light);
+  border-color: #7dd3c0;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 .color-option-btn.is-active {
-  border-color: var(--color-code);
-  background-color: var(--color-code);
+  border-color: #7dd3c0;
+  background: linear-gradient(135deg, var(--color-code) 0%, var(--color-code) 100%);
   color: white;
   font-weight: bold;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .color-option-icon {
-  width: 20px;
-  height: 20px;
-  margin-right: 15px;
+  width: 24px;
+  height: 24px;
+  margin-right: 12px;
   transition: filter 0.2s;
 }
 
@@ -663,13 +710,19 @@ watch(
 
 .close-btn {
   width: 100%;
-  padding: 10px;
-  background-color: #ccc;
-  color: #333;
+  padding: 12px;
+  background-color:#7dd3c0;
+  color: white;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   cursor: pointer;
   font-size: 1rem;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.close-btn:hover {
+  background-color: #7F8C8D;
 }
 
 /* ---------------------------------------------------- */
@@ -679,8 +732,8 @@ watch(
 .year-month-modal {
   background: white;
   padding: 2rem;
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
   width: 90%;
   max-width: 400px;
 }
@@ -688,8 +741,9 @@ watch(
 .year-month-modal h2 {
   font-size: 1.5rem;
   margin-bottom: 1.5rem;
-  color: var(--color-primary);
+  color: var(--color-primary-dark);
   text-align: center;
+  font-weight: 700;
 }
 
 .select-group {
@@ -699,19 +753,32 @@ watch(
 }
 
 .select-group label {
-  font-weight: bold;
+  font-weight: 600;
   margin-bottom: 0.5rem;
   color: var(--color-text-default);
+  font-size: 0.95rem;
 }
 
 .date-select {
-  padding: 0.75rem;
-  border: 1px solid #ddd;
-  border-radius: 8px;
+  padding: 0.85rem;
+  border: 2px solid var(--color-border);
+  border-radius: 10px;
   font-size: 1rem;
   appearance: none;
-  background-color: #f9f9f9;
+  background-color: white;
   cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 500;
+}
+
+.date-select:hover {
+  border-color: #7dd3c0;
+}
+
+.date-select:focus {
+  outline: none;
+  border-color: #7dd3c0;
+  box-shadow: 0 0 0 3px rgba(152, 216, 200, 0.2);
 }
 
 .modal-actions {
@@ -723,24 +790,43 @@ watch(
 
 .cancel-btn {
   flex: 1;
-  padding: 10px;
-  background-color: #ccc;
-  color: #333;
-  border: none;
-  border-radius: 8px;
+  padding: 12px;
+  background-color: white;
+  color: var(--color-text-default);
+  border: 2px solid var(--color-border);
+  border-radius: 10px;
   cursor: pointer;
   font-size: 1rem;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.cancel-btn:hover {
+  background-color: var(--color-bg-light);
+  border-color: var(--color-text-secondary);
 }
 
 .apply-btn {
   flex: 1;
-  padding: 10px;
-  background-color: var(--color-primary);
-  color: white;
+  padding: 12px;
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+  color: black;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   cursor: pointer;
   font-size: 1rem;
   font-weight: bold;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(111, 175, 170, 0.3);
 }
+
+.apply-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(111, 175, 170, 0.4);
+}
+
+.apply-btn:active {
+  transform: translateY(0);
+}
+
 </style>
