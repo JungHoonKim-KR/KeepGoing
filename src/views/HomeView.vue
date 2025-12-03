@@ -90,7 +90,7 @@
     <!-- 페이지 3: 물 기록 -->
     <section class="page water-page">
       <div class="page-content">
-        <div class="record-card" @click="goToWaterRecord">
+        <div class="record-card" @click="openWaterModal">
           <h1 class="page-title">물 마시기</h1>
           <div class="record-icon">💧</div>
           <div class="water-progress">
@@ -128,6 +128,7 @@
 
     <!-- 체중 기록 모달 -->
     <WeightRecordModal v-if="showWeightModal" @close="closeWeightModal" />
+    <WaterRecordModal v-if="showWaterModal" @close="closeWaterModal" />
   </div>
 </template>
 
@@ -138,10 +139,10 @@ import dayjs from "dayjs";
 import characterImage from "../assets/images/characters/test.gif";
 import Footer from "./utils/Footer.vue";
 import WeightRecordModal from "../components/record/WeightRecordModal.vue";
-
+import WaterRecordModal from "@/components/record/WaterRecordModal.vue";
 const router = useRouter();
 const showWeightModal = ref(false);
-
+const showWaterModal = ref(false);
 const currentDate = computed(() => {
   return dayjs().format("YYYY년 M월 D일");
 });
@@ -150,8 +151,12 @@ const goToMealRecord = () => {
   router.push("/record/meal");
 };
 
-const goToWaterRecord = () => {
-  router.push("/record/water");
+const openWaterModal = () => {
+  showWaterModal.value = true;
+};
+
+const closeWaterModal = () => {
+  showWaterModal.value = false;
 };
 
 const openWeightModal = () => {
