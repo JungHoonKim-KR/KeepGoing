@@ -53,16 +53,15 @@ const cancelEdit = () => {
 
 <template>
   <div class="profile-view">
-    <header class="header">
-      <div class="header-content">
-        <h1>👤 마이페이지</h1>
-        <button v-if="!isEditing" @click="startEdit" class="edit-btn">
-          수정
-        </button>
-      </div>
-    </header>
-
     <div class="content">
+      <header class="header">
+        <div class="header-content">
+          <h1>👤 마이페이지</h1>
+          <button v-if="!isEditing" @click="startEdit" class="edit-btn">
+            수정
+          </button>
+        </div>
+      </header>
       <div class="info-card">
         <div class="profile-item">
           <label>이름</label>
@@ -242,12 +241,11 @@ const cancelEdit = () => {
 /* --- 레이아웃 및 헤더 --- */
 .profile-view {
   min-height: 100vh;
-  background-color: #f7f7f7;
+  background: linear-gradient(135deg, #98d8c8 0%, #6fafaa 100%);
   padding-bottom: 80px; /* 네비게이션 공간 확보 */
 }
 
 .header {
-  background: linear-gradient(135deg, #b39cd0 0%, #8e7cc3 100%);
   color: white;
   padding: 2rem 1.5rem 1rem;
 }
@@ -259,9 +257,11 @@ const cancelEdit = () => {
 }
 
 .header-content h1 {
-  font-size: 1.5rem;
-  font-weight: bold;
+  font-size: 1.75rem;
+  font-weight: 500;
+  text-align: center;
   margin: 0;
+  letter-spacing: -0.02em;
 }
 
 .edit-btn {
@@ -281,10 +281,16 @@ const cancelEdit = () => {
 }
 
 .info-card {
-  background: white;
-  border-radius: 12px;
   padding: 1.5rem;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 1.75rem;
+  text-align: center;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+  cursor: pointer;
+  transition: transform 0.15s ease-out;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  user-select: none;
 }
 
 /* --- 정보 표시 모드 스타일 --- */
@@ -306,8 +312,7 @@ const cancelEdit = () => {
 }
 
 .display-value {
-  font-weight: bold;
-  color: var(--color-text-default);
+  color: white;
 }
 
 .body-type {
