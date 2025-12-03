@@ -53,13 +53,16 @@ const cancelEdit = () => {
 
 <template>
   <div class="profile-view">
-    <div class="content">
+    <header class="header">
       <div class="header-content">
-        <h1>👤 mypage</h1>
+        <h1>👤 마이페이지</h1>
         <button v-if="!isEditing" @click="startEdit" class="edit-btn">
           수정
         </button>
       </div>
+    </header>
+
+    <div class="content">
       <div class="info-card">
         <div class="profile-item">
           <label>이름</label>
@@ -239,7 +242,7 @@ const cancelEdit = () => {
 /* --- 레이아웃 및 헤더 --- */
 .profile-view {
   min-height: 100vh;
-  background-color: #89c9bd;
+  background-color: #f7f7f7;
   padding-bottom: 80px; /* 네비게이션 공간 확보 */
 }
 
@@ -253,11 +256,9 @@ const cancelEdit = () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem;
 }
 
 .header-content h1 {
-  color: white;
   font-size: 1.5rem;
   font-weight: bold;
   margin: 0;
