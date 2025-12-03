@@ -36,13 +36,13 @@ const trackingStates = ref([
   {
     key: "burned",
     label: "운동",
-    color: "#FF69B4",
+    color: "#F5C857",
     icon: new URL("/src/assets/images/stickers/sad.png", import.meta.url).href,
   },
   {
     key: "weight",
     label: "몸무게",
-    color: "#FF9800",
+    color: "#FF3838",
     icon: new URL("/src/assets/images/stickers/smile.png", import.meta.url).href,
   },
 ]);
@@ -195,8 +195,10 @@ const selectColorForRecord = (recordKey) => {
     const isCurrentlySelected = currentRecords.includes(recordKey);
 
     if (isCurrentlySelected) {
+      // 이미 선택된 상태를 다시 클릭하면 해제 (토글 방식)
       dailyRecords.value[dateKey] = [];
     } else {
+      // 새로운 상태를 클릭하면 이전 상태 해제 후 새로운 상태 기록 (단일 선택 방식)
       dailyRecords.value[dateKey] = [recordKey];
     }
 
@@ -218,7 +220,6 @@ const getRecordIconUrl = (records) => {
 
 // 💡 추가된 년/월 모달 함수
 const openYearMonthModal = () => {
-  // 현재 달력의 년/월로 임시 상태 초기화
   tempSelectedYear.value = currentDate.value.getFullYear();
   tempSelectedMonth.value = currentDate.value.getMonth();
   isYearMonthModalOpen.value = true;
@@ -232,7 +233,6 @@ const applyYearMonth = () => {
   const currentDayOfMonth = currentDate.value.getDate();
   let newDate = new Date(tempSelectedYear.value, tempSelectedMonth.value, currentDayOfMonth);
 
-  // 날짜가 다음 달로 넘어갔다면 해당 월의 마지막 날로 조정
   if (newDate.getMonth() !== tempSelectedMonth.value) {
     newDate = new Date(tempSelectedYear.value, tempSelectedMonth.value + 1, 0);
   }
@@ -260,13 +260,13 @@ watch(
     <header class="header">
       <div class="month-header">
         <button @click="changeMonth(-1)" class="month-btn">◀</button>
-        <h1 class="month-display">
+        
+        <h1 class="month-display" @click.stop="openYearMonthModal">
           {{ displayMonth }}
-          <span class="dropdown-icon" @click.stop="openYearMonthModal">▼</span>
+          <span class="dropdown-icon">▼</span>
         </h1>
         
         <button @click="changeMonth(1)" class="month-btn">▶</button>
-      <!--  <button @click="selectToday" class="today-btn">오늘 선택</button> -->
       </div>
     </header>
 
@@ -283,41 +283,43 @@ watch(
         </div>
       </div>
 
-      <div class="days-of-week">
-        <span v-for="day in daysOfWeek" :key="day" class="weekday-header">{{ day }}</span>
-      </div>
+      <div class="calendar-card">
+        <div class="days-of-week">
+          <span v-for="day in daysOfWeek" :key="day" class="weekday-header">{{ day }}</span>
+        </div>
 
-      <div class="date-grid">
-        <div v-for="(day, index) in calendarDays" :key="index" class="date-cell-wrapper">
-          <button
-            v-if="day.isCurrentMonth"
-            :class="[
-              'date-cell',
-              {
-                'is-today': day.isToday,
-                'is-selected': day.isSelected,
-                'has-icon': day.records.length > 0, // 아이콘 덮어쓰기 여부
-              },
-            ]"
-            @mousedown.prevent="startPress(day)"
-            @mouseup.prevent="endPress(day)"
-            @mouseleave.prevent="cancelPress"
-            @touchstart.prevent="startPress(day)"
-            @touchend.prevent="endPress(day)"
-            @touchcancel.prevent="cancelPress"
-            :aria-label="`${displayMonth} ${day.day}일`"
-          >
-            <img
-              v-if="day.records.length > 0"
-              :src="getRecordIconUrl(day.records)"
-              :alt="`기록 아이콘`"
-              class="date-content date-icon-overlay"
-            />
-            <span v-else class="date-content date-number">
-              {{ day.day }}
-            </span>
-          </button>
-          <span v-else class="empty-cell"></span>
+        <div class="date-grid">
+          <div v-for="(day, index) in calendarDays" :key="index" class="date-cell-wrapper">
+            <button
+              v-if="day.isCurrentMonth"
+              :class="[
+                'date-cell',
+                {
+                  'is-today': day.isToday,
+                  'is-selected': day.isSelected,
+                  'has-icon': day.records.length > 0,
+                },
+              ]"
+              @mousedown.prevent="startPress(day)"
+              @mouseup.prevent="endPress(day)"
+              @mouseleave.prevent="cancelPress"
+              @touchstart.prevent="startPress(day)"
+              @touchend.prevent="endPress(day)"
+              @touchcancel.prevent="cancelPress"
+              :aria-label="`${displayMonth} ${day.day}일`"
+            >
+              <img
+                v-if="day.records.length > 0"
+                :src="getRecordIconUrl(day.records)"
+                :alt="`기록 아이콘`"
+                class="date-content date-icon-overlay"
+              />
+              <span v-else class="date-content date-number">
+                {{ day.day }}
+              </span>
+            </button>
+            <span v-else class="empty-cell"></span>
+          </div>
         </div>
       </div>
     </div>
@@ -328,7 +330,7 @@ watch(
   <Teleport to="body">
     <div v-if="isColorModalOpen" class="modal-overlay" @click.self="closeColorModal">
       <div class="color-modal">
-        <h2>{{ modalTargetDay?.day }}일 기록 선택 (단일)</h2>
+        <h2>{{ modalTargetDay?.day }}일 기록 선택</h2>
         <p class="modal-info">선택 시, 이전 상태는 해제되고 새로운 상태가 기록됩니다.</p>
 
         <div class="color-options">
@@ -388,9 +390,8 @@ watch(
 <style scoped>
 /* --- 기본 변수 정의 --- */
 :root {
-  --color-primary: #8E7CC3 ;
-  --color-primary-dark: #6abfa8;
-  --color-primary-light: #a8e6dd;
+  --color-primary: #98d8c8;
+  --color-primary-dark: #6fafaa;
   --color-accent: #FF6B9D;
   --color-accent-light: #FFB6D3;
   --color-warning: #FFA726;
@@ -399,25 +400,23 @@ watch(
   --color-text-secondary: #7F8C8D;
   --color-text-muted: #95A5A6;
   --color-red: #E74C3C;
-  --color-green: #4CAF50;
-  --color-bg-light: #f8fffe;
-  --color-bg-mint: #f0faf8;
-  --color-border: #d4ebe5;
 }
 
 /* --- 캘린더 전체 레이아웃 --- */
 .calendar-view {
   min-height: 100vh;
   padding-bottom: 80px;
-  
-  background: #F9FAFB;
+  /* 💡 수정: 전체 뷰에 그라데이션 적용 */
+  background: linear-gradient(135deg, #98d8c8 0%, #6fafaa 100%);
+  color: white;
 }
 
 .header {
-  background: linear-gradient(135deg, #7dd3c0 0%, #6abfa8 100%);
+  /* 💡 수정: 배경색과 그림자 제거하여 투명하게 만듦 */
+  /* background: linear-gradient(135deg, #98d8c8 0%, #6fafaa 100%); (제거) */
+  /* box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12); (제거) */
   color: white;
   padding: 2rem 1.5rem 1rem;
-  box-shadow: 0 2px 8px rgba(111, 175, 170, 0.15);
 }
 
 .month-header {
@@ -433,17 +432,15 @@ watch(
   margin: 0;
   flex-grow: 1;
   text-align: center;
+  color: white;
+  cursor: pointer; 
 }
 
 .dropdown-icon {
-  cursor: pointer;
   margin-left: 5px;
   opacity: 0.9;
   transition: opacity 0.2s;
-}
-
-.dropdown-icon:hover {
-  opacity: 1;
+  display: none; 
 }
 
 .month-btn {
@@ -454,27 +451,16 @@ watch(
   cursor: pointer;
   padding: 8px 12px;
   border-radius: 8px;
-  transition: background 0.2s;
+  transition: all 0.2s;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .month-btn:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.35);
 }
 
-.today-btn {
-  background-color: rgba(255, 255, 255, 0.25);
-  color: white;
-  border: none;
-  border-radius: 20px;
-  padding: 0.5rem 1rem;
-  font-size: 0.8rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.today-btn:hover {
-  background-color: rgba(255, 255, 255, 0.35);
+.month-btn:active {
+  transform: scale(0.95);
 }
 
 /* --- 트래킹 상태 칩 스타일 --- */
@@ -487,23 +473,23 @@ watch(
   gap: 0.5rem;
   overflow-x: auto;
   white-space: nowrap;
-  background-color: #f8fffe;
-  padding: 1rem 1.5rem;
-  margin: 0 -1.5rem 1rem;
-  border-bottom: 2px solid var(--color-border);
+  padding: 1.5rem 0;
+  margin-bottom: 0;
 }
 
 .state-chip {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 0.5rem 1rem;
+  padding: 0.6rem 1.2rem;
   border-radius: 20px;
   color: white;
   font-size: 0.85rem;
   font-weight: 600;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
   transition: transform 0.2s, box-shadow 0.2s;
+  flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .state-chip:active {
@@ -516,25 +502,36 @@ watch(
   height: 18px;
 }
 
+/* --- 캘린더 카드 (글래스모피즘) --- */
+.calendar-card {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 1.5rem 1.5rem 2rem 1.5rem;
+  border-radius: 1.75rem;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+  margin-bottom: 1.5rem;
+  overflow: hidden; 
+}
+
 /* --- 요일 헤더 --- */
 .days-of-week {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   text-align: center;
   font-weight: 600;
-  color: black;
-  padding-bottom: 0.75rem;
-  padding-top: 1rem;
-  border-bottom: 2px solid var(--color-border);
+  color: rgba(255, 255, 255, 0.9);
+  padding-bottom: 1rem;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.2);
   font-size: 0.9rem;
 }
 
 .weekday-header:first-child {
-  color: var(--color-red);
+  color: #FFB6D3;
 }
 
 .weekday-header:last-child {
-  color: var(--color-primary-dark);
+  color: #FFB6D3;
 }
 
 /* --- 날짜 그리드 --- */
@@ -542,7 +539,7 @@ watch(
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   text-align: center;
-  gap: 8px 0;
+  gap: 4px 0; 
   padding: 1rem 0;
 }
 
@@ -550,44 +547,54 @@ watch(
   display: flex;
   justify-content: center;
   align-items: center;
-  padding: 4px 0;
+  padding: 2px 0;
 }
 
 .date-cell {
-  width: 44px;
-  height: 44px;
+  width: 100%; 
+  max-width: 44px; 
+  aspect-ratio: 1 / 1; 
+  
   display: flex;
   justify-content: center;
   align-items: center;
-  background: #F9FAFB;
+  background: rgba(255, 255, 255, 0.15);
   border: 2px solid transparent;
   font-size: 1rem;
   font-weight: 500;
   cursor: pointer;
   position: relative;
   padding: 0;
-  color: var(--color-text-default);
+  color: white;
   border-radius: 12px;
   transition: all 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  user-select: none;
 }
 
 .date-cell:hover {
-  background-color: #e0f0ed;
+  background-color: rgba(255, 255, 255, 0.25);
   transform: scale(1.08);
+  border-color: rgba(255, 255, 255, 0.4);
 }
 
-/* .is-selected {
-  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
-  color: white !important;
-  font-weight: bold;
-  box-shadow: 0 4px 12px rgba(109, 188, 170, 0.3);
-} */
+.date-cell:active {
+  transform: scale(0.97);
+}
 
 .is-today {
-  background-color: #7dd3c0  ;
-  color: var(--color-primary-dark);
-  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.6);
   font-weight: 600;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.is-selected {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.6);
+  font-weight: bold;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 /* 💡 아이콘/날짜 오버레이 스타일 */
@@ -604,7 +611,7 @@ watch(
 }
 
 .has-icon .date-content {
-  background: linear-gradient(135deg, rgba(152, 216, 200, 0.15) 0%, rgba(111, 175, 170, 0.15) 100%);
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .date-number {
@@ -612,6 +619,11 @@ watch(
   line-height: 1;
 }
 
+.date-icon-overlay {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
 
 .empty-cell {
   visibility: hidden;
@@ -635,16 +647,16 @@ watch(
 .color-modal {
   background: white;
   padding: 2rem;
-  border-radius: 16px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  border-radius: 1.75rem;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
   width: 90%;
   max-width: 400px;
 }
 
 .color-modal h2 {
-  font-size: 1.5rem;
+  font-size: 1.3rem;
   margin-bottom: 0.5rem;
-  color: var(--color-primary-dark);
+  color: var(--color-text-default);
   font-weight: 700;
 }
 
@@ -666,27 +678,34 @@ watch(
   align-items: center;
   justify-content: flex-start;
   padding: 1rem;
-  border: 2px solid var(--color-border);
-  background: white;
-  border-radius: 12px;
+  border: 2px solid rgba(152, 216, 200, 0.3);
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 0.875rem;
   font-size: 1rem;
   cursor: pointer;
   transition: all 0.2s;
   position: relative;
   color: var(--color-text-default);
   font-weight: 500;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  user-select: none;
 }
 
 .color-option-btn:hover {
-  background: var(--color-bg-light);
-  border-color: #7dd3c0;
+  background: rgba(152, 216, 200, 0.2);
+  border-color: rgba(152, 216, 200, 0.6);
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
+.color-option-btn:active {
+  transform: scale(0.97);
+}
+
 .color-option-btn.is-active {
-  border-color: #7dd3c0;
-  background: linear-gradient(135deg, var(--color-code) 0%, var(--color-code) 100%);
+  border-color: var(--color-code);
+  background: var(--color-code);
   color: white;
   font-weight: bold;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -710,19 +729,33 @@ watch(
 
 .close-btn {
   width: 100%;
-  padding: 12px;
-  background-color:#7dd3c0;
+  padding: 1rem 2rem;
+  background: rgba(255, 255, 255, 0.1);
   color: white;
-  border: none;
-  border-radius: 10px;
+  border: 1.5px solid rgba(255, 255, 255, 0.6);
+  border-radius: 3rem;
   cursor: pointer;
   font-size: 1rem;
   font-weight: 600;
-  transition: background 0.2s;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  user-select: none;
 }
 
 .close-btn:hover {
-  background-color: #7F8C8D;
+  background: white;
+  color: #6fafaa;
+  transform: translateY(-3px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.close-btn:active {
+  transform: scale(0.95);
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 1);
 }
 
 /* ---------------------------------------------------- */
@@ -732,16 +765,16 @@ watch(
 .year-month-modal {
   background: white;
   padding: 2rem;
-  border-radius: 16px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  border-radius: 1.75rem;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
   width: 90%;
   max-width: 400px;
 }
 
 .year-month-modal h2 {
-  font-size: 1.5rem;
+  font-size: 1.3rem;
   margin-bottom: 1.5rem;
-  color: var(--color-primary-dark);
+  color: var(--color-text-default);
   text-align: center;
   font-weight: 700;
 }
@@ -761,23 +794,26 @@ watch(
 
 .date-select {
   padding: 0.85rem;
-  border: 2px solid var(--color-border);
-  border-radius: 10px;
+  border: 2px solid rgba(152, 216, 200, 0.3);
+  border-radius: 0.875rem;
   font-size: 1rem;
   appearance: none;
   background-color: white;
   cursor: pointer;
   transition: all 0.2s;
   font-weight: 500;
+  color: var(--color-text-default);
+  -webkit-tap-highlight-color: transparent;
 }
 
 .date-select:hover {
-  border-color: #7dd3c0;
+  border-color: rgba(152, 216, 200, 0.6);
+  background-color: rgba(152, 216, 200, 0.05);
 }
 
 .date-select:focus {
   outline: none;
-  border-color: #7dd3c0;
+  border-color: #98d8c8;
   box-shadow: 0 0 0 3px rgba(152, 216, 200, 0.2);
 }
 
@@ -788,45 +824,60 @@ watch(
   gap: 10px;
 }
 
+/* 취소 버튼 스타일 (기준) */
 .cancel-btn {
   flex: 1;
-  padding: 12px;
-  background-color: white;
+  padding: 0.85rem;
+  background-color: rgba(255, 255, 255, 0.8);
   color: var(--color-text-default);
-  border: 2px solid var(--color-border);
-  border-radius: 10px;
+  border: 2px solid rgba(152, 216, 200, 0.3);
+  border-radius: 0.875rem;
   cursor: pointer;
   font-size: 1rem;
   font-weight: 600;
   transition: all 0.2s;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  user-select: none;
 }
 
 .cancel-btn:hover {
-  background-color: var(--color-bg-light);
-  border-color: var(--color-text-secondary);
+  background-color: rgba(152, 216, 200, 0.2);
+  border-color: rgba(152, 216, 200, 0.6);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
+.cancel-btn:active {
+  transform: scale(0.97);
+}
+
+/* 💡 적용 버튼 스타일: cancel-btn과 동일하게 설정 */
 .apply-btn {
   flex: 1;
-  padding: 12px;
-  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
-  color: black;
-  border: none;
-  border-radius: 10px;
+  padding: 0.85rem;
+  background-color: rgba(255, 255, 255, 0.8); 
+  color: var(--color-text-default); 
+  border: 2px solid rgba(152, 216, 200, 0.3); 
+  border-radius: 0.875rem; 
   cursor: pointer;
   font-size: 1rem;
-  font-weight: bold;
+  font-weight: 600;
   transition: all 0.2s;
-  box-shadow: 0 2px 8px rgba(111, 175, 170, 0.3);
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  user-select: none;
 }
 
 .apply-btn:hover {
+  background-color: rgba(152, 216, 200, 0.2);
+  border-color: rgba(152, 216, 200, 0.6);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(111, 175, 170, 0.4);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  color: var(--color-text-default);
 }
 
 .apply-btn:active {
-  transform: translateY(0);
+  transform: scale(0.97);
 }
-
 </style>
