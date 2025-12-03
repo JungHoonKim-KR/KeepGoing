@@ -1,6 +1,8 @@
 <script setup>
 import { ref } from "vue";
 import Footer from "./utils/Footer.vue";
+import characterImage from "../assets/images/characters/test.gif";
+
 // ----------------------------------------------------
 // 1. 상태 관리
 // ----------------------------------------------------
@@ -56,9 +58,21 @@ const cancelEdit = () => {
     <div class="content">
       <header class="header">
         <div class="header-content">
-          <h1>👤{{ profile.name }}님</h1>
+          <div>
+            <div class="character-container">
+              <img
+                :src="characterImage"
+                alt="건강 캐릭터"
+                class="character-gif"
+              />
+            </div>
+            {{ profile.name }}님
+          </div>
           <button v-if="!isEditing" @click="startEdit" class="edit-btn">
             수정
+          </button>
+          <button v-if="isEditing" @click="cancelEdit" class="edit-btn">
+            닫기
           </button>
         </div>
       </header>
@@ -105,8 +119,6 @@ const cancelEdit = () => {
 
         <template v-else>
           <div class="profile-edit-wrapper">
-            <button class="close-btn" @click="cancelEdit">X</button>
-
             <div class="form-group">
               <label for="age">나이</label>
               <input
@@ -240,7 +252,7 @@ const cancelEdit = () => {
 /* --- 레이아웃 및 헤더 --- */
 .profile-view {
   min-height: 100vh;
-  background: linear-gradient(135deg, #98d8c8 0%, #6fafaa 100%);
+  background: rgba(16, 16, 16, 1);
   padding-bottom: 80px; /* 네비게이션 공간 확보 */
 }
 
@@ -255,12 +267,20 @@ const cancelEdit = () => {
   align-items: center;
 }
 
-.header-content h1 {
+.header-content div {
   font-size: 1.75rem;
   font-weight: 500;
   text-align: center;
   margin: 0;
   letter-spacing: -0.02em;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+}
+.character-container img {
+  max-width: 3rem;
+  max-height: 3rem;
 }
 
 .edit-btn {
@@ -280,7 +300,6 @@ const cancelEdit = () => {
 }
 
 .info-card {
-  position: relative;
   color: white;
   padding: 1.5rem;
   background: rgba(255, 255, 255, 0.2);
@@ -300,7 +319,7 @@ const cancelEdit = () => {
   justify-content: space-between;
   align-items: center;
   padding: 0.75rem 0;
-  border-bottom: 1px solid #eee;
+  /* border-bottom: 1px solid #eee; */
 }
 
 .profile-item:last-child {
@@ -308,8 +327,9 @@ const cancelEdit = () => {
 }
 
 .profile-item label {
-  font-weight: 600;
-  color: var(--color-text-secondary);
+  font-weight: 400;
+  /* color: var(--color-text-secondary); */
+  color: #757575;
 }
 
 .display-value {
@@ -417,21 +437,5 @@ const cancelEdit = () => {
 .save-btn {
   background-color: #7cc399;
   color: white;
-}
-
-.close-btn {
-  color: white;
-  position: absolute;
-  top: 20px;
-  right: 20px;
-  border: none;
-  background: transparent;
-  font-size: 20px;
-  cursor: pointer;
-}
-
-.cancel-btn {
-  background-color: #ccc;
-  color: var(--color-text-default);
 }
 </style>

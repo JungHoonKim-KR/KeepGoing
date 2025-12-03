@@ -24,14 +24,14 @@ const isYearMonthModalOpen = ref(false);
 const tempSelectedYear = ref(currentDate.value.getFullYear());
 const tempSelectedMonth = ref(currentDate.value.getMonth()); // 0부터 시작 (0: 1월)
 
-
 // 트래킹 상태 정의
 const trackingStates = ref([
   {
     key: "ate",
     label: "식사",
     color: "#4CAF50",
-    icon: new URL("/src/assets/images/stickers/jinji.png", import.meta.url).href,
+    icon: new URL("/src/assets/images/stickers/jinji.png", import.meta.url)
+      .href,
   },
   {
     key: "burned",
@@ -43,7 +43,8 @@ const trackingStates = ref([
     key: "weight",
     label: "몸무게",
     color: "#FF3838",
-    icon: new URL("/src/assets/images/stickers/smile.png", import.meta.url).href,
+    icon: new URL("/src/assets/images/stickers/smile.png", import.meta.url)
+      .href,
   },
 ]);
 
@@ -68,7 +69,6 @@ const availableYears = computed(() => {
 const availableMonths = computed(() => {
   return Array.from({ length: 12 }, (_, i) => i);
 });
-
 
 const displayMonth = computed(() => {
   return currentDate.value.toLocaleDateString("ko-KR", {
@@ -96,7 +96,9 @@ const calendarDays = computed(() => {
   // 2. 이번 달 날짜 채우기
   for (let i = 1; i <= lastDate; i++) {
     const fullDate = new Date(year, month, i);
-    const dateKey = `${year}-${String(month + 1).padStart(2, "0")}-${String(i).padStart(2, "0")}`;
+    const dateKey = `${year}-${String(month + 1).padStart(2, "0")}-${String(
+      i
+    ).padStart(2, "0")}`;
 
     days.push({
       day: i,
@@ -231,7 +233,11 @@ const closeYearMonthModal = () => {
 
 const applyYearMonth = () => {
   const currentDayOfMonth = currentDate.value.getDate();
-  let newDate = new Date(tempSelectedYear.value, tempSelectedMonth.value, currentDayOfMonth);
+  let newDate = new Date(
+    tempSelectedYear.value,
+    tempSelectedMonth.value,
+    currentDayOfMonth
+  );
 
   if (newDate.getMonth() !== tempSelectedMonth.value) {
     newDate = new Date(tempSelectedYear.value, tempSelectedMonth.value + 1, 0);
@@ -240,7 +246,6 @@ const applyYearMonth = () => {
   currentDate.value = newDate;
   closeYearMonthModal();
 };
-
 
 // ----------------------------------------------------
 // 4. 오류 방지 watch
@@ -260,12 +265,12 @@ watch(
     <header class="header">
       <div class="month-header">
         <button @click="changeMonth(-1)" class="month-btn">◀</button>
-        
+
         <h1 class="month-display" @click.stop="openYearMonthModal">
           {{ displayMonth }}
           <span class="dropdown-icon">▼</span>
         </h1>
-        
+
         <button @click="changeMonth(1)" class="month-btn">▶</button>
       </div>
     </header>
@@ -278,18 +283,29 @@ watch(
           class="state-chip"
           :style="{ backgroundColor: state.color }"
         >
-          <img v-if="state.icon" :src="state.icon" :alt="state.label" class="state-chip-icon" />
+          <img
+            v-if="state.icon"
+            :src="state.icon"
+            :alt="state.label"
+            class="state-chip-icon"
+          />
           {{ state.label }}
         </div>
       </div>
 
       <div class="calendar-card">
         <div class="days-of-week">
-          <span v-for="day in daysOfWeek" :key="day" class="weekday-header">{{ day }}</span>
+          <span v-for="day in daysOfWeek" :key="day" class="weekday-header">{{
+            day
+          }}</span>
         </div>
 
         <div class="date-grid">
-          <div v-for="(day, index) in calendarDays" :key="index" class="date-cell-wrapper">
+          <div
+            v-for="(day, index) in calendarDays"
+            :key="index"
+            class="date-cell-wrapper"
+          >
             <button
               v-if="day.isCurrentMonth"
               :class="[
@@ -324,14 +340,20 @@ watch(
       </div>
     </div>
 
-   <Footer></Footer>
+    <Footer></Footer>
   </div>
 
   <Teleport to="body">
-    <div v-if="isColorModalOpen" class="modal-overlay" @click.self="closeColorModal">
+    <div
+      v-if="isColorModalOpen"
+      class="modal-overlay"
+      @click.self="closeColorModal"
+    >
       <div class="color-modal">
         <h2>{{ modalTargetDay?.day }}일 기록 선택</h2>
-        <p class="modal-info">선택 시, 이전 상태는 해제되고 새로운 상태가 기록됩니다.</p>
+        <p class="modal-info">
+          선택 시, 이전 상태는 해제되고 새로운 상태가 기록됩니다.
+        </p>
 
         <div class="color-options">
           <button
@@ -346,7 +368,12 @@ watch(
             ]"
             @click="selectColorForRecord(state.key)"
           >
-            <img v-if="state.icon" :src="state.icon" :alt="state.label" class="color-option-icon" />
+            <img
+              v-if="state.icon"
+              :src="state.icon"
+              :alt="state.label"
+              class="color-option-icon"
+            />
             {{ state.label }}
           </button>
         </div>
@@ -356,13 +383,21 @@ watch(
   </Teleport>
 
   <Teleport to="body">
-    <div v-if="isYearMonthModalOpen" class="modal-overlay" @click.self="closeYearMonthModal">
+    <div
+      v-if="isYearMonthModalOpen"
+      class="modal-overlay"
+      @click.self="closeYearMonthModal"
+    >
       <div class="year-month-modal">
         <h2>날짜 선택</h2>
 
         <div class="select-group">
           <label for="year-select">년도</label>
-          <select id="year-select" v-model.number="tempSelectedYear" class="date-select">
+          <select
+            id="year-select"
+            v-model.number="tempSelectedYear"
+            class="date-select"
+          >
             <option v-for="year in availableYears" :key="year" :value="year">
               {{ year }}년
             </option>
@@ -371,8 +406,16 @@ watch(
 
         <div class="select-group">
           <label for="month-select">월</label>
-          <select id="month-select" v-model.number="tempSelectedMonth" class="date-select">
-            <option v-for="month in availableMonths" :key="month" :value="month">
+          <select
+            id="month-select"
+            v-model.number="tempSelectedMonth"
+            class="date-select"
+          >
+            <option
+              v-for="month in availableMonths"
+              :key="month"
+              :value="month"
+            >
               {{ month + 1 }}월
             </option>
           </select>
@@ -392,14 +435,14 @@ watch(
 :root {
   --color-primary: #98d8c8;
   --color-primary-dark: #6fafaa;
-  --color-accent: #FF6B9D;
-  --color-accent-light: #FFB6D3;
-  --color-warning: #FFA726;
-  --color-success: #66BB6A;
-  --color-text-default: #2C3E50;
-  --color-text-secondary: #7F8C8D;
-  --color-text-muted: #95A5A6;
-  --color-red: #E74C3C;
+  --color-accent: #ff6b9d;
+  --color-accent-light: #ffb6d3;
+  --color-warning: #ffa726;
+  --color-success: #66bb6a;
+  --color-text-default: #2c3e50;
+  --color-text-secondary: #7f8c8d;
+  --color-text-muted: #95a5a6;
+  --color-red: #e74c3c;
 }
 
 /* --- 캘린더 전체 레이아웃 --- */
@@ -407,7 +450,8 @@ watch(
   min-height: 100vh;
   padding-bottom: 80px;
   /* 💡 수정: 전체 뷰에 그라데이션 적용 */
-  background: linear-gradient(135deg, #98d8c8 0%, #6fafaa 100%);
+  /* background: linear-gradient(135deg, #98d8c8 0%, #6fafaa 100%); */
+  background: rgba(16, 16, 16, 1);
   color: white;
 }
 
@@ -433,14 +477,14 @@ watch(
   flex-grow: 1;
   text-align: center;
   color: white;
-  cursor: pointer; 
+  cursor: pointer;
 }
 
 .dropdown-icon {
   margin-left: 5px;
   opacity: 0.9;
   transition: opacity 0.2s;
-  display: none; 
+  display: none;
 }
 
 .month-btn {
@@ -511,7 +555,7 @@ watch(
   -webkit-backdrop-filter: blur(10px);
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
   margin-bottom: 1.5rem;
-  overflow: hidden; 
+  overflow: hidden;
 }
 
 /* --- 요일 헤더 --- */
@@ -527,11 +571,11 @@ watch(
 }
 
 .weekday-header:first-child {
-  color: #FFB6D3;
+  color: #ffb6d3;
 }
 
 .weekday-header:last-child {
-  color: #FFB6D3;
+  color: #ffb6d3;
 }
 
 /* --- 날짜 그리드 --- */
@@ -539,7 +583,7 @@ watch(
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   text-align: center;
-  gap: 4px 0; 
+  gap: 4px 0;
   padding: 1rem 0;
 }
 
@@ -551,10 +595,10 @@ watch(
 }
 
 .date-cell {
-  width: 100%; 
-  max-width: 44px; 
-  aspect-ratio: 1 / 1; 
-  
+  width: 100%;
+  max-width: 44px;
+  aspect-ratio: 1 / 1;
+
   display: flex;
   justify-content: center;
   align-items: center;
@@ -856,10 +900,10 @@ watch(
 .apply-btn {
   flex: 1;
   padding: 0.85rem;
-  background-color: rgba(255, 255, 255, 0.8); 
-  color: var(--color-text-default); 
-  border: 2px solid rgba(152, 216, 200, 0.3); 
-  border-radius: 0.875rem; 
+  background-color: rgba(255, 255, 255, 0.8);
+  color: var(--color-text-default);
+  border: 2px solid rgba(152, 216, 200, 0.3);
+  border-radius: 0.875rem;
   cursor: pointer;
   font-size: 1rem;
   font-weight: 600;
