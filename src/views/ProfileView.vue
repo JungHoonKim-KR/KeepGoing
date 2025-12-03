@@ -56,18 +56,13 @@ const cancelEdit = () => {
     <div class="content">
       <header class="header">
         <div class="header-content">
-          <h1>👤 마이페이지</h1>
+          <h1>👤{{ profile.name }}님</h1>
           <button v-if="!isEditing" @click="startEdit" class="edit-btn">
             수정
           </button>
         </div>
       </header>
       <div class="info-card">
-        <div class="profile-item">
-          <label>이름</label>
-          <span class="display-value">{{ profile.name }}</span>
-        </div>
-
         <template v-if="!isEditing">
           <div class="profile-item">
             <label>나이</label>
@@ -109,114 +104,118 @@ const cancelEdit = () => {
         </template>
 
         <template v-else>
-          <div class="form-group">
-            <label for="age">나이</label>
-            <input
-              id="age"
-              type="number"
-              v-model.number="profile.age"
-              min="1"
-            />
-          </div>
+          <div class="profile-edit-wrapper">
+            <button class="close-btn" @click="cancelEdit">X</button>
 
-          <div class="form-group">
-            <label>성별</label>
-            <div class="radio-group">
+            <div class="form-group">
+              <label for="age">나이</label>
               <input
-                id="gender-male"
-                type="radio"
-                value="male"
-                v-model="profile.gender"
-              />
-              <label for="gender-male">남성</label>
-              <input
-                id="gender-female"
-                type="radio"
-                value="female"
-                v-model="profile.gender"
-              />
-              <label for="gender-female">여성</label>
-            </div>
-          </div>
-
-          <div class="form-group-inline">
-            <div class="form-group sub-group">
-              <label for="height">키 (cm)</label>
-              <input
-                id="height"
+                id="age"
                 type="number"
-                v-model.number="profile.height"
-                min="100"
+                v-model.number="profile.age"
+                min="1"
               />
             </div>
-            <div class="form-group sub-group">
-              <label for="weight">몸무게 (kg)</label>
-              <input
-                id="weight"
-                type="number"
-                v-model.number="profile.weight"
-                min="30"
-              />
-            </div>
-          </div>
 
-          <div class="form-group">
-            <label for="activity">활동량</label>
-            <select id="activity" v-model="profile.activityLevel">
-              <option
-                v-for="option in activityOptions"
-                :key="option.value"
-                :value="option.value"
-              >
-                {{ option.label }}
-              </option>
-            </select>
-          </div>
-
-          <div class="form-group">
-            <label for="sleepHours">평균 수면 시간 (시간)</label>
-            <input
-              id="sleepHours"
-              type="number"
-              v-model.number="profile.sleepHours"
-              min="1"
-              max="15"
-            />
-          </div>
-
-          <div class="form-group">
-            <label for="weeklyWorkout">주간 운동 횟수</label>
-            <input
-              id="weeklyWorkout"
-              type="number"
-              v-model.number="profile.weeklyWorkout"
-              min="0"
-              max="7"
-            />
-          </div>
-
-          <div class="form-group">
-            <label>체형 선택</label>
-            <div class="radio-group body-type-select">
-              <div
-                v-for="option in bodyTypeOptions"
-                :key="option.value"
-                class="radio-item"
-              >
+            <div class="form-group">
+              <label>성별</label>
+              <div class="radio-group">
                 <input
-                  :id="'body-' + option.value"
+                  id="gender-male"
                   type="radio"
-                  :value="option.value"
-                  v-model="profile.bodyType"
+                  value="male"
+                  v-model="profile.gender"
                 />
-                <label :for="'body-' + option.value">{{ option.label }}</label>
+                <label for="gender-male">남성</label>
+                <input
+                  id="gender-female"
+                  type="radio"
+                  value="female"
+                  v-model="profile.gender"
+                />
+                <label for="gender-female">여성</label>
               </div>
             </div>
-          </div>
 
-          <div class="action-buttons">
-            <button @click="cancelEdit" class="cancel-btn">취소</button>
-            <button @click="saveProfile" class="save-btn">저장</button>
+            <div class="form-group-inline">
+              <div class="form-group sub-group">
+                <label for="height">키 (cm)</label>
+                <input
+                  id="height"
+                  type="number"
+                  v-model.number="profile.height"
+                  min="100"
+                />
+              </div>
+              <div class="form-group sub-group">
+                <label for="weight">몸무게 (kg)</label>
+                <input
+                  id="weight"
+                  type="number"
+                  v-model.number="profile.weight"
+                  min="30"
+                />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="activity">활동량</label>
+              <select id="activity" v-model="profile.activityLevel">
+                <option
+                  v-for="option in activityOptions"
+                  :key="option.value"
+                  :value="option.value"
+                >
+                  {{ option.label }}
+                </option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="sleepHours">평균 수면 시간 (시간)</label>
+              <input
+                id="sleepHours"
+                type="number"
+                v-model.number="profile.sleepHours"
+                min="1"
+                max="15"
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="weeklyWorkout">주간 운동 횟수</label>
+              <input
+                id="weeklyWorkout"
+                type="number"
+                v-model.number="profile.weeklyWorkout"
+                min="0"
+                max="7"
+              />
+            </div>
+
+            <div class="form-group">
+              <div class="radio-group body-type-select">
+                <div
+                  v-for="option in bodyTypeOptions"
+                  :key="option.value"
+                  class="radio-item"
+                >
+                  <input
+                    :id="'body-' + option.value"
+                    type="radio"
+                    :value="option.value"
+                    v-model="profile.bodyType"
+                  />
+                  <label :for="'body-' + option.value">{{
+                    option.label
+                  }}</label>
+                </div>
+              </div>
+            </div>
+
+            <div class="action-buttons">
+              <button @click="saveProfile" class="save-btn">저장</button>
+            </div>
           </div>
         </template>
       </div>
@@ -247,7 +246,7 @@ const cancelEdit = () => {
 
 .header {
   color: white;
-  padding: 2rem 1.5rem 1rem;
+  padding: 1rem 1.5rem;
 }
 
 .header-content {
@@ -281,6 +280,8 @@ const cancelEdit = () => {
 }
 
 .info-card {
+  position: relative;
+  color: white;
   padding: 1.5rem;
   background: rgba(255, 255, 255, 0.2);
   border-radius: 1.75rem;
@@ -316,8 +317,8 @@ const cancelEdit = () => {
 }
 
 .body-type {
-  color: var(--color-primary);
-  background-color: #e6e9ff;
+  color: #245b42;
+  background-color: #f3fff7;
   padding: 2px 8px;
   border-radius: 4px;
   font-size: 0.9rem;
@@ -375,7 +376,7 @@ const cancelEdit = () => {
 
 .radio-group label {
   padding: 0.5rem 1rem;
-  border: 1px solid #ddd;
+  border: 1px solid;
   border-radius: 20px;
   cursor: pointer;
   font-weight: normal;
@@ -383,9 +384,8 @@ const cancelEdit = () => {
 }
 
 .radio-group input[type="radio"]:checked + label {
-  background-color: #8e7cc3;
-  color: white;
-  border-color: var(--color-primary);
+  color: #245b42;
+  /* border-color: var(--color-primary); 경계선 색 고민중 ..ㅜ */
   font-weight: 600;
 }
 
@@ -415,8 +415,19 @@ const cancelEdit = () => {
 }
 
 .save-btn {
-  background-color: #8e7cc3;
+  background-color: #7cc399;
   color: white;
+}
+
+.close-btn {
+  color: white;
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  border: none;
+  background: transparent;
+  font-size: 20px;
+  cursor: pointer;
 }
 
 .cancel-btn {
