@@ -71,6 +71,9 @@ const cancelEdit = () => {
           <button v-if="!isEditing" @click="startEdit" class="edit-btn">
             수정
           </button>
+          <button v-if="isEditing" @click="cancelEdit" class="edit-btn">
+            닫기
+          </button>
         </div>
       </header>
       <div class="info-card">
@@ -116,8 +119,6 @@ const cancelEdit = () => {
 
         <template v-else>
           <div class="profile-edit-wrapper">
-            <button class="close-btn" @click="cancelEdit">X</button>
-
             <div class="form-group">
               <label for="age">나이</label>
               <input
@@ -299,7 +300,6 @@ const cancelEdit = () => {
 }
 
 .info-card {
-  position: relative;
   color: white;
   padding: 1.5rem;
   background: rgba(255, 255, 255, 0.2);
@@ -437,21 +437,5 @@ const cancelEdit = () => {
 .save-btn {
   background-color: #7cc399;
   color: white;
-}
-
-.close-btn {
-  color: white;
-  position: absolute;
-  top: 20px;
-  right: 20px;
-  border: none;
-  background: transparent;
-  font-size: 20px;
-  cursor: pointer;
-}
-
-.cancel-btn {
-  background-color: #ccc;
-  color: var(--color-text-default);
 }
 </style>
