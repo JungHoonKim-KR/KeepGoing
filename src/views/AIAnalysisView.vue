@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { Sparkles, TrendingUp } from 'lucide-vue-next';
-
+import Footer from './utils/Footer.vue';
 // ----------------------------------------------------
 // 1. 상태 관리
 // ----------------------------------------------------
@@ -236,6 +236,7 @@ const getScoreClass = (score) => {
       </div>
     </div>
   </div>
+  <Footer></Footer>
 </template>
 
 <style scoped>
