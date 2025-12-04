@@ -663,11 +663,11 @@ watch(
   line-height: 1;
 }
 
-.date-icon-overlay {
+/* .date-icon-overlay {
   width: 28px;
   height: 28px;
   object-fit: contain;
-}
+} */
 
 .empty-cell {
   visibility: hidden;
