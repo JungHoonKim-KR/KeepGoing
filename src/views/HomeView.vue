@@ -138,7 +138,7 @@ import { ref, computed } from "vue";
 import { useRouter } from "vue-router";
 import dayjs from "dayjs";
 import characterImage from "../assets/images/characters/test.gif";
-import Footer from "./utils/Footer.vue";
+import Footer from '../components/utils/Footer.vue';  
 import WeightRecordModal from "../components/record/WeightRecordModal.vue";
 import WaterRecordModal from "@/components/record/WaterRecordModal.vue";
 import MealRecordModal from "@/components/record/MealRecordModal.vue";

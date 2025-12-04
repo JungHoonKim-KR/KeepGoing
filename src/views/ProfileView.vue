@@ -1,6 +1,6 @@
 <script setup>
 import { ref } from "vue";
-import Footer from "./utils/Footer.vue";
+import Footer from '../components/utils/Footer.vue';  
 import characterImage from "../assets/images/characters/test.gif";
 
 // ----------------------------------------------------

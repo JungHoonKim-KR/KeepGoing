@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { Sparkles, TrendingUp } from 'lucide-vue-next';
-import Footer from './utils/Footer.vue';
+import Footer from '../components/utils/Footer.vue';  
 // import Footer from './utils/Footer.vue'; // ⚠️ 주의: 실제 사용 시 이 컴포넌트가 프로젝트에 존재해야 합니다.
 
 // ----------------------------------------------------

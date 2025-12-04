@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
-import Footer from "./utils/Footer.vue";
+import Footer from '../components/utils/Footer.vue';  
 const router = useRouter();
 const route = useRoute();
 
