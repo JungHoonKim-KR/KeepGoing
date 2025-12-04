@@ -1,6 +1,6 @@
 <script setup>
 import { ref } from "vue";
-import Footer from '../components/utils/Footer.vue';  
+import Footer from "../components/utils/Footer.vue";
 import characterImage from "../assets/images/characters/test.gif";
 
 // ----------------------------------------------------
@@ -300,9 +300,18 @@ const cancelEdit = () => {
 }
 
 .info-card {
+  background: linear-gradient(
+    to right,
+    rgba(16, 185, 129, 0.1),
+    rgba(5, 150, 105, 0.05)
+  );
+
+  /* 수정된 부분: 색상을 포함하여 한 줄로 작성 */
+  border: 1px solid rgba(16, 185, 129, 0.3);
+
+  backdrop-filter: blur(4px);
   color: white;
   padding: 1.5rem;
-  background: rgba(255, 255, 255, 0.2);
   border-radius: 1.75rem;
   text-align: center;
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
@@ -405,6 +414,8 @@ const cancelEdit = () => {
 
 .radio-group input[type="radio"]:checked + label {
   color: #245b42;
+  background-color: #f3fff7;
+  /* color: #245b42; */
   /* border-color: var(--color-primary); 경계선 색 고민중 ..ㅜ */
   font-weight: 600;
 }
