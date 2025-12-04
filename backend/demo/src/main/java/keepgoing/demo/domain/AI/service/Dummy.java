@@ -1,4 +1,4 @@
-package keepgoing.demo.domain.AI.service;
+package keepgoing.demo.domain.ai.service;
 
 public class Dummy {
 }

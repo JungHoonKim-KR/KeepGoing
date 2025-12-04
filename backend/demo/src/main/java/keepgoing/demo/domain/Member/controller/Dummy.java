@@ -1,4 +1,4 @@
-package keepgoing.demo.domain.Member.controller;
+package keepgoing.demo.domain.member.controller;
 
 public class Dummy {
 }

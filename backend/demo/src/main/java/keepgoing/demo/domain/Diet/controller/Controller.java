@@ -1,4 +1,4 @@
-package keepgoing.demo.domain.Diet.controller;
+package keepgoing.demo.domain.diet.controller;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;

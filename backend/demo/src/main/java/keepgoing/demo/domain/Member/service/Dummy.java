@@ -1,4 +1,4 @@
-package keepgoing.demo.domain.Member.service;
+package keepgoing.demo.domain.member.service;
 
 public class Dummy {
 }

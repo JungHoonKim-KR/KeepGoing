@@ -1,4 +1,4 @@
-package keepgoing.demo.domain.Member.entity;
+package keepgoing.demo.domain.member.entity;
 
 public class Accomplishment {
 }

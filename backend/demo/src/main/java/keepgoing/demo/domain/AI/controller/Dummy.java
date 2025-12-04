@@ -1,5 +1,5 @@
 
-package keepgoing.demo.domain.AI.controller;
+package keepgoing.demo.domain.ai.controller;
 
 public class Dummy {
 }
