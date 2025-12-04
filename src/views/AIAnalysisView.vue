@@ -1,14 +1,28 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { Sparkles, TrendingUp } from 'lucide-vue-next';
-import Footer from '../components/utils/Footer.vue';  
-// import Footer from './utils/Footer.vue'; // ⚠️ 주의: 실제 사용 시 이 컴포넌트가 프로젝트에 존재해야 합니다.
+// Footer 컴포넌트 import는 그대로 유지합니다.
+import Footer from '../components/utils/Footer.vue'; 
+
+// Vue Router 관련 import
+import { useRouter, useRoute } from 'vue-router';
+
+const router = useRouter();
+const route = useRoute(); // 현재 라우트 정보를 가져옵니다.
 
 // ----------------------------------------------------
 // 1. 상태 관리
 // ----------------------------------------------------
 const isLoading = ref(true);
 const analysisData = ref(null);
+
+// computed 속성을 사용하여 현재 AI 분석 대시보드를 보여줄지 결정합니다.
+// 자식 라우트(diet-plan)로 이동하면 이 대시보드는 숨겨집니다.
+// route.path가 '/ai-analysis'일 때만 대시보드를 표시하고, 로딩이 완료되었는지 확인합니다.
+const showAnalysisDashboard = () => {
+    return route.path === '/ai-analysis' && !isLoading.value;
+};
+
 
 // ----------------------------------------------------
 // 2. 데이터 로드 시뮬레이션
@@ -77,19 +91,32 @@ const getScoreClass = (score) => {
     if (score >= 60) return 'score-mid';
     return 'score-low';
 };
+
+/**
+ * AI Diet Plan 경로로 이동합니다.
+ */
+const goToAIDietPlan = () => {
+    console.log("Navigating to AI Diet Plan at /ai-analysis/diet-plan");
+    // Vue Router를 사용하여 '/ai-analysis/diet-plan' 경로로 이동
+    router.push('/ai-analysis/diet-plan');
+}
 </script>
 
 <template>
     <div class="container">
         <div class="wrapper">
+            
+            <!-- 헤더 섹션은 항상 표시 -->
             <div class="header-section">
                 <div class="title-row">
                     <Sparkles class="icon-sparkle" />
-                    <h1>AI 식단 분석</h1>
+                    <!-- 현재 라우트에 따라 제목 변경 -->
+                    <h1>{{ route.path === '/ai-analysis/diet-plan' ? 'AI 식단 플랜' : 'AI 식단 분석' }}</h1>
                 </div>
-                <p class="subtitle">당신의 식단을 AI Agent가 분석하고 있습니다</p>
+                <p class="subtitle">{{ route.path === '/ai-analysis/diet-plan' ? '개인 맞춤형 식단 계획을 확인하세요' : '당신의 식단을 AI Agent가 분석하고 있습니다' }}</p>
             </div>
 
+            <!-- 로딩 컨테이너 (경로에 상관없이 데이터 로드 중일 때 표시) -->
             <div v-if="isLoading" class="loading-container">
                 <div class="loading-box">
                     <div class="pulse-effect">
@@ -138,7 +165,8 @@ const getScoreClass = (score) => {
                 </div>
             </div>
 
-            <div v-else class="content-container">
+            <!-- AI 분석 대시보드 (자식 라우트가 아닐 때만 표시) -->
+            <div v-else-if="showAnalysisDashboard()" class="content-container">
                 <div class="main-score-card">
                     <div class="score-content">
                         <div class="agent-wrapper">
@@ -238,17 +266,22 @@ const getScoreClass = (score) => {
                 </div>
 
                 <div class="button-group">
-                    <button class="btn btn-primary">상세 분석 보기</button>
-                    <button class="btn btn-secondary">식단 개선안</button>
+                    <!-- @click 이벤트 핸들러는 goToAIDietPlan 함수를 호출하여 라우팅을 수행합니다. -->
+                    <button class="btn btn-primary" @click="goToAIDietPlan">AI Diet Plan</button>
+                    <button class="btn btn-secondary">AI Talk</button>
                 </div>
             </div>
+            
+            <!-- 중첩 라우트의 내용이 렌더링될 위치 (AiDietPlan.vue가 여기에 로드됨) -->
+            <router-view></router-view>
+
         </div>
         
         <div class="footer-spacer"></div>
     </div>
 
     <div class="footer-fixed temporary-footer">
-        <Footer></Footer>>
+        <Footer></Footer>
     </div>
 </template>
 
