@@ -66,7 +66,7 @@
     <!-- 페이지 2: 식사 기록 -->
     <section class="page meal-page">
       <div class="page-content">
-        <div class="record-card" @click="goToMealRecord">
+        <div class="record-card" @click="openMealModal">
           <div class="record-icon">🍽️</div>
           <h2>오늘의 식사를 기록하세요</h2>
           <p>아침, 점심, 저녁, 간식</p>
@@ -129,6 +129,7 @@
     <!-- 체중 기록 모달 -->
     <WeightRecordModal v-if="showWeightModal" @close="closeWeightModal" />
     <WaterRecordModal v-if="showWaterModal" @close="closeWaterModal" />
+    <MealRecordModal v-if="showMealModal" @close="closeMealModal" />
   </div>
 </template>
 
@@ -140,15 +141,21 @@ import characterImage from "../assets/images/characters/test.gif";
 import Footer from "./utils/Footer.vue";
 import WeightRecordModal from "../components/record/WeightRecordModal.vue";
 import WaterRecordModal from "@/components/record/WaterRecordModal.vue";
+import MealRecordModal from "@/components/record/MealRecordModal.vue";
 const router = useRouter();
 const showWeightModal = ref(false);
 const showWaterModal = ref(false);
+const showMealModal = ref(false);
 const currentDate = computed(() => {
   return dayjs().format("YYYY년 M월 D일");
 });
 
-const goToMealRecord = () => {
-  router.push("/record/meal");
+const openMealModal = () => {
+  showMealModal.value = true;
+};
+
+const closeMealModal = () => {
+  showMealModal.value = false;
 };
 
 const openWaterModal = () => {
