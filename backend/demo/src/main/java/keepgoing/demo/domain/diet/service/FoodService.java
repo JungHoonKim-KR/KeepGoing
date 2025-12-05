@@ -15,4 +15,8 @@ public class FoodService  {
     public List<Food> selectAll() {
         return foodMapper.selectAll();
     }
+
+    public List<Food> selectByName(String partOfName){
+        return foodMapper.selectByName(partOfName);
+    }
 }

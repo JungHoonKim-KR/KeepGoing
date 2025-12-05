@@ -15,14 +15,14 @@
         food
         LIMIT 10
     </select>
-    <!-- 단일 레코드 조회 (SELECT BY ID) -->
-    <select id="selectFoodByCode" resultMap="FoodResultMap" parameterType="String">
+    <!-- 단일 레코드 조회 (SELECT BY NAME) -->
+    <select id="selectByName" resultMap="FoodResultMap">
         SELECT
             *
         FROM
             food
         WHERE
-            code = #{code}
+            name LIKE CONCAT(#{name}, '%');
     </select>
 
     <!-- 데이터 삽입 (INSERT) -->
