@@ -25,5 +25,4 @@ public class Food {
     private String ash;              // 회분(g)
     private String carbohydrate;     // 탄수화물(g)
     private String sugars;           // 당류(g)
-    private String sodium;           // 나트륨(mg)
 }

@@ -24,44 +24,4 @@
         WHERE
             name LIKE CONCAT(#{name}, '%');
     </select>
-
-    <!-- 데이터 삽입 (INSERT) -->
-    <insert id="insertFood" parameterType="keepgoing.demo.domain.diet.entity.Food">
-        INSERT INTO food (
-            code, name, data_type_name, middle_category_name, food_weight,
-            serving_size, energy, water, protein, fat, ash, carbohydrate, sugars, sodium
-        ) VALUES (
-                     #{code}, #{name}, #{dataTypeName}, #{middleCategoryName}, #{foodWeight},
-                     #{servingSize}, #{energy}, #{water}, #{protein}, #{fat}, #{ash}, #{carbohydrate}, #{sugars}, #{sodium}
-                 )
-    </insert>
-
-    <!-- 데이터 수정 (UPDATE) -->
-    <update id="updateFood" parameterType="keepgoing.demo.domain.diet.entity.Food">
-        UPDATE food
-        SET
-            name = #{name},
-            data_type_name = #{dataTypeName},
-            middle_category_name = #{middleCategoryName},
-            food_weight = #{foodWeight},
-            serving_size = #{servingSize},
-            energy = #{energy},
-            water = #{water},
-            protein = #{protein},
-            fat = #{fat},
-            ash = #{ash},
-            carbohydrate = #{carbohydrate},
-            sugars = #{sugars},
-            sodium = #{sodium}
-        WHERE
-            code = #{code}
-    </update>
-
-    <!-- 데이터 삭제 (DELETE) -->
-    <delete id="deleteFood" parameterType="String">
-        DELETE FROM food
-        WHERE
-            code = #{code}
-    </delete>
-
 </mapper>
