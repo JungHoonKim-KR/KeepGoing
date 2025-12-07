@@ -17,13 +17,13 @@
                 <h3 class="section-title">식사 시간</h3>
                 <div class="meal-type-buttons">
                     <button
-                        v-for="type in mealTypes"
-                        :key="type.id"
-                        :class="['meal-type-btn', { active: selectedMealType === type.id }]"
-                        @click="selectedMealType = type.id"
+                        v-for="time in mealTimes"
+                        :key="time.id"
+                        :class="['meal-type-btn', { active: selectedMealTime === time.name }]"
+                        @click="selectedMealTime = time.name"
                     >
-                        <span class="meal-emoji">{{ type.emoji }}</span>
-                        <span class="meal-name">{{ type.name }}</span>
+                        <span class="meal-emoji">{{ time.emoji }}</span>
+                        <span class="meal-name">{{ time.name }}</span>
                     </button>
                 </div>
             </div>
@@ -47,7 +47,7 @@
                         </svg>
                     </div>
 
-                    <button @click="addFood" class="add-btn">추가</button>
+                    <button @click="addFood()" class="add-btn">추가</button>
                     
                     <ul 
                         v-if="suggestions.length > 0" 
@@ -60,15 +60,15 @@
                             @mouseover="selectedFoodIndex = index"
                             :class="['suggestion-item', { active: index === selectedFoodIndex }]"
                         >
-                            {{ suggestion }}
+                            {{ suggestion.name }}
                         </li>
                     </ul>
 
                 </div>
 
-                <div v-if="foodList.length > 0" class="food-list">
-                    <div v-for="(food, index) in foodList" :key="index" class="food-item">
-                        <span class="food-item-name">{{ food }}</span>
+                <div v-if="selectedFoodNameList.length > 0" class="food-list">
+                    <div v-for="(foodNameItem, index) in selectedFoodNameList" :key="index" class="food-item">
+                        <span class="food-item-name">{{ foodNameItem }}</span>
                         <button @click="removeFood(index)" class="remove-food-btn">
                             ✕
                         </button>
@@ -131,6 +131,9 @@
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import dayjs from "dayjs"; 
 
+// **✨ 중요 수정:** 부모 컴포넌트에 모달 닫힘을 알리기 위한 emit 선언
+const emit = defineEmits(['close']);
+
 // ===================================
 // 1. 디바운싱 유틸리티 함수
 // ===================================
@@ -145,12 +148,18 @@ const debounce = (func, delay) => {
 };
 
 // 실제 Spring Boot API 엔드포인트
-const API_ENDPOINT = 'http://localhost:8080/food';
+const API_ENDPOINT = 'http://localhost:8080';
 
-// Data
-const selectedMealType = ref("breakfast");
+// ===================================
+// 2. Data
+// ===================================
+const selectedMealTime = ref("breakfast");
 const foodName = ref("");
-const foodList = ref([]);
+
+// 최종 목표 변수
+const selectedFoodList = ref([]);     
+const selectedFoodNameList = ref([]); 
+
 const memo = ref("");
 const photoPreview = ref(null);
 const fileInput = ref(null);
@@ -160,7 +169,7 @@ const suggestions = ref([]);
 const isLoading = ref(false);
 const selectedFoodIndex = ref(0); 
 
-const mealTypes = [
+const mealTimes = [
     { id: "breakfast", name: "아침", emoji: "🌅" },
     { id: "lunch", name: "점심", emoji: "🌞" },
     { id: "dinner", name: "저녁", emoji: "🌙" },
@@ -180,7 +189,7 @@ const formattedDate = computed(() => {
 });
 
 // ===================================
-// 2. 검색 및 상태 변경 로직
+// 3. 음식검색 로직
 // ===================================
 
 async function fetchSuggestions(query) {
@@ -189,9 +198,8 @@ async function fetchSuggestions(query) {
     let suggestionsList = []; 
 
     try {
-        const url = `${API_ENDPOINT}/name?name=${encodeURIComponent(query)}`;
+        const url = `${API_ENDPOINT}/food/name?name=${encodeURIComponent(query)}`;
         
-        console.log("요청 URL:", url);
         const response = await fetch(url);
 
         if (!response.ok) {
@@ -200,19 +208,11 @@ async function fetchSuggestions(query) {
         }
 
         const data = await response.json();
-        console.log("API 응답 데이터 (data 로그):", data); 
         
         if (Array.isArray(data)) {
             suggestionsList = data
-                .map(food => food.name) 
-                
-                // 💡 필수: 쿼리를 포함하는 항목만 필터링합니다.
-                .filter(name => name && name.includes(query.trim())) 
-                
-                // 💡 필수: 중복 이름 제거
-                .filter((name, index, self) => name && self.indexOf(name) === index); 
-                
-                // .slice(0, 10) 제거: 모든 데이터가 보이도록 함
+                .filter(food => food && food.name && food.name.includes(query.trim())) 
+                .filter((food, index, self) => food.name && self.findIndex(f => f.name === food.name) === index);
         }
 
     } catch (error) {
@@ -220,14 +220,12 @@ async function fetchSuggestions(query) {
         suggestionsList = []; 
     } finally {
         isLoading.value = false;
-        
-        console.log(`최종 연관 검색어: ${query} ->`, suggestionsList);
+        // console.log(`최종 연관 검색어: ${query} ->`, suggestionsList);
         return suggestionsList;
     }
 }
 
 const debouncedSearch = debounce(async (query) => {
-    // 1글자 입력 시에도 검색 허용
     if (query.trim().length < 1) { 
         suggestions.value = [];
         return;
@@ -243,26 +241,69 @@ const handleInput = (event) => {
     debouncedSearch(foodName.value);
 };
 
-// Methods
+// ===================================
+// 4. Methods (핵심 CRUD 로직)
+// ===================================
 
-const addFood = () => {
-    const name = foodName.value.trim();
-    if (name) {
-        foodList.value.push(name);
-        foodName.value = "";
-        suggestions.value = []; 
+const addFood = (food) => {
+    // 1. 자동완성 항목을 선택한 경우 (food 객체가 넘어옴)
+    if (food && typeof food === 'object' && food['name']) {
+        selectedFoodList.value.push(food);
+        selectedFoodNameList.value.push(food['name']);
+    } 
+    // 2. 직접 입력 후 '추가' 버튼을 누른 경우 (food가 없거나 유효하지 않음)
+    else if (foodName.value.trim() !== '') {
+        const customFoodName = foodName.value.trim();
+        
+        selectedFoodList.value.push({ name: customFoodName }); 
+        selectedFoodNameList.value.push(customFoodName);
     }
+    
+    // ✨ 드롭다운 닫기 로직 (selectFood/addFood 시 실행됨)
+    foodName.value = ''; 
+    suggestions.value = []; 
+    selectedFoodIndex.value = 0;
 };
 
 const removeFood = (index) => {
-    foodList.value.splice(index, 1);
+    selectedFoodNameList.value.splice(index, 1);
+    selectedFoodList.value.splice(index, 1);
 };
 
-function selectFood(name) {
-    foodName.value = name; 
-    suggestions.value = []; // 드롭다운 닫기
-    addFood(); 
+function selectFood(food) {
+    foodName.value = food['name']; 
+    addFood(food); 
+
+    // addFood 내에서 suggestions.value = []가 호출되어 드롭다운이 닫힘
 }
+
+const saveMeal = async() => {
+    
+    const mealData = {
+        mealTime : selectedMealTime.value,
+        foods: selectedFoodList.value,
+       // member : ...
+    }
+
+    try{
+        const response = await fetch(`${API_ENDPOINT}/food/diet`,{
+            method:'POST',
+            headers:{
+                'Content-Type' : 'application/json'
+            },
+            body:JSON.stringify(mealData)
+        });
+
+        if (!response.ok) {
+            console.error(`저장 API 실패: ${response.status}`);
+            throw new Error(`저장 API 호출 실패 (Status: ${response.status})`);
+        }
+    }
+    catch(error){
+        console.error("식사 기록 저장 중 오류 발생:", error);
+    }
+    closeModal();
+};
 
 function handleKeydown(event) {
     const maxIndex = suggestions.value.length - 1;
@@ -282,8 +323,8 @@ function handleKeydown(event) {
         }
     }
 }
-        
-// --- 기존 모달 로직 ---
+    
+// --- 모달/사진 로직 ---
 
 const triggerFileInput = () => { fileInput.value?.click(); };
 const handleFileUpload = (event) => {
@@ -298,19 +339,19 @@ const removePhoto = () => {
     photoPreview.value = null;
     if (fileInput.value) { fileInput.value.value = ""; }
 };
-const closeModal = () => { console.log("모달 닫힘"); };
+
+// **✨ 중요 수정:** 부모에게 닫힘 이벤트 전달
+const closeModal = () => { 
+    console.log("모달 닫힘 요청"); 
+    emit('close'); 
+}; 
+
 const handleOverlayClick = (e) => {
     if (e.target === e.currentTarget) { closeModal(); }
 };
-const saveMeal = () => {
-    console.log("식사 기록 저장:", {
-        type: selectedMealType.value, foods: foodList.value,
-        photo: photoPreview.value ? "uploaded" : null, memo: memo.value,
-    });
-    closeModal();
-};
 
-// Lifecycle
+
+// Lifecycle (스크롤 방지)
 onMounted(() => { document.body.style.overflow = "hidden"; });
 onUnmounted(() => { document.body.style.overflow = ""; });
 </script>

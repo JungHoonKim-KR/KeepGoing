@@ -10,7 +10,6 @@ import lombok.ToString;
 @NoArgsConstructor
 @ToString
 public class Food {
-
     private String code;         // 식품코드
     private String name;         // 식품명
     private String dataTypeName;     // 데이터구분명
@@ -22,7 +21,9 @@ public class Food {
     private String water;            // 수분(g)
     private String protein;          // 단백질(g)
     private String fat;              // 지방(g)
-    private String ash;              // 회분(g)
     private String carbohydrate;     // 탄수화물(g)
     private String sugars;           // 당류(g)
+    private String sodium;           // 나트륨(g)
+
+
 }

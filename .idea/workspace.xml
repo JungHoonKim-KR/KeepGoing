@@ -4,15 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="0c66d9b7-a887-45ec-9f8d-eff33a0a86c7" name="Changes" comment="selectAll 성공">
-      <change afterPath="$PROJECT_DIR$/backend/demo/src/main/java/keepgoing/demo/global/config/WebConfig.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/demo/src/main/java/keepgoing/demo/domain/diet/controller/Controller.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/demo/src/main/java/keepgoing/demo/domain/diet/controller/Controller.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/demo/src/main/java/keepgoing/demo/domain/diet/mapper/FoodMapper.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/demo/src/main/java/keepgoing/demo/domain/diet/mapper/FoodMapper.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/demo/src/main/java/keepgoing/demo/domain/diet/service/FoodService.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/demo/src/main/java/keepgoing/demo/domain/diet/service/FoodService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/demo/src/main/java/keepgoing/demo/global/config/Dummy.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/demo/src/main/resources/application.yml" beforeDir="false" afterPath="$PROJECT_DIR$/backend/demo/src/main/resources/application.yml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/demo/src/main/resources/mappers/FoodMapper.xml" beforeDir="false" afterPath="$PROJECT_DIR$/backend/demo/src/main/resources/mappers/FoodMapper.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/src/components/record/MealRecordModal.vue" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/src/components/record/MealRecordModal.vue" afterDir="false" />
+    <list default="true" id="0c66d9b7-a887-45ec-9f8d-eff33a0a86c7" name="Changes" comment="음식 및 식단 구조">
+      <change afterPath="$PROJECT_DIR$/.idea/uiDesigner.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/backend/demo/src/main/java/keepgoing/demo/domain/diet/entity/Diet.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/demo/src/main/java/keepgoing/demo/domain/diet/entity/Diet.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -29,16 +24,40 @@
       <state>
         <projects_view>
           <tree_state>
-            <expand />
+            <expand>
+              <path>
+                <item name="" type="6a2764b6:ExternalProjectsStructure$RootNode" />
+                <item name="demo" type="f1a62948:ProjectNode" />
+              </path>
+            </expand>
             <select />
           </tree_state>
         </projects_view>
       </state>
     </system>
   </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Class" />
+      </list>
+    </option>
+  </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
+  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
+  "lastFilter": {
+    "state": "OPEN",
+    "assignee": "JungHoonKim-KR"
+  }
+}]]></component>
+  <component name="GithubPullRequestsUISettings"><![CDATA[{
+  "selectedUrlAndAccountId": {
+    "url": "https://github.com/JungHoonKim-KR/KeepGoing.git",
+    "accountId": "1b11645e-66dd-461a-bcb2-8f18203ec273"
+  }
+}]]></component>
   <component name="ProjectColorInfo">{
   &quot;customColor&quot;: &quot;&quot;,
   &quot;associatedIndex&quot;: 5
@@ -48,25 +67,27 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;Gradle.Build demo.executor&quot;: &quot;Run&quot;,
-    &quot;RequestMappingsPanelOrder0&quot;: &quot;0&quot;,
-    &quot;RequestMappingsPanelOrder1&quot;: &quot;1&quot;,
-    &quot;RequestMappingsPanelWidth0&quot;: &quot;75&quot;,
-    &quot;RequestMappingsPanelWidth1&quot;: &quot;75&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;Spring Boot.DemoApplication.executor&quot;: &quot;Run&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
-    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Gradle.Build demo.executor": "Run",
+    "RequestMappingsPanelOrder0": "0",
+    "RequestMappingsPanelOrder1": "1",
+    "RequestMappingsPanelWidth0": "75",
+    "RequestMappingsPanelWidth1": "75",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
+    "Spring Boot.DemoApplication.executor": "Run",
+    "git-widget-placeholder": "main",
+    "kotlin-language-version-configured": "true",
+    "last_opened_file_path": "E:/KeepGoing/backend",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "vue.rearranger.settings.migration": "true"
   }
-}</component>
+}]]></component>
   <component name="RunManager">
     <configuration name="DemoApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
       <module name="demo.main" />
@@ -79,8 +100,8 @@
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-jdk-9f38398b9061-39b83d9b5494-intellij.indexing.shared.core-IU-241.15989.150" />
-        <option value="bundled-js-predefined-1d06a55b98c1-91d5c284f522-JavaScript-IU-241.15989.150" />
+        <option value="bundled-jdk-9823dce3aa75-b114ca120d71-intellij.indexing.shared.core-IU-242.21829.142" />
+        <option value="bundled-js-predefined-d6986cc7102b-7c0b70fcd90d-JavaScript-IU-242.21829.142" />
       </set>
     </attachedChunks>
   </component>
@@ -95,6 +116,9 @@
       <workItem from="1764858747519" duration="2010000" />
       <workItem from="1764899506815" duration="39000" />
       <workItem from="1764901293648" duration="10123000" />
+      <workItem from="1764919315944" duration="1219000" />
+      <workItem from="1764920860532" duration="2220000" />
+      <workItem from="1765084837412" duration="29000" />
     </task>
     <task id="LOCAL-00001" summary="selectAll 성공">
       <option name="closed" value="true" />
@@ -104,7 +128,15 @@
       <option name="project" value="LOCAL" />
       <updated>1764860679108</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="음식 및 식단 구조">
+      <option name="closed" value="true" />
+      <created>1764924194406</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1764924194406</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -112,6 +144,7 @@
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="selectAll 성공" />
-    <option name="LAST_COMMIT_MESSAGE" value="selectAll 성공" />
+    <MESSAGE value="음식 및 식단 구조" />
+    <option name="LAST_COMMIT_MESSAGE" value="음식 및 식단 구조" />
   </component>
 </project>

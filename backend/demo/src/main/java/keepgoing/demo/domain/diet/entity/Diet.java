@@ -14,7 +14,7 @@ public class Diet {
     private int id;
     private LocalDate date;
     private List<Food> foods;
-        private double carbohydrate;
+    private double carbohydrate;
     private double protein;
     private double fat;
     private double sugars;
