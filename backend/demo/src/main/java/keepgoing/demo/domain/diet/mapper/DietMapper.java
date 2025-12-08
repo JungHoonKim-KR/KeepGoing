@@ -8,7 +8,7 @@ import java.util.List;
 
 @Mapper
 public interface DietMapper {
-    int insert(Diet diet);
+    int insert(int memberId, Diet diet);
 
     // 1. 식단 리스트 저장
     void saveDietList(List<Diet> dietList);

@@ -131,7 +131,6 @@
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import dayjs from "dayjs"; 
 
-// **✨ 중요 수정:** 부모 컴포넌트에 모달 닫힘을 알리기 위한 emit 선언
 const emit = defineEmits(['close']);
 
 // ===================================
@@ -157,7 +156,7 @@ const selectedMealTime = ref("breakfast");
 const foodName = ref("");
 
 // 최종 목표 변수
-const selectedFoodList = ref([]);     
+const selectedFoodList = ref([]);     
 const selectedFoodNameList = ref([]); 
 
 const memo = ref("");
@@ -168,6 +167,7 @@ const fileInput = ref(null);
 const suggestions = ref([]); 
 const isLoading = ref(false);
 const selectedFoodIndex = ref(0); 
+const isSelectingFood = ref(false); // 💡 추가: 자동 선택 중 플래그
 
 const mealTimes = [
     { id: "breakfast", name: "아침", emoji: "🌅" },
@@ -198,7 +198,7 @@ async function fetchSuggestions(query) {
     let suggestionsList = []; 
 
     try {
-        const url = `${API_ENDPOINT}/food/name?name=${encodeURIComponent(query)}`;
+        const url = `${API_ENDPOINT}/food?foodName=${encodeURIComponent(query)}`;
         
         const response = await fetch(url);
 
@@ -220,7 +220,6 @@ async function fetchSuggestions(query) {
         suggestionsList = []; 
     } finally {
         isLoading.value = false;
-        // console.log(`최종 연관 검색어: ${query} ->`, suggestionsList);
         return suggestionsList;
     }
 }
@@ -231,6 +230,11 @@ const debouncedSearch = debounce(async (query) => {
         return;
     }
     
+    // 💡 수정: isSelectingFood 플래그가 true면 검색 API 호출을 막습니다.
+    if (isSelectingFood.value) {
+        return; 
+    }
+    
     const results = await fetchSuggestions(query.trim());
     suggestions.value = results;
     selectedFoodIndex.value = 0; 
@@ -238,6 +242,12 @@ const debouncedSearch = debounce(async (query) => {
 
 const handleInput = (event) => {
     foodName.value = event.target.value;
+    
+    // 💡 수정: isSelectingFood가 true면 검색을 건너뜁니다.
+    if (isSelectingFood.value) {
+        return;
+    }
+    
     debouncedSearch(foodName.value);
 };
 
@@ -251,7 +261,7 @@ const addFood = (food) => {
         selectedFoodList.value.push(food);
         selectedFoodNameList.value.push(food['name']);
     } 
-    // 2. 직접 입력 후 '추가' 버튼을 누른 경우 (food가 없거나 유효하지 않음)
+    // 2. 직접 입력 후 '추가' 버튼을 누르거나 Enter를 누른 경우
     else if (foodName.value.trim() !== '') {
         const customFoodName = foodName.value.trim();
         
@@ -259,7 +269,7 @@ const addFood = (food) => {
         selectedFoodNameList.value.push(customFoodName);
     }
     
-    // ✨ 드롭다운 닫기 로직 (selectFood/addFood 시 실행됨)
+    // ✨ 드롭다운 닫기 & Input 초기화 (핵심: 이로써 다음 검색을 막고 인풋을 비움)
     foodName.value = ''; 
     suggestions.value = []; 
     selectedFoodIndex.value = 0;
@@ -271,22 +281,33 @@ const removeFood = (index) => {
 };
 
 function selectFood(food) {
-    foodName.value = food['name']; 
+    // 💡 수정 1: 플래그를 켜서 foodName 변경 없이 addFood를 호출해도 혹시 발생할 수 있는 이벤트를 막음
+    isSelectingFood.value = true; 
+    
+    // 💡 수정 2: foodName.value를 설정하는 코드를 제거하고 바로 addFood 호출
     addFood(food); 
 
-    // addFood 내에서 suggestions.value = []가 호출되어 드롭다운이 닫힘
+    // 💡 수정 3: 다음 틱(Next Tick)에서 플래그를 해제하여 다음 사용자 입력은 허용
+    setTimeout(() => {
+        isSelectingFood.value = false;
+    }, 100); 
 }
 
 const saveMeal = async() => {
     
+    // 사진 파일 처리 로직 (Multipart)은 백엔드에 따라 달라질 수 있으므로,
+    // 현재는 JSON 데이터만 보내는 것으로 가정합니다.
     const mealData = {
+        memberId : 1, // 임시 하드코딩
         mealTime : selectedMealTime.value,
         foods: selectedFoodList.value,
+       // photo: ... (Blob 또는 fileId)
+       // memo: memo.value,
        // member : ...
     }
 
     try{
-        const response = await fetch(`${API_ENDPOINT}/food/diet`,{
+        const response = await fetch(`${API_ENDPOINT}/diet/meal`,{
             method:'POST',
             headers:{
                 'Content-Type' : 'application/json'
@@ -317,8 +338,10 @@ function handleKeydown(event) {
     } else if (event.key === 'Enter') {
         event.preventDefault();
         if (suggestions.value.length > 0 && selectedFoodIndex.value >= 0) {
+            // 자동 완성 목록 중 선택된 항목 추가
             selectFood(suggestions.value[selectedFoodIndex.value]);
         } else if (foodName.value.trim() !== '') {
+            // 직접 입력된 텍스트 추가
             addFood(); 
         }
     }
@@ -340,7 +363,6 @@ const removePhoto = () => {
     if (fileInput.value) { fileInput.value.value = ""; }
 };
 
-// **✨ 중요 수정:** 부모에게 닫힘 이벤트 전달
 const closeModal = () => { 
     console.log("모달 닫힘 요청"); 
     emit('close'); 

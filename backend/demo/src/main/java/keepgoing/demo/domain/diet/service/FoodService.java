@@ -12,10 +12,6 @@ import java.util.List;
 public class FoodService  {
     private final FoodMapper foodMapper;
 
-    public List<Food> selectAll() {
-        return foodMapper.selectAll();
-    }
-
     public List<Food> selectByName(String partOfName){
         return foodMapper.selectByName(partOfName);
     }

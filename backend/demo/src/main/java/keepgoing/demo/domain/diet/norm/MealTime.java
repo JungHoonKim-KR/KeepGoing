@@ -8,10 +8,8 @@ public enum MealTime {
     LUNCH("점심"),
     DINNER("저녁"),
     SNACK("간식");
-
     private final String mealType;
     MealTime(String mealType) {
         this.mealType = mealType;
     }
-
 }

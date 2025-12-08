@@ -1,12 +1,12 @@
 package keepgoing.demo.domain.diet.entity;
 
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Getter
-@Setter
-@NoArgsConstructor
+@Builder
 public class DietFoodMapping {
     private Long id;
     private Long memberId;

@@ -7,6 +7,7 @@ import java.util.List;
 
 @Data
 public class DietInsertRequestDTO {
+    Long memberId;
     String mealTime;
     List<Food> foods;
 }

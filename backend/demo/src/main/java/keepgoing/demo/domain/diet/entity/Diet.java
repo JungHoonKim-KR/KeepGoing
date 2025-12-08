@@ -1,6 +1,7 @@
 package keepgoing.demo.domain.diet.entity;
 
 import keepgoing.demo.domain.diet.norm.MealTime;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -9,8 +10,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 @Getter
-@Setter
-@NoArgsConstructor
+@Builder
 public class Diet {
     private Long id;
     private Long memberId;
