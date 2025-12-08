@@ -1,5 +1,6 @@
 package keepgoing.demo.domain.diet.entity;
 
+import keepgoing.demo.domain.diet.norm.MealTime;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -11,16 +12,18 @@ import java.util.List;
 @Setter
 @NoArgsConstructor
 public class Diet {
-    private int id;
+    private Long id;
+    private Long memberId;
     private LocalDate date;
     private List<Food> foods;
-    private double carbohydrate;
+    private double energy;
+    private double water;
     private double protein;
     private double fat;
+    private double carbohydrate;
     private double sugars;
-    private String mealTime;
-    private int memberId; // 임시
-    // private Member member;
+    private double sodium;
 
-
+    private MealTime mealTime;
+    private List<DietFoodMapping> foodMappings;
 }
