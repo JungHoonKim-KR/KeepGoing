@@ -18,8 +18,7 @@ public class Diet {
     private double protein;
     private double fat;
     private double sugars;
-    private String meal_time;
+    private String mealTime;
+//    private int member_id; // 임시
     // private Member member;
-
-
 }
