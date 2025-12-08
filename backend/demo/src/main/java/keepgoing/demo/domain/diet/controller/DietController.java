@@ -2,6 +2,7 @@ package keepgoing.demo.domain.diet.controller;
 
 import keepgoing.demo.domain.ai.dto.AiResponseDto;
 import keepgoing.demo.domain.diet.dto.DietInsertRequestDTO;
+import keepgoing.demo.domain.diet.dto.WaterInsertRequestDTO;
 import keepgoing.demo.domain.diet.service.DietService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -12,7 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
 
 @RestController
-@RequestMapping("/diet")
+@RequestMapping("/diets")
 @RequiredArgsConstructor
 public class DietController {
     private final DietService dietService;
@@ -35,7 +36,7 @@ public class DietController {
     }
 
     @PostMapping("/water")
-    public ResponseEntity<?> water(@RequestBody DietInsertRequestDTO dto) {
+    public ResponseEntity<?> water(@RequestBody WaterInsertRequestDTO dto) {
         return new ResponseEntity<>(HttpStatus.CREATED);
     }
 }

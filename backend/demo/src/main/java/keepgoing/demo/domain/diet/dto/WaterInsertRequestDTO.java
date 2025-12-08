@@ -4,6 +4,6 @@ import lombok.Data;
 
 @Data
 public class WaterInsertRequestDTO {
-    // int memberId;
+     int memberId;
     double water;
 }
