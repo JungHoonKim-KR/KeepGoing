@@ -74,11 +74,13 @@ public class DietService {
         return result;
     }
 
-
+    @Transactional
     public int addDiet(DietInsertRequestDTO dto) {
+        Diet diet = buildDiet(dto);
+        dietMapper.insert(dto.getMemberId(), diet);
+        Long dietId = diet.getId();
 
         return 1;// 임시
-
     }
 
 
@@ -127,5 +129,5 @@ public class DietService {
                 .build();
     }
 
-//    private List<DietFoodMapping> createMappings()
+
 }
