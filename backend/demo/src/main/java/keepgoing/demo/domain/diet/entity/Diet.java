@@ -1,14 +1,14 @@
 package keepgoing.demo.domain.diet.entity;
 
 import keepgoing.demo.domain.diet.norm.MealTime;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.time.LocalDate;
 import java.util.List;
 
+@NoArgsConstructor
+@AllArgsConstructor
+@Setter
 @Getter
 @Builder
 public class Diet {
