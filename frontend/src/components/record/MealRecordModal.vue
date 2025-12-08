@@ -307,7 +307,7 @@ const saveMeal = async() => {
     }
 
     try{
-        const response = await fetch(`${API_ENDPOINT}/diet/meal`,{
+        const response = await fetch(`${API_ENDPOINT}/diets/meal`,{
             method:'POST',
             headers:{
                 'Content-Type' : 'application/json'
