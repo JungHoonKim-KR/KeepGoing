@@ -1,13 +1,9 @@
 package keepgoing.demo.domain.diet.entity;
 
-import lombok.Getter;
-import lombok.Setter;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
+import lombok.*;
 
 @Getter
-@Setter
-@NoArgsConstructor
+@Builder
 @ToString
 public class Food {
     private String code;         // 식품코드
@@ -24,6 +20,7 @@ public class Food {
     private String carbohydrate;     // 탄수화물(g)
     private String sugars;           // 당류(g)
     private String sodium;           // 나트륨(g)
+
 
 
 }
