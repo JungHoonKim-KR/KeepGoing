@@ -5,7 +5,7 @@ import java.time.LocalDateTime;
 
 @Data
 public class Member {
-    private Long memberId;      // int -> Long (BIGINT 매핑)
+    private Long id;      // int -> Long (BIGINT 매핑)
     private String email;
     private String password;
     private String name;
