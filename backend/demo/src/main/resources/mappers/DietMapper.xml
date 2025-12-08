@@ -4,52 +4,59 @@
 
     <resultMap id="DietResultMap" type="keepgoing.demo.domain.diet.entity.Diet">
         <id property="id" column="diet_id"/>
-
         <result property="memberId" column="member_id"/>
         <result property="date" column="date"/>
-
         <result property="mealTime" column="meal_time"/>
-
-        <result property="energy" column="energy"/>
-        <result property="water" column="water"/>
+        <result property="carbohydrate" column="carbs"/>
         <result property="protein" column="protein"/>
         <result property="fat" column="fat"/>
-        <result property="carbohydrate" column="carbs"/> <result property="sugars" column="sugars"/>
-        <result property="sodium" column="sodium"/>
+        <result property="sugars" column="sugars"/>
 
         <collection property="foods" ofType="keepgoing.demo.domain.diet.entity.Food">
-            <id property="code" column="food_code"/>
+            <result property="code" column="food_code"/>
             <result property="name" column="food_name"/>
         </collection>
     </resultMap>
 
     <select id="findAllByDate" resultMap="DietResultMap">
         SELECT
-        d.diet_id,
-        d.member_id,
-        d.date,
-        d.meal_time,
-        d.energy,
-        d.water,
-        d.protein,
-        d.fat,
-        d.carbs,       d.sugars,
-        d.sodium,
-        f.code AS food_code,
-        f.name AS food_name
+            d.diet_id, d.member_id, d.date, d.meal_time,
+            d.carbs, d.protein, d.fat, d.sugars,
+            f.code AS food_code,
+            f.name AS food_name
         FROM diet_log d
-        LEFT JOIN diet_food_mapping m ON d.diet_id = m.diet_id
-        LEFT JOIN food f ON m.food_code = f.code
+                 LEFT JOIN diet_food_mapping m ON d.diet_id = m.diet_id
+                 LEFT JOIN food f ON m.food_code = f.code
         WHERE d.member_id = #{memberId}
-        AND d.date = #{date}
+          AND d.date = #{date}
     </select>
 
     <insert id="saveAiReport">
         INSERT INTO ai_report (
-        member_id, date, score, feedback_text, recommend_json
+            member_id, date, score, feedback_text, recommend_json
         ) VALUES (
-        #{memberId}, #{date}, #{score}, #{feedbackText}, #{recommendJson}
+                     #{memberId}, #{date}, #{score}, #{feedbackText}, #{recommendJson}
+                 )
+    </insert>
+
+    <insert id="insertDiet" parameterType="Diet" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO diet (
+            member_id, record_date, meal_time
+        ) VALUES (
+                     #{memberId}, #{date}, #{mealTime, typeHandler=org.apache.ibatis.type.EnumOrdinalTypeHandler}
+                 )
+    </insert>
+
+    <insert id="insertFoodMappings" parameterType="java.util.List">
+        INSERT INTO diet_food_mapping (
+        diet_id, food_id
         )
+        VALUES
+        <foreach collection="list" item="food" separator=",">
+            (
+            #{food.dietId},
+            #{food.foodId}       )
+        </foreach>
     </insert>
 
 </mapper>

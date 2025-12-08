@@ -79,7 +79,8 @@ public class DietService {
         Diet diet = buildDiet(dto);
         dietMapper.insert(dto.getMemberId(), diet);
         Long dietId = diet.getId();
-
+        dietMapper.insertFoodMappings(dto.getFoods(), dietId);
+        System.out.println("실행");
         return 1;// 임시
     }
 

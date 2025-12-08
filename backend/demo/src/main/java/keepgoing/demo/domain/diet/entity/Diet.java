@@ -25,5 +25,5 @@ public class Diet {
     private double sodium;
 
     private MealTime mealTime;
-    private List<DietFoodMapping> foodMappings;
+//    private List<DietFoodMapping> foodMappings;
 }
