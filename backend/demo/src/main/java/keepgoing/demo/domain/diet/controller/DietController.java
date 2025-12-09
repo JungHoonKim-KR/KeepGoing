@@ -43,6 +43,7 @@ public class DietController {
 
     @PostMapping("/water")
     public ResponseEntity<?> water(@RequestBody WaterInsertRequestDTO dto) {
+        dietService.addWater(dto);
         return new ResponseEntity<>(HttpStatus.CREATED);
     }
 }

@@ -9,7 +9,6 @@ import java.time.LocalDate;
 @Getter
 @Builder
 public class HydrationRecord {
-    private Long id;
     private Long memberId;
     private double waterAmount;
     private LocalDate date;

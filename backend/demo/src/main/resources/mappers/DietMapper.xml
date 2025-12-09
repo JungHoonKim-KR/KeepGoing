@@ -19,11 +19,16 @@
     </resultMap>
 
     <select id="findAllByDate" resultMap="DietResultMap">
-        SELECT
-            d.diet_id, d.member_id, d.date, d.meal_time,
-            d.carbs, d.protein, d.fat, d.sugars,
-            f.code AS food_code,
-            f.name AS food_name
+        SELECT d.diet_id,
+               d.member_id,
+               d.date,
+               d.meal_time,
+               d.carbs,
+               d.protein,
+               d.fat,
+               d.sugars,
+               f.code AS food_code,
+               f.name AS food_name
         FROM diet_log d
                  LEFT JOIN diet_food_mapping m ON d.diet_id = m.diet_id
                  LEFT JOIN food f ON m.food_code = f.code
@@ -32,37 +37,31 @@
     </select>
 
     <insert id="saveAiReport">
-        INSERT INTO ai_report (
-            member_id, date, score, feedback_text, recommend_json
-        ) VALUES (
-                     #{memberId}, #{date}, #{score}, #{feedbackText}, #{recommendJson}
-                 )
+        INSERT INTO ai_report (member_id, date, score, feedback_text, recommend_json)
+        VALUES (#{memberId}, #{date}, #{score}, #{feedbackText}, #{recommendJson})
     </insert>
 
-    <insert id="insert" useGeneratedKeys="true" keyProperty="diet.id">
-        INSERT INTO diet (
-            member_id,
-            record_date,
-            meal_time,
-            energy,
-            water,
-            protein,
-            fat,
-            carbohydrate,
-            sugars,
-            sodium
-        ) VALUES (
-                     #{memberId},
-                     #{diet.date},
-                     #{diet.mealTime},
-                     #{diet.energy},
-                     #{diet.water},
-                     #{diet.protein},
-                     #{diet.fat},
-                     #{diet.carbohydrate},
-                     #{diet.sugars},
-                     #{diet.sodium}
-                 )
+    <insert id="insertDiet" useGeneratedKeys="true" keyProperty="diet.id">
+        INSERT INTO diet (member_id,
+                          date,
+                          meal_time,
+                          energy,
+                          water,
+                          protein,
+                          fat,
+                          carbohydrate,
+                          sugars,
+                          sodium)
+        VALUES (#{memberId},
+                #{diet.date},
+                #{diet.mealTime},
+                #{diet.energy},
+                #{diet.water},
+                #{diet.protein},
+                #{diet.fat},
+                #{diet.carbohydrate},
+                #{diet.sugars},
+                #{diet.sodium})
     </insert>
 
     <insert id="insertFoodMappings" parameterType="java.util.List">
@@ -73,8 +72,16 @@
         <foreach collection="foods" item="food" separator=",">
             (
             #{dietId},
-            #{food.code}       )
+            #{food.code} )
         </foreach>
+    </insert>
+    <insert id="insertHydration">
+        INSERT INTO hydration_record(member_id,
+                                     water_amount,
+                                     record_date)
+        VALUES (#{memberId}, #{hydrationRecord.waterAmount}, #{hydrationRecord.date})
+            )
+
     </insert>
 
 </mapper>

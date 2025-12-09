@@ -6,9 +6,11 @@ import keepgoing.demo.domain.ai.dto.AiResponseDto;
 import keepgoing.demo.domain.ai.service.AiClient;
 import keepgoing.demo.domain.diet.dto.DietInsertRequestDTO;
 import keepgoing.demo.domain.diet.dto.NutritionTotalsDTO;
+import keepgoing.demo.domain.diet.dto.WaterInsertRequestDTO;
 import keepgoing.demo.domain.diet.entity.AiReport;
 import keepgoing.demo.domain.diet.entity.Diet;
 import keepgoing.demo.domain.diet.entity.Food;
+import keepgoing.demo.domain.diet.entity.HydrationRecord;
 import keepgoing.demo.domain.diet.mapper.DietMapper;
 import keepgoing.demo.domain.diet.norm.MealTime;
 import keepgoing.demo.domain.member.entity.Member;
@@ -75,9 +77,18 @@ public class DietService {
     }
 
     @Transactional
+    public void addWater(WaterInsertRequestDTO dto){
+        LocalDate recordDate = LocalDate.now();
+        HydrationRecord hydrationRecord = HydrationRecord.builder().memberId(dto.getMemberId()).waterAmount(dto.getWater()*1000).date(recordDate)
+                .build();
+
+
+    }
+
+    @Transactional
     public int addDiet(DietInsertRequestDTO dto) {
         Diet diet = buildDiet(dto);
-        dietMapper.insert(dto.getMemberId(), diet);
+        dietMapper.insertDiet(dto.getMemberId(), diet);
         Long dietId = diet.getId();
         dietMapper.insertFoodMappings(dto.getFoods(), dietId);
         return 1;// 임시
