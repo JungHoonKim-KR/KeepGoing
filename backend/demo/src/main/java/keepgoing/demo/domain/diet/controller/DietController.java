@@ -17,6 +17,7 @@ import java.time.LocalDate;
 @RequiredArgsConstructor
 public class DietController {
     private final DietService dietService;
+
     @PostMapping("/analyze")
     public ResponseEntity<AiResponseDto> analyze(
             @RequestParam Long memberId,
@@ -24,13 +25,14 @@ public class DietController {
     ) {
         return ResponseEntity.ok(dietService.analyzeDailyDiet(memberId, date));
     }
+
     /*
     식단 저장 호출
     우선은 회원이 설계되지 않아 음식만 저장(실제로 저장하진 않았음)
      */
     @PostMapping("/meal")
     public ResponseEntity<?> meal(@RequestBody DietInsertRequestDTO dto) {
-
+        dietService.addDiet(dto);
         // 응답 형태는 임시로 상태코드만 응답
         return new ResponseEntity<>(HttpStatus.CREATED);
     }

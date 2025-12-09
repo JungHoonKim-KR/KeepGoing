@@ -12,4 +12,18 @@ public enum MealTime {
     MealTime(String mealType) {
         this.mealType = mealType;
     }
+    public static MealTime fromMealType(String mealType) {
+        if (mealType == null) {
+            throw new IllegalArgumentException("MealType must not be null");
+        }
+
+        String cleanMealType = mealType.trim();
+
+        for (MealTime time : MealTime.values()) {
+            if (time.mealType.equals(cleanMealType)) {
+                return time;
+            }
+        }
+        throw new IllegalArgumentException("No MealTime constant with mealType: " + mealType);
+    }
 }

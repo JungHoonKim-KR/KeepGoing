@@ -80,7 +80,6 @@ public class DietService {
         dietMapper.insert(dto.getMemberId(), diet);
         Long dietId = diet.getId();
         dietMapper.insertFoodMappings(dto.getFoods(), dietId);
-        System.out.println("실행");
         return 1;// 임시
     }
 
@@ -88,11 +87,11 @@ public class DietService {
     private Diet buildDiet(DietInsertRequestDTO dto) {
         NutritionTotalsDTO nutritionTotalsDTO = calculateNutritionTotals(dto.getFoods());
         LocalDate recordDate = LocalDate.now();
-        MealTime mealTime = MealTime.valueOf(dto.getMealTime());
+//        MealTime mealTime = MealTime.fromMealType(dto.getMealTime());
         return Diet.builder()
                 .memberId(dto.getMemberId())
                 .date(recordDate)
-                .mealTime(mealTime)
+                .mealTime(dto.getMealTime())
                 .energy(nutritionTotalsDTO.getTotalEnergy())
                 .water(nutritionTotalsDTO.getTotalWater())
                 .protein(nutritionTotalsDTO.getTotalProtein())
@@ -108,8 +107,7 @@ public class DietService {
         double totalCarbohydrate = 0.0, totalSugars = 0.0, totalSodium = 0.0;
 
         for (Food food : foods) {
-
-            double ratio = Double.parseDouble(food.getFoodWeight()) / Double.parseDouble(food.getServingSize());
+            double ratio = (Double.parseDouble(food.getFoodWeight().substring(0,3)) / Double.parseDouble(food.getServingSize().substring(0,3)));
             // Food 객체의 String 필드를 double로 파싱하여 계산
             try {
                 totalEnergy += Double.parseDouble(food.getEnergy()) * ratio;

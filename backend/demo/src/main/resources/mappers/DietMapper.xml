@@ -39,23 +39,41 @@
                  )
     </insert>
 
-    <insert id="insertDiet" parameterType="Diet" useGeneratedKeys="true" keyProperty="id">
+    <insert id="insert" useGeneratedKeys="true" keyProperty="diet.id">
         INSERT INTO diet (
-            member_id, record_date, meal_time
+            member_id,
+            record_date,
+            meal_time,
+            energy,
+            water,
+            protein,
+            fat,
+            carbohydrate,
+            sugars,
+            sodium
         ) VALUES (
-                     #{memberId}, #{date}, #{mealTime, typeHandler=org.apache.ibatis.type.EnumOrdinalTypeHandler}
+                     #{memberId},
+                     #{diet.date},
+                     #{diet.mealTime},
+                     #{diet.energy},
+                     #{diet.water},
+                     #{diet.protein},
+                     #{diet.fat},
+                     #{diet.carbohydrate},
+                     #{diet.sugars},
+                     #{diet.sodium}
                  )
     </insert>
 
     <insert id="insertFoodMappings" parameterType="java.util.List">
         INSERT INTO diet_food_mapping (
-        diet_id, food_id
+        diet_id, food_code
         )
         VALUES
-        <foreach collection="list" item="food" separator=",">
+        <foreach collection="foods" item="food" separator=",">
             (
-            #{food.dietId},
-            #{food.foodId}       )
+            #{dietId},
+            #{food.code}       )
         </foreach>
     </insert>
 

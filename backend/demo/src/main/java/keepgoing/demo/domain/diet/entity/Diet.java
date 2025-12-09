@@ -6,9 +6,6 @@ import lombok.*;
 import java.time.LocalDate;
 import java.util.List;
 
-@NoArgsConstructor
-@AllArgsConstructor
-@Setter
 @Getter
 @Builder
 public class Diet {
@@ -24,6 +21,6 @@ public class Diet {
     private double sugars;
     private double sodium;
 
-    private MealTime mealTime;
+    private String mealTime;
 //    private List<DietFoodMapping> foodMappings;
 }
