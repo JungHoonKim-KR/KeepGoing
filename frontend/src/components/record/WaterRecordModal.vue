@@ -256,6 +256,9 @@ onUnmounted(() => {
   justify-content: center;
   z-index: 9999;
   font-family: "NeoDunggeunmo", monospace;
+  /* 작은 화면에서 스크롤 허용 */
+  overflow-y: auto;
+  padding: 10px; /* 모바일에서 잘림 방지 */
 }
 
 /* 스캔라인 */
@@ -277,7 +280,7 @@ onUnmounted(() => {
 /* 모달 본체 */
 .retro-modal {
   background: #000022; /* 심해/우주 색상 */
-  width: 90%;
+  width: 95%; /* 모바일에서 95%로 확장 */
   max-width: 400px;
   border: 4px solid #fff;
   box-shadow: 0 0 20px rgba(0, 229, 255, 0.4), inset 0 0 20px rgba(0, 0, 0, 0.5);
@@ -285,6 +288,8 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  /* 모바일에서 모달이 화면 높이를 넘어가면 스크롤 가능하게 */
+  min-height: min-content;
 }
 
 @keyframes popIn {
@@ -338,13 +343,15 @@ onUnmounted(() => {
 .modal-body {
   padding: 1rem;
   color: #fff;
+  /* 모바일에서 세로 공간을 위해 패딩 조절 */
+  padding-top: 0.5rem;
 }
 
 .date-display {
   text-align: right;
   font-size: 0.8rem;
   color: #00e5ff;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem; /* 마진 감소 */
   font-family: monospace;
 }
 
@@ -352,20 +359,22 @@ onUnmounted(() => {
 .potion-section {
   display: flex;
   justify-content: center;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem; /* 마진 감소 */
 }
 
 .potion-bottle-container {
   display: flex;
   flex-direction: column;
   align-items: center;
+  /* 작은 화면에서도 병 크기 유지 */
+  transform: scale(0.95);
 }
 
 .potion-bottle {
   width: 100px;
   height: 140px;
   border: 4px solid #fff;
-  border-radius: 40px 40px 10px 10px; /* 플라스크 모양 */
+  border-radius: 40px 40px 10px 10px;
   position: relative;
   background: rgba(255, 255, 255, 0.1);
   overflow: hidden;
@@ -446,14 +455,21 @@ onUnmounted(() => {
   color: #ffd700; /* Gold */
 }
 
+.inventory-section {
+  margin-bottom: 1rem; /* 마진 감소 */
+}
+
 .item-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  /* 4열 대신 flex-wrap으로 유연하게 처리 */
+  display: flex;
+  flex-wrap: wrap; 
+  justify-content: space-between;
   gap: 8px;
-  margin-bottom: 1.5rem;
 }
 
 .item-slot {
+  /* 4개 대신 2개가 한 줄에 오도록 48% 설정 */
+  flex-basis: calc(50% - 4px); 
   background: #222;
   border: 2px solid #555;
   color: #fff;
@@ -464,6 +480,7 @@ onUnmounted(() => {
   align-items: center;
   gap: 4px;
 }
+
 .item-slot:active {
   border-color: #00e5ff;
   background: #333;
@@ -482,7 +499,7 @@ onUnmounted(() => {
 
 /* 슬라이더 */
 .slider-section {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem; /* 마진 감소 */
 }
 .slider-section label {
   font-size: 0.7rem;
@@ -516,7 +533,8 @@ onUnmounted(() => {
 .log-console {
   background: rgba(0, 0, 0, 0.5);
   border: 2px solid #333;
-  height: 100px;
+  /* 높이 축소하여 공간 확보 */
+  height: 80px; 
   overflow-y: auto;
   padding: 5px;
   font-size: 0.75rem;
@@ -535,6 +553,8 @@ onUnmounted(() => {
 .log-line .msg {
   flex: 1;
   color: #ccc;
+  /* 작은 화면에서 텍스트가 잘리지 않도록 */
+  word-break: break-all; 
 }
 .delete-x {
   background: none;
@@ -546,13 +566,15 @@ onUnmounted(() => {
 .log-line.empty {
   color: #555;
   justify-content: center;
-  padding-top: 30px;
+  /* 높이 축소에 맞춰 패딩 조절 */
+  padding-top: 15px; 
   border: none;
 }
 
 /* 버튼 */
 .action-footer {
   text-align: center;
+  padding-top: 0.5rem; /* 버튼 위 공간 추가 */
 }
 .retro-btn {
   background: #00e5ff;
@@ -568,5 +590,18 @@ onUnmounted(() => {
 .retro-btn:active {
   transform: translate(4px, 4px);
   box-shadow: none;
+}
+
+/* 450px 이하 화면을 위한 미디어 쿼리 */
+@media (max-width: 450px) {
+    .retro-modal {
+        /* 모바일 환경에서 모달의 높이가 화면을 초과하는 경우를 대비하여 padding-bottom 제거 */
+        padding-bottom: 0; 
+        /* 모바일에서 모달이 화면의 중앙이 아닌 상단에서 시작하도록 조정 */
+        margin: 10px auto; 
+    }
+    .modal-overlay {
+        align-items: flex-start; /* 모달을 상단에 정렬 */
+    }
 }
 </style>

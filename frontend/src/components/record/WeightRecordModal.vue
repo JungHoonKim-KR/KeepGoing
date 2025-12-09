@@ -201,10 +201,13 @@ onUnmounted(() => (document.body.style.overflow = ""));
   bottom: 0;
   background: rgba(0, 0, 0, 0.9);
   display: flex;
-  align-items: center;
+  /* 모바일에서 콘텐츠가 잘릴 경우 스크롤 가능하도록 flex-start와 overflow 설정 */
+  align-items: flex-start; 
   justify-content: center;
   z-index: 9999;
   font-family: "NeoDunggeunmo", monospace;
+  overflow-y: auto;
+  padding: 10px; /* 모바일에서 모달이 화면 끝에 붙지 않도록 여백 추가 */
 }
 
 /* 스캔라인 */
@@ -225,7 +228,7 @@ onUnmounted(() => (document.body.style.overflow = ""));
 
 .retro-modal {
   background: #2a0a29; /* 보라색 어두운 배경 */
-  width: 90%;
+  width: 95%; /* 모바일에서 더 넓게 사용 */
   max-width: 400px;
   border: 4px double #d500f9; /* 네온 퍼플 테두리 */
   box-shadow: 0 0 20px rgba(213, 0, 249, 0.5);
@@ -233,6 +236,8 @@ onUnmounted(() => (document.body.style.overflow = ""));
   flex-direction: column;
   animation: slideUp 0.3s ease-out;
   color: #fff;
+  /* 모바일에서 스크롤을 위해 높이 유동적으로 설정 */
+  margin-top: 20px; 
 }
 
 @keyframes slideUp {
@@ -279,22 +284,24 @@ onUnmounted(() => (document.body.style.overflow = ""));
 }
 
 .modal-body {
-  padding: 1.5rem 1rem;
+  /* 세로 여백 감소 */
+  padding: 1rem 1rem; 
 }
 
 .date-display {
   text-align: right;
   font-size: 0.8rem;
   color: #d500f9;
-  margin-bottom: 1rem;
+  margin-bottom: 0.8rem; /* 마진 감소 */
 }
 
 /* 스코어 보드 (체중 입력) */
 .score-board-section {
   background: #000;
   border: 2px solid #555;
-  padding: 1rem;
-  margin-bottom: 1.5rem;
+  /* 패딩 감소 */
+  padding: 0.8rem; 
+  margin-bottom: 1rem; /* 마진 감소 */
   text-align: center;
 }
 .score-label {
@@ -314,8 +321,9 @@ onUnmounted(() => (document.body.style.overflow = ""));
   border: none;
   color: #fff;
   font-family: "NeoDunggeunmo", monospace;
-  font-size: 3rem;
-  width: 140px;
+  /* 모바일에서 폰트 크기 약간 감소 */
+  font-size: 2.5rem; 
+  width: 120px; /* 너비 조절 */
   text-align: right;
   outline: none;
   text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
@@ -327,7 +335,7 @@ onUnmounted(() => (document.body.style.overflow = ""));
 
 /* 컨트롤 패드 */
 .control-pad {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem; /* 마진 감소 */
 }
 .pad-label {
   font-size: 0.7rem;
@@ -348,7 +356,10 @@ onUnmounted(() => (document.body.style.overflow = ""));
 .pad-btn {
   border: 2px solid #fff;
   color: #fff;
-  padding: 8px 10px;
+  /* 패딩 조절로 버튼 크기 유연하게 */
+  padding: 8px 5px; 
+  /* flex-grow 추가로 남은 공간 나눠 가지게 함 (반응형 개선) */
+  flex-grow: 1; 
   font-family: inherit;
   font-size: 0.8rem;
   cursor: pointer;
@@ -389,7 +400,7 @@ onUnmounted(() => (document.body.style.overflow = ""));
 
 /* 랭킹 리스트 */
 .ranking-section {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem; /* 마진 감소 */
 }
 .pixel-subtitle {
   font-size: 0.9rem;
@@ -403,6 +414,9 @@ onUnmounted(() => (document.body.style.overflow = ""));
   background: rgba(0, 0, 0, 0.3);
   padding: 5px;
   border: 1px solid #333;
+  /* 작은 화면에서 스크롤바가 생기지 않도록 높이 제한 */
+  max-height: 120px; 
+  overflow-y: auto;
 }
 .rank-row {
   display: flex;
@@ -415,20 +429,35 @@ onUnmounted(() => (document.body.style.overflow = ""));
   border-bottom: 1px dashed #555;
   margin-bottom: 5px;
 }
+/* 랭킹 리스트 열 너비 확보 */
+.rank-row span {
+    flex-basis: 33%;
+    text-align: center;
+}
 .rank-date {
   color: #ccc;
+  text-align: left !important;
+  flex-basis: 34%;
 }
 .rank-score {
   color: #fff;
+  text-align: center !important;
+}
+.rank-diff {
+  text-align: right !important;
+  flex-basis: 32%;
 }
 .rank-diff.bonus {
   color: #00e5ff;
-} /* 체중 감소는 보너스(파랑) */
+} 
 .rank-diff.penalty {
   color: #ff0055;
-} /* 체중 증가는 패널티(빨강) */
+} 
 
 /* 치트키 (메모) */
+.cheat-code-section {
+    margin-bottom: 1rem;
+}
 .retro-textarea {
   width: 100%;
   background: #111;
@@ -447,14 +476,15 @@ onUnmounted(() => (document.body.style.overflow = ""));
 /* 저장 버튼 */
 .action-footer {
   text-align: center;
-  margin-top: 1rem;
+  margin-top: 0.8rem; /* 마진 감소 */
 }
 .retro-btn {
   background: #d500f9;
   color: #fff;
   border: 2px solid #fff;
-  padding: 12px 30px;
-  font-size: 1.1rem;
+  /* 패딩 조절 */
+  padding: 10px 25px; 
+  font-size: 1rem; 
   font-family: inherit;
   cursor: pointer;
   box-shadow: 4px 4px 0 #000;
