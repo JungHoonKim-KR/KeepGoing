@@ -341,9 +341,13 @@ const removeFood = (index) => {
 function selectFood(food) {
   isSelectingFood.value = true;
   addFood(food);
+  //드롭다운 없애기 위해 값 비우기
+  suggestions.value = [];
+  foodName.value="";
+  // 시간 너무 짧게 주면 값이 안비워짐
   setTimeout(() => {
     isSelectingFood.value = false;
-  }, 100);
+  }, 300);
 }
 
 const triggerFileInput = () => {
