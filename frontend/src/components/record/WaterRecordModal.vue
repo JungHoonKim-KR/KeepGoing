@@ -1,114 +1,108 @@
 <template>
-  <div class="water-modal-overlay" @click="handleOverlayClick">
-    <div class="water-modal" @click.stop>
-      <!-- 헤더 -->
+  <div class="modal-overlay" @click="handleOverlayClick">
+    <div class="scanlines"></div>
+
+    <div class="retro-modal" @click.stop>
       <div class="modal-header">
-        <button @click="closeModal" class="close-btn">
-          <span class="close-icon">✕</span>
-        </button>
-        <h2 class="modal-title">물 마시기</h2>
-        <button @click="saveWater" class="save-btn">완료</button>
+        <h2 class="modal-title blink-text">MANA RECOVERY</h2>
+        <button @click="closeModal" class="close-btn pixel-btn">✕</button>
       </div>
 
-      <!-- 날짜 선택 -->
-      <div class="date-section">
-        <div class="date-display">{{ formattedDate }}</div>
-      </div>
+      <div class="modal-body">
+        <div class="date-display">Date: {{ formattedDate }}</div>
 
-      <!-- 물 섭취량 표시 -->
-      <div class="water-display-section">
-        <div class="water-cup-container">
-          <div class="water-cup">
-            <div class="water-level" :style="{ height: waterPercentage + '%' }">
-              <div class="water-wave"></div>
+        <div class="potion-section">
+          <div class="potion-bottle-container">
+            <div class="potion-bottle">
+              <div
+                class="potion-liquid"
+                :style="{ height: waterPercentage + '%' }"
+              >
+                <div class="potion-surface"></div>
+                <div class="bubbles">
+                  <span></span><span></span><span></span><span></span>
+                </div>
+              </div>
+              <div class="bottle-shine"></div>
             </div>
-            <span class="water-icon">💧</span>
+            <div class="potion-value">
+              <span class="current">{{ currentAmount.toFixed(1) }}</span>
+              <span class="divider">/</span>
+              <span class="max">{{ goalAmount.toFixed(1) }} L</span>
+            </div>
+            <div class="mp-label">MP (Hydration) {{ waterPercentage }}%</div>
           </div>
         </div>
 
-        <div class="water-amount-display">
-          <span class="current-amount">{{ currentAmount.toFixed(1) }}</span>
-          <span class="unit">L</span>
-          <span class="goal-amount">/ {{ goalAmount.toFixed(1) }}L</span>
+        <div class="inventory-section">
+          <h3 class="pixel-subtitle">SELECT ITEM</h3>
+          <div class="item-grid">
+            <button
+              @click="addWater(0.1)"
+              class="item-slot"
+              title="Small Potion"
+            >
+              <div class="item-icon">💧</div>
+              <div class="item-name">Small<br />+100</div>
+            </button>
+            <button
+              @click="addWater(0.2)"
+              class="item-slot"
+              title="Medium Potion"
+            >
+              <div class="item-icon">🧪</div>
+              <div class="item-name">Medium<br />+200</div>
+            </button>
+            <button
+              @click="addWater(0.3)"
+              class="item-slot"
+              title="Large Potion"
+            >
+              <div class="item-icon">🏺</div>
+              <div class="item-name">Large<br />+300</div>
+            </button>
+            <button @click="addWater(0.5)" class="item-slot" title="Elixir">
+              <div class="item-icon">💎</div>
+              <div class="item-name">Elixir<br />+500</div>
+            </button>
+          </div>
         </div>
 
-        <div class="percentage-display">{{ waterPercentage }}% 달성</div>
-      </div>
-
-      <!-- 빠른 추가 버튼 -->
-      <div class="quick-add-section">
-        <h3 class="section-title">빠른 추가</h3>
-        <div class="quick-add-buttons">
-          <button @click="addWater(0.1)" class="quick-btn">
-            <span class="quick-icon">💧</span>
-            <span class="quick-amount">100ml</span>
-          </button>
-          <button @click="addWater(0.2)" class="quick-btn">
-            <span class="quick-icon">🥤</span>
-            <span class="quick-amount">200ml</span>
-          </button>
-          <button @click="addWater(0.3)" class="quick-btn">
-            <span class="quick-icon">🧃</span>
-            <span class="quick-amount">300ml</span>
-          </button>
-          <button @click="addWater(0.5)" class="quick-btn">
-            <span class="quick-icon">🍶</span>
-            <span class="quick-amount">500ml</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- 슬라이더 -->
-      <div class="slider-section">
-        <h3 class="section-title">정확한 양 입력</h3>
-        <div class="slider-container">
+        <div class="slider-section">
+          <label>FINE TUNE AMOUNT</label>
           <input
             v-model="sliderValue"
             type="range"
             min="0"
             max="50"
             step="1"
-            class="water-slider"
+            class="retro-slider"
             @input="updateFromSlider"
           />
-          <div class="slider-labels">
-            <span>0.0L</span>
-            <span>5.0L</span>
+        </div>
+
+        <div class="log-section">
+          <h3 class="pixel-subtitle">SYSTEM LOG</h3>
+          <div class="log-console">
+            <div v-if="todayRecords.length === 0" class="log-line empty">
+              > No records found...
+            </div>
+            <div
+              v-for="(record, index) in todayRecords"
+              :key="index"
+              class="log-line"
+            >
+              <span class="time">[{{ record.time }}]</span>
+              <span class="msg">Recovered {{ record.amount }}L MP</span>
+              <button @click="removeRecord(index)" class="delete-x">[x]</button>
+            </div>
           </div>
         </div>
-      </div>
 
-      <!-- 오늘의 기록 -->
-      <div class="today-records">
-        <h3 class="section-title">오늘의 기록</h3>
-        <div class="records-list">
-          <div
-            class="record-item"
-            v-for="(record, index) in todayRecords"
-            :key="index"
-          >
-            <div class="record-time">{{ record.time }}</div>
-            <div class="record-amount">{{ record.amount }}L</div>
-            <button @click="removeRecord(index)" class="remove-btn">✕</button>
-          </div>
-          <div v-if="todayRecords.length === 0" class="no-records">
-            아직 기록이 없습니다
-          </div>
-        </div>
-      </div>
-
-      <!-- 목표 설정 -->
-      <div class="goal-section">
-        <h3 class="section-title">일일 목표량</h3>
-        <div class="goal-input-container">
-          <input
-            v-model.number="goalAmount"
-            type="number"
-            step="0.1"
-            class="goal-input"
-            @input="updatePercentage"
-          />
-          <span class="goal-unit">L</span>
+        <div class="action-footer">
+          <button @click="saveWater" class="retro-btn save-btn">
+            SAVE GAME
+          </button>
         </div>
       </div>
     </div>
@@ -120,36 +114,66 @@ import { ref, computed, onMounted, onUnmounted } from "vue";
 import dayjs from "dayjs";
 
 const API_ENDPOINT = "http://localhost:8080";
-// Props & Emits
 const emit = defineEmits(["close"]);
 
 // Data
 const currentAmount = ref(1.5);
 const goalAmount = ref(2.0);
 const sliderValue = ref(15);
-
 const todayRecords = ref([
   { time: "14:30", amount: "0.5" },
   { time: "12:00", amount: "0.3" },
-  { time: "09:30", amount: "0.7" },
 ]);
 
 // Computed
-const formattedDate = computed(() => {
-  return dayjs().format("YYYY년 M월 D일");
-});
-
+const formattedDate = computed(() => dayjs().format("YYYY-MM-DD"));
 const waterPercentage = computed(() => {
   const percentage = (currentAmount.value / goalAmount.value) * 100;
   return Math.min(Math.round(percentage), 100);
 });
 
+// 🔊 8-bit 사운드 효과
+const playSound = (type) => {
+  const AudioContext = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContext) return;
+
+  const ctx = new AudioContext();
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+
+  const now = ctx.currentTime;
+
+  if (type === "glug") {
+    // 물 마시는 소리
+    osc.type = "triangle";
+    osc.frequency.setValueAtTime(400, now);
+    osc.frequency.linearRampToValueAtTime(200, now + 0.15);
+    gain.gain.setValueAtTime(0.1, now);
+    gain.gain.linearRampToValueAtTime(0, now + 0.15);
+    osc.start(now);
+    osc.stop(now + 0.15);
+  } else if (type === "save") {
+    // 저장 성공 소리
+    osc.type = "square";
+    osc.frequency.setValueAtTime(523.25, now); // C
+    osc.frequency.setValueAtTime(659.25, now + 0.1); // E
+    osc.frequency.setValueAtTime(783.99, now + 0.2); // G
+    gain.gain.setValueAtTime(0.05, now);
+    gain.gain.linearRampToValueAtTime(0, now + 0.4);
+    osc.start(now);
+    osc.stop(now + 0.4);
+  }
+};
+
 // Methods
 const addWater = (amount) => {
+  playSound("glug");
   currentAmount.value = Math.min(currentAmount.value + amount, 5.0);
   sliderValue.value = Math.round(currentAmount.value * 10);
 
-  // 기록 추가
   const now = dayjs().format("HH:mm");
   todayRecords.value.unshift({
     time: now,
@@ -159,10 +183,6 @@ const addWater = (amount) => {
 
 const updateFromSlider = () => {
   currentAmount.value = sliderValue.value / 10;
-};
-
-const updatePercentage = () => {
-  // 목표량이 변경되면 퍼센트 자동 업데이트
 };
 
 const removeRecord = (index) => {
@@ -182,493 +202,371 @@ const handleOverlayClick = (e) => {
   }
 };
 
-const saveWater = async() => {
-  console.log("물 섭취량 저장:", currentAmount.value, "L");
+const saveWater = async () => {
+  playSound("save");
+  console.log("SAVE GAME :: Water Amount:", currentAmount.value, "L");
 
   const hydrationData = {
-      memberId : 1,
-      waterAmount : currentAmount.value,
+    memberId: 1,
+    waterAmount: currentAmount.value,
+  };
+
+  try {
+    const response = await fetch(`${API_ENDPOINT}/diets/hydration`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(hydrationData),
+    });
+
+    if (!response.ok) {
+      console.error(`Error Status: ${response.status}`);
+      throw new Error("Save Failed");
+    }
+    // 성공 시 딜레이를 주어 소리 듣게 함
+    setTimeout(() => closeModal(), 300);
+  } catch (error) {
+    console.error("Save Error:", error);
+    // 에러나도 일단 닫거나 사용자 알림 (여기선 닫음)
+    closeModal();
   }
-  try{
-          const response = await fetch(`${API_ENDPOINT}/diets/hydration`,{
-              method:'POST',
-              headers:{
-                  'Content-Type' : 'application/json'
-              },
-              body:JSON.stringify(hydrationData)
-          });
-
-          if (!response.ok) {
-              console.error(`저장 API 실패: ${response.status}`);
-              throw new Error(`저장 API 호출 실패 (Status: ${response.status})`);
-          }
-      }
-  catch(error){
-      console.error("식사 기록 저장 중 오류 발생:", error);
-  }
-
-
-  closeModal();
 };
 
 // Lifecycle
 onMounted(() => {
   document.body.style.overflow = "hidden";
 });
-
 onUnmounted(() => {
   document.body.style.overflow = "";
 });
 </script>
 
 <style scoped>
-/* 모달 오버레이 */
-.water-modal-overlay {
+/* 폰트 로드 (이미 Home에 있다면 생략 가능) */
+@import url("https://cdn.jsdelivr.net/gh/neodgm/neodgm-webfont@latest/neodgm/style.css");
+
+.modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: rgba(0, 0, 0, 0.85);
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
   z-index: 9999;
-  animation: fadeIn 0.3s ease-out;
+  font-family: "NeoDunggeunmo", monospace;
 }
 
-@keyframes fadeIn {
+/* 스캔라인 */
+.scanlines {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
+    linear-gradient(
+      90deg,
+      rgba(255, 0, 0, 0.06),
+      rgba(0, 255, 0, 0.02),
+      rgba(0, 0, 255, 0.06)
+    );
+  background-size: 100% 4px, 6px 100%;
+}
+
+/* 모달 본체 */
+.retro-modal {
+  background: #000022; /* 심해/우주 색상 */
+  width: 90%;
+  max-width: 400px;
+  border: 4px solid #fff;
+  box-shadow: 0 0 20px rgba(0, 229, 255, 0.4), inset 0 0 20px rgba(0, 0, 0, 0.5);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes popIn {
   from {
+    transform: scale(0.8);
     opacity: 0;
   }
   to {
+    transform: scale(1);
     opacity: 1;
-  }
-}
-
-/* 모달 컨테이너 */
-.water-modal {
-  background: white;
-  width: 100%;
-  max-width: 500px;
-  max-height: 90vh;
-  border-radius: 1.5rem 1.5rem 0 0;
-  overflow-y: auto;
-  animation: slideUp 0.3s ease-out;
-  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
-}
-
-@keyframes slideUp {
-  from {
-    transform: translateY(100%);
-  }
-  to {
-    transform: translateY(0);
   }
 }
 
 /* 헤더 */
 .modal-header {
+  background: #fff;
+  padding: 0.5rem 1rem;
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid #f3f4f6;
-  position: sticky;
-  top: 0;
-  background: white;
-  z-index: 10;
+  align-items: center;
 }
 
 .modal-title {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #111827;
   margin: 0;
+  font-size: 1.2rem;
+  color: #000;
+  letter-spacing: -1px;
+}
+.blink-text {
+  animation: blink 2s infinite;
+}
+@keyframes blink {
+  50% {
+    opacity: 0.5;
+  }
 }
 
-.close-btn,
-.save-btn {
-  background: none;
+.close-btn {
+  background: #000;
+  color: #fff;
   border: none;
-  font-size: 1rem;
+  font-size: 1.2rem;
+  width: 32px;
+  height: 32px;
   cursor: pointer;
-  padding: 0.5rem;
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
-  transition: transform 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.close-btn:active,
-.save-btn:active {
-  transform: scale(0.9);
-}
-
-.close-icon {
-  font-size: 1.5rem;
-  color: #6b7280;
-}
-
-.save-btn {
-  color: #3b82f6;
-  font-weight: 600;
-}
-
-/* 날짜 섹션 */
-.date-section {
-  padding: 1rem 1.5rem;
-  text-align: center;
+.modal-body {
+  padding: 1rem;
+  color: #fff;
 }
 
 .date-display {
-  font-size: 0.95rem;
-  color: #6b7280;
-  font-weight: 500;
+  text-align: right;
+  font-size: 0.8rem;
+  color: #00e5ff;
+  margin-bottom: 1rem;
+  font-family: monospace;
 }
 
-/* 물 표시 섹션 */
-.water-display-section {
-  padding: 2rem 1.5rem;
-  background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
-  text-align: center;
-}
-
-.water-cup-container {
+/* 포션 디스플레이 */
+.potion-section {
   display: flex;
   justify-content: center;
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
 }
 
-.water-cup {
-  width: 120px;
-  height: 160px;
-  background: rgba(255, 255, 255, 0.5);
-  border: 3px solid #3b82f6;
-  border-radius: 0 0 1rem 1rem;
-  position: relative;
-  overflow: hidden;
-  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
-}
-
-.water-level {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: linear-gradient(180deg, #60a5fa 0%, #3b82f6 100%);
-  transition: height 0.5s ease-out;
-}
-
-.water-wave {
-  position: absolute;
-  top: -10px;
-  left: -50%;
-  width: 200%;
-  height: 20px;
-  background: radial-gradient(
-    circle,
-    rgba(255, 255, 255, 0.3) 30%,
-    transparent 30%
-  );
-  animation: wave 3s infinite linear;
-}
-
-@keyframes wave {
-  0% {
-    transform: translateX(0);
-  }
-  100% {
-    transform: translateX(50%);
-  }
-}
-
-.water-icon {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 3rem;
-  opacity: 0.3;
-}
-
-.water-amount-display {
-  display: flex;
-  align-items: baseline;
-  justify-content: center;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-}
-
-.current-amount {
-  font-size: 3.5rem;
-  font-weight: 700;
-  color: #1e40af;
-}
-
-.unit {
-  font-size: 1.5rem;
-  color: #3b82f6;
-  font-weight: 600;
-}
-
-.goal-amount {
-  font-size: 1.25rem;
-  color: #6b7280;
-}
-
-.percentage-display {
-  font-size: 1.1rem;
-  color: #1e40af;
-  font-weight: 600;
-}
-
-/* 빠른 추가 버튼 */
-.quick-add-section {
-  padding: 1.5rem;
-  border-top: 8px solid #f9fafb;
-}
-
-.section-title {
-  font-size: 1rem;
-  font-weight: 600;
-  color: #111827;
-  margin-bottom: 1rem;
-}
-
-.quick-add-buttons {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 0.75rem;
-}
-
-.quick-btn {
-  background: white;
-  border: 2px solid #e5e7eb;
-  padding: 1rem 0.5rem;
-  border-radius: 1rem;
-  cursor: pointer;
-  transition: all 0.2s;
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
+.potion-bottle-container {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.5rem;
 }
 
-.quick-btn:active {
+.potion-bottle {
+  width: 100px;
+  height: 140px;
+  border: 4px solid #fff;
+  border-radius: 40px 40px 10px 10px; /* 플라스크 모양 */
+  position: relative;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+}
+
+.potion-liquid {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  background: #00e5ff;
+  box-shadow: 0 0 15px #00e5ff;
+  transition: height 0.3s ease-out;
+}
+
+.potion-surface {
+  width: 100%;
+  height: 5px;
+  background: #fff;
+}
+
+/* 기포 애니메이션 */
+.bubbles span {
+  position: absolute;
+  bottom: -10px;
+  width: 4px;
+  height: 4px;
+  background: #fff;
+  animation: bubbleUp 2s infinite;
+}
+.bubbles span:nth-child(1) {
+  left: 20%;
+  animation-delay: 0s;
+}
+.bubbles span:nth-child(2) {
+  left: 50%;
+  animation-delay: 0.5s;
+}
+.bubbles span:nth-child(3) {
+  left: 80%;
+  animation-delay: 1.2s;
+}
+
+@keyframes bubbleUp {
+  0% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-100px);
+    opacity: 0;
+  }
+}
+
+.potion-value {
+  font-size: 1.5rem;
+  text-shadow: 2px 2px #000;
+}
+.potion-value .current {
+  color: #00e5ff;
+  font-weight: bold;
+}
+.potion-value .max {
+  font-size: 1rem;
+  color: #888;
+}
+.mp-label {
+  font-size: 0.8rem;
+  color: #00e5ff;
+  margin-top: 5px;
+}
+
+/* 아이템 그리드 */
+.pixel-subtitle {
+  font-size: 0.9rem;
+  border-bottom: 2px solid #333;
+  margin-bottom: 0.5rem;
+  color: #ffd700; /* Gold */
+}
+
+.item-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 1.5rem;
+}
+
+.item-slot {
+  background: #222;
+  border: 2px solid #555;
+  color: #fff;
+  padding: 8px 4px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.item-slot:active {
+  border-color: #00e5ff;
+  background: #333;
   transform: scale(0.95);
-  background: #eff6ff;
-  border-color: #3b82f6;
 }
 
-.quick-icon {
-  font-size: 2rem;
+.item-icon {
+  font-size: 1.5rem;
 }
-
-.quick-amount {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #374151;
+.item-name {
+  font-size: 0.6rem;
+  text-align: center;
+  line-height: 1.2;
+  font-family: monospace;
 }
 
 /* 슬라이더 */
 .slider-section {
-  padding: 1.5rem;
-  border-top: 8px solid #f9fafb;
+  margin-bottom: 1.5rem;
+}
+.slider-section label {
+  font-size: 0.7rem;
+  color: #888;
+  display: block;
+  margin-bottom: 5px;
 }
 
-.slider-container {
-  margin-top: 1rem;
-}
-
-.water-slider {
+.retro-slider {
   width: 100%;
-  height: 8px;
-  border-radius: 1rem;
+  height: 12px;
+  -webkit-appearance: none;
+  background: #333;
+  border: 2px solid #fff;
   outline: none;
-  background: linear-gradient(to right, #e5e7eb 0%, #3b82f6 50%, #e5e7eb 100%);
+}
+.retro-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  background: #00e5ff;
+  border: 2px solid #fff;
   cursor: pointer;
+  box-shadow: 2px 2px 0 #000;
 }
 
-.water-slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: white;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-  cursor: pointer;
-  border: 3px solid #3b82f6;
-  transition: transform 0.2s;
+/* 로그 (System Log) */
+.log-section {
+  margin-bottom: 1rem;
 }
-
-.water-slider::-webkit-slider-thumb:active {
-  transform: scale(1.2);
-}
-
-.water-slider::-moz-range-thumb {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: white;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-  cursor: pointer;
-  border: 3px solid #3b82f6;
-  transition: transform 0.2s;
-}
-
-.water-slider::-moz-range-thumb:active {
-  transform: scale(1.2);
-}
-
-.slider-labels {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 0.5rem;
-  font-size: 0.75rem;
-  color: #9ca3af;
-}
-
-/* 오늘의 기록 */
-.today-records {
-  padding: 1.5rem;
-  border-top: 8px solid #f9fafb;
-}
-
-.records-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  max-height: 200px;
+.log-console {
+  background: rgba(0, 0, 0, 0.5);
+  border: 2px solid #333;
+  height: 100px;
   overflow-y: auto;
+  padding: 5px;
+  font-size: 0.75rem;
+  font-family: monospace;
 }
-
-.record-item {
+.log-line {
+  border-bottom: 1px dashed #333;
+  padding: 4px 0;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 1rem;
-  background: #f9fafb;
-  border-radius: 0.875rem;
 }
-
-.record-time {
-  font-size: 0.9rem;
-  color: #6b7280;
+.log-line .time {
+  color: #ffd700;
+  margin-right: 5px;
+}
+.log-line .msg {
   flex: 1;
+  color: #ccc;
 }
-
-.record-amount {
-  font-size: 1rem;
-  font-weight: 600;
-  color: #3b82f6;
-  flex: 1;
-  text-align: center;
-}
-
-.remove-btn {
+.delete-x {
   background: none;
   border: none;
-  color: #ef4444;
-  font-size: 1.25rem;
+  color: #ff0055;
   cursor: pointer;
-  padding: 0.25rem 0.5rem;
-  -webkit-tap-highlight-color: transparent;
+  font-family: monospace;
 }
-
-.remove-btn:active {
-  transform: scale(0.9);
-}
-
-.no-records {
-  text-align: center;
-  padding: 2rem;
-  color: #9ca3af;
-  font-size: 0.9rem;
-}
-
-/* 목표 설정 */
-.goal-section {
-  padding: 1.5rem;
-  border-top: 8px solid #f9fafb;
-}
-
-.goal-input-container {
-  display: flex;
-  align-items: center;
+.log-line.empty {
+  color: #555;
   justify-content: center;
-  gap: 0.5rem;
-  margin-top: 1rem;
+  padding-top: 30px;
+  border: none;
 }
 
-.goal-input {
-  width: 120px;
-  padding: 0.75rem 1rem;
-  border: 2px solid #e5e7eb;
-  border-radius: 0.875rem;
-  font-size: 1.25rem;
-  font-weight: 600;
+/* 버튼 */
+.action-footer {
   text-align: center;
-  outline: none;
-  transition: border-color 0.2s;
 }
-
-.goal-input:focus {
-  border-color: #3b82f6;
+.retro-btn {
+  background: #00e5ff;
+  color: #000;
+  border: 2px solid #fff;
+  padding: 10px 30px;
+  font-size: 1rem;
+  font-family: "NeoDunggeunmo", monospace;
+  cursor: pointer;
+  box-shadow: 4px 4px 0 #000;
+  transition: transform 0.1s;
 }
-
-.goal-input::-webkit-outer-spin-button,
-.goal-input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-
-.goal-input[type="number"] {
-  -moz-appearance: textfield;
-}
-
-.goal-unit {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: #6b7280;
-}
-
-/* 모바일 최적화 */
-@media (max-width: 390px) {
-  .current-amount {
-    font-size: 3rem;
-  }
-
-  .quick-add-buttons {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .water-cup {
-    width: 100px;
-    height: 140px;
-  }
-}
-
-/* 스크롤바 스타일링 */
-.water-modal::-webkit-scrollbar {
-  width: 6px;
-}
-
-.water-modal::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.water-modal::-webkit-scrollbar-thumb {
-  background: #d1d5db;
-  border-radius: 3px;
-}
-
-.water-modal::-webkit-scrollbar-thumb:hover {
-  background: #9ca3af;
+.retro-btn:active {
+  transform: translate(4px, 4px);
+  box-shadow: none;
 }
 </style>

@@ -1,93 +1,98 @@
 <template>
-  <div class="weight-modal-overlay" @click="handleOverlayClick">
-    <div class="weight-modal" @click.stop>
-      <!-- 헤더 -->
+  <div class="modal-overlay" @click="handleOverlayClick">
+    <div class="scanlines"></div>
+
+    <div class="retro-modal" @click.stop>
       <div class="modal-header">
-        <button @click="closeModal" class="close-btn">
-          <span class="close-icon">✕</span>
-        </button>
-        <h2 class="modal-title">체중 기록</h2>
-        <button @click="saveWeight" class="save-btn">완료</button>
+        <h2 class="modal-title blink-text">NEW RECORD</h2>
+        <button @click="closeModal" class="close-btn pixel-btn">✕</button>
       </div>
 
-      <!-- 날짜 선택 -->
-      <div class="date-section">
-        <div class="date-display">{{ formattedDate }}</div>
-      </div>
+      <div class="modal-body">
+        <div class="date-display">DATE: {{ formattedDate }}</div>
 
-      <!-- 체중 입력 섹션 -->
-      <div class="weight-input-section">
-        <div class="weight-display-large">
-          <input
-            v-model="weightInput"
-            type="number"
-            step="0.1"
-            class="weight-input"
-            placeholder="0.0"
-            @input="updateSlider"
-          />
-          <span class="weight-unit-large">kg</span>
-        </div>
-
-        <!-- 슬라이더 -->
-        <div class="slider-container">
-          <input
-            v-model="weightSlider"
-            type="range"
-            min="30"
-            max="150"
-            step="0.1"
-            class="weight-slider"
-            @input="updateInput"
-          />
-          <div class="slider-labels">
-            <span>30kg</span>
-            <span>150kg</span>
+        <div class="score-board-section">
+          <div class="score-label">CURRENT SCORE (WEIGHT)</div>
+          <div class="score-display">
+            <input
+              v-model="weightInput"
+              type="number"
+              step="0.1"
+              class="retro-input"
+              placeholder="00.0"
+              @input="updateSlider"
+            />
+            <span class="unit">kg</span>
           </div>
         </div>
-      </div>
 
-      <!-- 빠른 조정 버튼 -->
-      <div class="quick-adjust">
-        <button @click="adjustWeight(-1)" class="adjust-btn">-1.0</button>
-        <button @click="adjustWeight(-0.5)" class="adjust-btn">-0.5</button>
-        <button @click="adjustWeight(-0.1)" class="adjust-btn">-0.1</button>
-        <button @click="adjustWeight(0.1)" class="adjust-btn">+0.1</button>
-        <button @click="adjustWeight(0.5)" class="adjust-btn">+0.5</button>
-        <button @click="adjustWeight(1)" class="adjust-btn">+1.0</button>
-      </div>
+        <div class="control-pad">
+          <div class="pad-label">FINE TUNE</div>
+          <div class="pad-row">
+            <button @click="adjustWeight(-1)" class="pad-btn red">-1.0</button>
+            <button @click="adjustWeight(-0.1)" class="pad-btn red">
+              -0.1
+            </button>
+            <div class="pad-spacer"></div>
+            <button @click="adjustWeight(0.1)" class="pad-btn green">
+              +0.1
+            </button>
+            <button @click="adjustWeight(1)" class="pad-btn green">+1.0</button>
+          </div>
 
-      <!-- 최근 기록 -->
-      <div class="recent-records">
-        <h3 class="section-title">최근 기록</h3>
-        <div class="records-list">
-          <div class="record-item">
-            <div class="record-date">어제</div>
-            <div class="record-weight">70.3kg</div>
-            <div class="record-change decrease">-0.2kg</div>
-          </div>
-          <div class="record-item">
-            <div class="record-date">2일 전</div>
-            <div class="record-weight">70.5kg</div>
-            <div class="record-change increase">+0.3kg</div>
-          </div>
-          <div class="record-item">
-            <div class="record-date">3일 전</div>
-            <div class="record-weight">70.2kg</div>
-            <div class="record-change decrease">-0.1kg</div>
+          <div class="slider-wrapper">
+            <input
+              v-model="weightSlider"
+              type="range"
+              min="30"
+              max="150"
+              step="0.1"
+              class="retro-slider"
+              @input="updateInput"
+            />
           </div>
         </div>
-      </div>
 
-      <!-- 메모 (선택사항) -->
-      <div class="memo-section">
-        <label class="memo-label">메모 (선택)</label>
-        <textarea
-          v-model="memo"
-          class="memo-input"
-          placeholder="오늘의 컨디션이나 특이사항을 기록해보세요..."
-          rows="3"
-        ></textarea>
+        <div class="ranking-section">
+          <h3 class="pixel-subtitle">RANKING HISTORY</h3>
+          <div class="ranking-list">
+            <div class="rank-row header">
+              <span>DAY</span>
+              <span>SCORE</span>
+              <span>DIFF</span>
+            </div>
+            <div
+              class="rank-row"
+              v-for="(record, index) in recentRecords"
+              :key="index"
+            >
+              <span class="rank-date">{{ record.date }}</span>
+              <span class="rank-score">{{ record.weight }}kg</span>
+              <span
+                class="rank-diff"
+                :class="record.change < 0 ? 'bonus' : 'penalty'"
+              >
+                {{ record.change > 0 ? "+" : "" }}{{ record.change }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="cheat-code-section">
+          <label class="pixel-subtitle">MEMO / CHEAT CODE</label>
+          <textarea
+            v-model="memo"
+            class="retro-textarea"
+            placeholder="ENTER MESSAGE..."
+            rows="2"
+          ></textarea>
+        </div>
+
+        <div class="action-footer">
+          <button @click="saveWeight" class="retro-btn save-btn">
+            UPDATE RECORD
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -97,7 +102,6 @@
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import dayjs from "dayjs";
 
-// Props & Emits
 const emit = defineEmits(["close"]);
 
 // Data
@@ -105,414 +109,358 @@ const weightInput = ref("70.0");
 const weightSlider = ref(70);
 const memo = ref("");
 
+// 더미 데이터 (실제 데이터로 교체 가능)
+const recentRecords = [
+  { date: "YESTERDAY", weight: 70.3, change: -0.2 },
+  { date: "2 DAYS AGO", weight: 70.5, change: 0.3 },
+  { date: "3 DAYS AGO", weight: 70.2, change: -0.1 },
+];
+
 // Computed
-const formattedDate = computed(() => {
-  return dayjs().format("YYYY년 M월 D일");
-});
+const formattedDate = computed(() => dayjs().format("YYYY-MM-DD"));
+
+// 🔊 8-bit 사운드 효과 (모달 내부 조작용)
+const playSound = (type) => {
+  const AudioContext = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContext) return;
+  const ctx = new AudioContext();
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  const now = ctx.currentTime;
+
+  if (type === "blip") {
+    // 버튼 조작음
+    osc.type = "square";
+    osc.frequency.setValueAtTime(220, now);
+    gain.gain.setValueAtTime(0.05, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+    osc.start(now);
+    osc.stop(now + 0.1);
+  } else if (type === "save") {
+    // 저장음 (파워업)
+    osc.type = "sawtooth";
+    osc.frequency.setValueAtTime(110, now);
+    osc.frequency.linearRampToValueAtTime(880, now + 0.3);
+    gain.gain.setValueAtTime(0.1, now);
+    gain.gain.linearRampToValueAtTime(0, now + 0.3);
+    osc.start(now);
+    osc.stop(now + 0.3);
+  }
+};
 
 // Methods
 const updateSlider = () => {
-  const value = parseFloat(weightInput.value) || 70;
+  const value = parseFloat(weightInput.value) || 0;
   weightSlider.value = Math.max(30, Math.min(150, value));
 };
 
 const updateInput = () => {
+  // 슬라이더 움직일 때 드르륵 소리 (선택사항)
+  // playSound('blip');
   weightInput.value = parseFloat(weightSlider.value).toFixed(1);
 };
 
 const adjustWeight = (amount) => {
-  const current = parseFloat(weightInput.value) || 70;
+  playSound("blip");
+  const current = parseFloat(weightInput.value) || 0;
   const newWeight = Math.max(30, Math.min(150, current + amount));
   weightInput.value = newWeight.toFixed(1);
   weightSlider.value = newWeight;
 };
 
-const closeModal = () => {
-  emit("close");
-};
+const closeModal = () => emit("close");
 
 const handleOverlayClick = (e) => {
-  // 오버레이 직접 클릭시에만 닫기
-  if (e.target === e.currentTarget) {
-    closeModal();
-  }
+  if (e.target === e.currentTarget) closeModal();
 };
 
 const saveWeight = () => {
-  // TODO: 실제 저장 로직 구현
-  console.log("체중 저장:", weightInput.value, "kg");
-  console.log("메모:", memo.value);
-  closeModal();
+  playSound("save");
+  // API 호출 로직은 여기에 추가
+  console.log("Saving Score:", weightInput.value);
+
+  // 소리 들을 시간 주고 닫기
+  setTimeout(() => closeModal(), 400);
 };
 
-// Lifecycle
-onMounted(() => {
-  document.body.style.overflow = "hidden";
-});
-
-onUnmounted(() => {
-  document.body.style.overflow = "";
-});
+onMounted(() => (document.body.style.overflow = "hidden"));
+onUnmounted(() => (document.body.style.overflow = ""));
 </script>
 
 <style scoped>
-/* 모달 오버레이 */
-.weight-modal-overlay {
+/* 폰트 임포트 */
+@import url("https://cdn.jsdelivr.net/gh/neodgm/neodgm-webfont@latest/neodgm/style.css");
+
+.modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: rgba(0, 0, 0, 0.9);
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
   z-index: 9999;
-  animation: fadeIn 0.3s ease-out;
+  font-family: "NeoDunggeunmo", monospace;
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-/* 모달 컨테이너 */
-.weight-modal {
-  background: white;
+/* 스캔라인 */
+.scanlines {
+  position: absolute;
   width: 100%;
-  max-width: 500px;
-  max-height: 90vh;
-  border-radius: 1.5rem 1.5rem 0 0;
-  overflow-y: auto;
+  height: 100%;
+  pointer-events: none;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
+    linear-gradient(
+      90deg,
+      rgba(255, 0, 0, 0.06),
+      rgba(0, 255, 0, 0.02),
+      rgba(0, 0, 255, 0.06)
+    );
+  background-size: 100% 4px, 6px 100%;
+}
+
+.retro-modal {
+  background: #2a0a29; /* 보라색 어두운 배경 */
+  width: 90%;
+  max-width: 400px;
+  border: 4px double #d500f9; /* 네온 퍼플 테두리 */
+  box-shadow: 0 0 20px rgba(213, 0, 249, 0.5);
+  display: flex;
+  flex-direction: column;
   animation: slideUp 0.3s ease-out;
-  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+  color: #fff;
 }
 
 @keyframes slideUp {
   from {
-    transform: translateY(100%);
+    transform: translateY(50px);
+    opacity: 0;
   }
   to {
     transform: translateY(0);
+    opacity: 1;
   }
 }
 
-/* 헤더 */
 .modal-header {
+  background: #000;
+  padding: 0.8rem 1rem;
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid #f3f4f6;
-  position: sticky;
-  top: 0;
-  background: white;
-  z-index: 10;
+  align-items: center;
+  border-bottom: 2px solid #d500f9;
 }
 
 .modal-title {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #111827;
   margin: 0;
+  font-size: 1.2rem;
+  color: #d500f9;
+  text-shadow: 0 0 5px #d500f9;
+}
+.blink-text {
+  animation: blink 1.5s infinite;
+}
+@keyframes blink {
+  50% {
+    opacity: 0.3;
+  }
 }
 
-.close-btn,
-.save-btn {
+.close-btn {
   background: none;
   border: none;
-  font-size: 1rem;
+  color: #fff;
+  font-size: 1.2rem;
   cursor: pointer;
-  padding: 0.5rem;
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
-  transition: transform 0.2s;
 }
 
-.close-btn:active,
-.save-btn:active {
-  transform: scale(0.9);
-}
-
-.close-icon {
-  font-size: 1.5rem;
-  color: #6b7280;
-}
-
-.save-btn {
-  color: #667eea;
-  font-weight: 600;
-}
-
-/* 날짜 섹션 */
-.date-section {
-  padding: 1rem 1.5rem;
-  text-align: center;
+.modal-body {
+  padding: 1.5rem 1rem;
 }
 
 .date-display {
-  font-size: 0.95rem;
-  color: #6b7280;
-  font-weight: 500;
-}
-
-/* 체중 입력 섹션 */
-.weight-input-section {
-  padding: 2rem 1.5rem;
-  background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
-}
-
-.weight-display-large {
-  display: flex;
-  align-items: baseline;
-  justify-content: center;
-  gap: 0.5rem;
-  margin-bottom: 2rem;
-}
-
-.weight-input {
-  font-size: 4rem;
-  font-weight: 700;
-  color: #111827;
-  border: none;
-  background: transparent;
   text-align: right;
-  width: 180px;
-  outline: none;
-  padding: 0;
-}
-
-.weight-input::placeholder {
-  color: #d1d5db;
-}
-
-.weight-input::-webkit-outer-spin-button,
-.weight-input::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-
-.weight-input[type="number"] {
-  -moz-appearance: textfield;
-}
-
-.weight-unit-large {
-  font-size: 2rem;
-  color: #6b7280;
-  font-weight: 600;
-}
-
-/* 슬라이더 */
-.slider-container {
-  margin-top: 1rem;
-}
-
-.weight-slider {
-  width: 100%;
-  height: 8px;
-  border-radius: 1rem;
-  outline: none;
-  background: linear-gradient(to right, #e5e7eb 0%, #667eea 50%, #e5e7eb 100%);
-  -webkit-appearance: none;
-  cursor: pointer;
-}
-
-.weight-slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: white;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-  cursor: pointer;
-  border: 3px solid #667eea;
-  transition: transform 0.2s;
-}
-
-.weight-slider::-webkit-slider-thumb:active {
-  transform: scale(1.2);
-}
-
-.weight-slider::-moz-range-thumb {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: white;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-  cursor: pointer;
-  border: 3px solid #667eea;
-  transition: transform 0.2s;
-}
-
-.weight-slider::-moz-range-thumb:active {
-  transform: scale(1.2);
-}
-
-.slider-labels {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 0.5rem;
-  font-size: 0.75rem;
-  color: #9ca3af;
-}
-
-/* 빠른 조정 버튼 */
-.quick-adjust {
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 0.5rem;
-  padding: 1.5rem;
-}
-
-.adjust-btn {
-  background: white;
-  border: 1px solid #e5e7eb;
-  padding: 0.75rem 0.5rem;
-  border-radius: 0.75rem;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #374151;
-  cursor: pointer;
-  transition: all 0.2s;
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
-}
-
-.adjust-btn:active {
-  transform: scale(0.95);
-  background: #f3f4f6;
-}
-
-/* 최근 기록 */
-.recent-records {
-  padding: 1.5rem;
-  border-top: 8px solid #f9fafb;
-}
-
-.section-title {
-  font-size: 1rem;
-  font-weight: 600;
-  color: #111827;
+  font-size: 0.8rem;
+  color: #d500f9;
   margin-bottom: 1rem;
 }
 
-.records-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.record-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+/* 스코어 보드 (체중 입력) */
+.score-board-section {
+  background: #000;
+  border: 2px solid #555;
   padding: 1rem;
-  background: #f9fafb;
-  border-radius: 0.875rem;
-}
-
-.record-date {
-  font-size: 0.9rem;
-  color: #6b7280;
-  flex: 1;
-}
-
-.record-weight {
-  font-size: 1rem;
-  font-weight: 600;
-  color: #111827;
-  flex: 1;
+  margin-bottom: 1.5rem;
   text-align: center;
 }
-
-.record-change {
-  font-size: 0.85rem;
-  font-weight: 600;
-  flex: 1;
-  text-align: right;
+.score-label {
+  font-size: 0.8rem;
+  color: #888;
+  margin-bottom: 0.5rem;
+}
+.score-display {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 5px;
 }
 
-.record-change.decrease {
-  color: #10b981;
-}
-
-.record-change.increase {
-  color: #ef4444;
-}
-
-/* 메모 섹션 */
-.memo-section {
-  padding: 1.5rem;
-  border-top: 8px solid #f9fafb;
-}
-
-.memo-label {
-  display: block;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: #374151;
-  margin-bottom: 0.75rem;
-}
-
-.memo-input {
-  width: 100%;
-  padding: 1rem;
-  border: 1px solid #e5e7eb;
-  border-radius: 0.875rem;
-  font-size: 0.9rem;
-  color: #111827;
-  resize: none;
-  font-family: inherit;
-  outline: none;
-  transition: border-color 0.2s;
-}
-
-.memo-input:focus {
-  border-color: #667eea;
-}
-
-.memo-input::placeholder {
-  color: #9ca3af;
-}
-
-/* 모바일 최적화 */
-@media (max-width: 390px) {
-  .weight-input {
-    font-size: 3.5rem;
-    width: 160px;
-  }
-
-  .weight-unit-large {
-    font-size: 1.75rem;
-  }
-
-  .quick-adjust {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-
-/* 스크롤바 스타일링 */
-.weight-modal::-webkit-scrollbar {
-  width: 6px;
-}
-
-.weight-modal::-webkit-scrollbar-track {
+.retro-input {
   background: transparent;
+  border: none;
+  color: #fff;
+  font-family: "NeoDunggeunmo", monospace;
+  font-size: 3rem;
+  width: 140px;
+  text-align: right;
+  outline: none;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+}
+.unit {
+  font-size: 1.5rem;
+  color: #d500f9;
 }
 
-.weight-modal::-webkit-scrollbar-thumb {
-  background: #d1d5db;
-  border-radius: 3px;
+/* 컨트롤 패드 */
+.control-pad {
+  margin-bottom: 1.5rem;
+}
+.pad-label {
+  font-size: 0.7rem;
+  color: #aaa;
+  margin-bottom: 5px;
+  text-align: center;
+}
+.pad-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 5px;
+  margin-bottom: 10px;
+}
+.pad-spacer {
+  flex: 1;
 }
 
-.weight-modal::-webkit-scrollbar-thumb:hover {
-  background: #9ca3af;
+.pad-btn {
+  border: 2px solid #fff;
+  color: #fff;
+  padding: 8px 10px;
+  font-family: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+  box-shadow: 2px 2px 0 #000;
+  transition: transform 0.1s;
+}
+.pad-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: none;
+}
+.pad-btn.red {
+  background: #ff0055;
+}
+.pad-btn.green {
+  background: #00e5ff;
+  color: #000;
+}
+
+.slider-wrapper {
+  padding: 0 5px;
+}
+.retro-slider {
+  width: 100%;
+  height: 10px;
+  -webkit-appearance: none;
+  background: #333;
+  border: 2px solid #fff;
+  outline: none;
+}
+.retro-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  background: #d500f9;
+  border: 2px solid #fff;
+  cursor: pointer;
+}
+
+/* 랭킹 리스트 */
+.ranking-section {
+  margin-bottom: 1.5rem;
+}
+.pixel-subtitle {
+  font-size: 0.9rem;
+  border-bottom: 2px solid #555;
+  margin-bottom: 0.5rem;
+  color: #ffd700;
+  display: block;
+}
+
+.ranking-list {
+  background: rgba(0, 0, 0, 0.3);
+  padding: 5px;
+  border: 1px solid #333;
+}
+.rank-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px;
+  font-size: 0.8rem;
+}
+.rank-row.header {
+  color: #888;
+  border-bottom: 1px dashed #555;
+  margin-bottom: 5px;
+}
+.rank-date {
+  color: #ccc;
+}
+.rank-score {
+  color: #fff;
+}
+.rank-diff.bonus {
+  color: #00e5ff;
+} /* 체중 감소는 보너스(파랑) */
+.rank-diff.penalty {
+  color: #ff0055;
+} /* 체중 증가는 패널티(빨강) */
+
+/* 치트키 (메모) */
+.retro-textarea {
+  width: 100%;
+  background: #111;
+  border: 2px solid #555;
+  color: #fff;
+  padding: 8px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  outline: none;
+  box-sizing: border-box;
+}
+.retro-textarea:focus {
+  border-color: #d500f9;
+}
+
+/* 저장 버튼 */
+.action-footer {
+  text-align: center;
+  margin-top: 1rem;
+}
+.retro-btn {
+  background: #d500f9;
+  color: #fff;
+  border: 2px solid #fff;
+  padding: 12px 30px;
+  font-size: 1.1rem;
+  font-family: inherit;
+  cursor: pointer;
+  box-shadow: 4px 4px 0 #000;
+}
+.retro-btn:active {
+  transform: translate(4px, 4px);
+  box-shadow: none;
 }
 </style>

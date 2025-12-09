@@ -1,636 +1,554 @@
 <template>
-  <div class="home-view">
-    <!-- 페이지 1: 오늘의 지표 -->
+  <div class="home-view retro-theme" @click="initAudioContext">
+    <div class="scanlines"></div>
+
     <section class="page daily-page">
       <div class="page-content">
-        <div class="date">
-          <div>{{ currentDate }}</div>
+        <div class="retro-header">
+          <span class="blinking-cursor">▶</span> PLAYER_DATE: {{ currentDate }}
         </div>
 
-        <!-- 칼로리 메인 표시 -->
-        <div class="calorie-main">
-          <div class="calorie-value">912</div>
-          <div class="calorie-goal">/ 1,298 kcal</div>
-        </div>
-
-        <!-- 영양소 비율 -->
-        <div class="nutrition-ratio">
-          <div class="ratio-item">
-            <span class="ratio-icon carb">탄</span>
-            <span class="ratio-value">60%</span>
+        <div class="pixel-box main-stat-box">
+          <div class="stat-header">
+            <span class="label">HP (ENERGY)</span>
+            <span class="val">912 / 1,298</span>
           </div>
-          <div class="ratio-item">
-            <span class="ratio-icon protein">단</span>
-            <span class="ratio-value">34%</span>
-          </div>
-          <div class="ratio-item">
-            <span class="ratio-icon fat">지</span>
-            <span class="ratio-value">18%</span>
+          <div class="retro-progress-container" @click="triggerLevelUp">
+            <div class="retro-progress-bar hp-bar" style="width: 70%"></div>
+            <div class="click-hint">CLICK BAR TO LEVEL UP!</div>
           </div>
         </div>
 
-        <!-- 캐릭터 GIF -->
-        <div class="character-container">
-          <img :src="characterImage" alt="건강 캐릭터" class="character-gif" />
-        </div>
-
-        <!-- 영양소 상세 -->
-        <div class="nutrition-detail">
-          <div class="nutrition-grid">
-            <div class="nutrition-card">
-              <div class="nutrition-label">탄수화물</div>
-              <div class="nutrition-value">
-                <span class="current">234</span>
-                <span class="total">/ 350g</span>
+        <div class="game-screen-container" @click="playRetroSound('jump')">
+          <div class="pixel-border">
+            <div class="screen-bg">
+              <div
+                class="level-badge"
+                :class="{ 'level-up-anim': isLevelingUp }"
+              >
+                {{ isLevelingUp ? "LEVEL UP!" : "Lv.24" }}
+              </div>
+              <img
+                :src="characterImage"
+                alt="Character"
+                class="character-gif pixelated"
+                :class="{ bounce: isBouncing }"
+              />
+              <div class="dialog-box">
+                <p class="typing-effect">{{ dialogText }}</p>
               </div>
             </div>
-            <div class="nutrition-card">
-              <div class="nutrition-label">단백질</div>
-              <div class="nutrition-value">
-                <span class="current">89</span>
-                <span class="total">/ 80g</span>
+          </div>
+        </div>
+
+        <div class="pixel-box stats-box">
+          <h3 class="box-title">PLAYER STATS</h3>
+          <div class="stat-row" v-for="(stat, idx) in stats" :key="idx">
+            <div class="stat-icon">{{ stat.label }}</div>
+            <div class="stat-bar-group">
+              <div class="retro-bar-bg">
+                <div
+                  class="retro-bar-fill"
+                  :class="stat.class"
+                  :style="{ width: stat.percent }"
+                ></div>
               </div>
-            </div>
-            <div class="nutrition-card">
-              <div class="nutrition-label">지방</div>
-              <div class="nutrition-value">
-                <span class="current">42</span>
-                <span class="total">/ 90g</span>
-              </div>
+              <span class="stat-val">{{ stat.val }}</span>
             </div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- 페이지 2: 식사 기록 -->
     <section class="page meal-page">
       <div class="page-content">
-        <div class="record-card" @click="openMealModal">
-          <div class="record-icon">🍽️</div>
-          <h2>오늘의 식사를 기록하세요</h2>
-          <p>아침, 점심, 저녁, 간식</p>
-          <button class="record-btn">기록하기</button>
-        </div>
-
-        <div class="recent-meals">
-          <h3>최근 식사</h3>
-          <div class="meal-item">
-            <span>🍚 점심 - 12:30</span>
-            <span class="calories">650kcal</span>
-          </div>
-          <div class="meal-item">
-            <span>🥐 아침 - 08:00</span>
-            <span class="calories">420kcal</span>
+        <div class="pixel-card interactive" @click="handleMealClick">
+          <div class="card-inner">
+            <div class="icon-8bit">🍗</div>
+            <h2>LOG ITEM</h2>
+            <p class="pixel-text">식사를 기록하고 경험치를 획득하세요.</p>
+            <button class="retro-btn press-start">INSERT COIN</button>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- 페이지 3: 물 기록 -->
     <section class="page water-page">
       <div class="page-content">
-        <div class="record-card" @click="openWaterModal">
-          <h1 class="page-title">물 마시기</h1>
-          <div class="record-icon">💧</div>
-          <div class="water-progress">
-            <div class="water-amount">1.5L</div>
-            <div class="water-goal">/ 2.0L</div>
+        <div
+          class="pixel-card interactive blue-theme"
+          @click="handleWaterClick"
+        >
+          <h1 class="page-title pixel-font">MANA POTION</h1>
+          <div class="potion-container">
+            <div class="potion-bottle">
+              <div class="potion-liquid" style="height: 75%">
+                <div class="bubbles">
+                  <span></span><span></span><span></span>
+                </div>
+              </div>
+            </div>
           </div>
-          <div class="progress-bar">
-            <div class="progress-fill" style="width: 75%"></div>
-          </div>
-          <button class="record-btn">물 마시기 기록</button>
+          <button class="retro-btn blue-btn">DRINK</button>
         </div>
       </div>
     </section>
 
-    <!-- 페이지 4: 체중 기록 -->
     <section class="page weight-page">
       <div class="page-content">
-        <div class="record-card weight-record-card" @click="openWeightModal">
-          <h1 class="page-title">체중 관리</h1>
-          <div class="record-icon">⚖️</div>
-          <div class="weight-display">
-            <span class="weight-value">70.0</span>
-            <span class="weight-unit">kg</span>
-          </div>
-          <div class="weight-change">
-            <span class="change-label">어제보다</span>
-            <span class="change-value positive">-0.3kg</span>
-          </div>
-          <button class="record-btn">체중 기록</button>
+        <div
+          class="pixel-card interactive purple-theme"
+          @click="handleWeightClick"
+        >
+          <h1 class="page-title pixel-font">HIGH SCORE</h1>
+          <div class="score-board"></div>
+          <button class="retro-btn purple-btn">UPDATE SCORE</button>
         </div>
       </div>
     </section>
 
-    <Footer />
+    <Footer></Footer>
 
-    <!-- 체중 기록 모달 -->
-    <WeightRecordModal v-if="showWeightModal" @close="closeWeightModal" />
-    <WaterRecordModal v-if="showWaterModal" @close="closeWaterModal" />
+    <div v-if="showModal" class="modal-overlay" @click="closeModal"></div>
     <MealRecordModal v-if="showMealModal" @close="closeMealModal" />
+    <WaterRecordModal v-if="showWaterModal" @close="closeWaterModal" />
+    <WeightRecordModal v-if="showWeightModal" @close="closeWeightModal" />
   </div>
 </template>
 
 <script setup>
 import { ref, computed } from "vue";
-import { useRouter } from "vue-router";
 import dayjs from "dayjs";
+import confetti from "canvas-confetti"; // npm install canvas-confetti 필요
 import characterImage from "../assets/images/characters/test.gif";
-import Footer from '../components/utils/Footer.vue';  
-import WeightRecordModal from "../components/record/WeightRecordModal.vue";
-import WaterRecordModal from "@/components/record/WaterRecordModal.vue";
-import MealRecordModal from "@/components/record/MealRecordModal.vue";
-const router = useRouter();
-const showWeightModal = ref(false);
-const showWaterModal = ref(false);
-const showMealModal = ref(false);
-const currentDate = computed(() => {
-  return dayjs().format("YYYY년 M월 D일");
-});
+import Footer from "../components/utils/Footer.vue";
 
-const openMealModal = () => {
+// ... import 부분
+import WaterRecordModal from "@/components/record/WaterRecordModal.vue"; // 경로 확인
+import WeightRecordModal from "@/components/record/WeightRecordModal.vue"; // 경로 확인 필요
+import MealRecordModal from "@/components/record/MealRecordModal.vue"; // 경로 확인 필요
+
+const showWaterModal = ref(false);
+const showWeightModal = ref(false);
+const showMealModal = ref(false);
+// === 상태 변수 ===
+const showModal = ref(false);
+const isLevelingUp = ref(false);
+const isBouncing = ref(false);
+const dialogText = ref('"오늘도 힘내보자구!"');
+const currentDate = computed(() => dayjs().format("YY.MM.DD"));
+
+const stats = [
+  { label: "⚡STR (탄)", class: "carb", percent: "60%", val: "234g" },
+  { label: "🛡️DEF (단)", class: "protein", percent: "34%", val: "89g" },
+  { label: "🔮INT (지)", class: "fat", percent: "18%", val: "42g" },
+];
+
+// === 🎵 8-bit 사운드 엔진 (Web Audio API) ===
+// 외부 파일 없이 브라우저 내장 신디사이저로 소리를 만듭니다.
+const audioCtx = ref(null);
+
+const initAudioContext = () => {
+  if (!audioCtx.value) {
+    audioCtx.value = new (window.AudioContext || window.webkitAudioContext)();
+  }
+};
+
+const playRetroSound = (type) => {
+  if (!audioCtx.value) initAudioContext();
+  const ctx = audioCtx.value;
+  const osc = ctx.createOscillator();
+  const gainNode = ctx.createGain();
+
+  osc.connect(gainNode);
+  gainNode.connect(ctx.destination);
+
+  const now = ctx.currentTime;
+
+  if (type === "coin") {
+    // 띠-링! (Coin Sound)
+    osc.type = "square";
+    osc.frequency.setValueAtTime(987.77, now); // B5
+    osc.frequency.setValueAtTime(1318.51, now + 0.1); // E6
+    gainNode.gain.setValueAtTime(0.1, now);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+    osc.start(now);
+    osc.stop(now + 0.3);
+  } else if (type === "jump") {
+    // 뿅! (Jump/Select)
+    osc.type = "square";
+    osc.frequency.setValueAtTime(150, now);
+    osc.frequency.linearRampToValueAtTime(600, now + 0.1);
+    gainNode.gain.setValueAtTime(0.1, now);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+    osc.start(now);
+    osc.stop(now + 0.1);
+  } else if (type === "potion") {
+    // 꼴깍 (Drinking)
+    osc.type = "triangle";
+    osc.frequency.setValueAtTime(600, now);
+    osc.frequency.linearRampToValueAtTime(300, now + 0.3);
+    gainNode.gain.setValueAtTime(0.1, now);
+    gainNode.gain.linearRampToValueAtTime(0.01, now + 0.3);
+    osc.start(now);
+    osc.stop(now + 0.3);
+  } else if (type === "levelup") {
+    // 따다단딴! (Fanfare)
+    osc.type = "square";
+    const melody = [523.25, 659.25, 783.99, 1046.5]; // C E G C
+    const duration = 0.1;
+
+    // 아르페지오 효과를 위해 여러 개의 오실레이터 생성 필요하지만
+    // 간단히 주파수 변경으로 구현
+    osc.frequency.setValueAtTime(523.25, now);
+    osc.frequency.setValueAtTime(659.25, now + 0.1);
+    osc.frequency.setValueAtTime(783.99, now + 0.2);
+    osc.frequency.setValueAtTime(1046.5, now + 0.3);
+
+    gainNode.gain.setValueAtTime(0.1, now);
+    gainNode.gain.setValueAtTime(0.1, now + 0.3);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
+
+    osc.start(now);
+    osc.stop(now + 0.6);
+  }
+};
+
+// === 🎉 폭죽 효과 (Confetti) ===
+const fireConfetti = () => {
+  // 중앙에서 터지는 효과
+  confetti({
+    particleCount: 100,
+    spread: 70,
+    origin: { y: 0.6 },
+    colors: ["#ff0055", "#00e5ff", "#ffcc00"], // 테마 컬러
+  });
+
+  // 양옆에서 쏘는 효과 (좀 더 화려하게)
+  setTimeout(() => {
+    confetti({
+      particleCount: 50,
+      angle: 60,
+      spread: 55,
+      origin: { x: 0 },
+      colors: ["#ff0055", "#00e5ff"],
+    });
+    confetti({
+      particleCount: 50,
+      angle: 120,
+      spread: 55,
+      origin: { x: 1 },
+      colors: ["#ff0055", "#00e5ff"],
+    });
+  }, 200);
+};
+
+// === 이벤트 핸들러 ===
+const handleMealClick = () => {
+  playRetroSound("coin");
+  // 모달 열기 로직...
   showMealModal.value = true;
 };
 
+const handleWaterClick = () => {
+  playRetroSound("potion");
+  // 물 추가 로직...
+  showWaterModal.value = true;
+};
+const handleWeightClick = () => {
+  playRetroSound("jump");
+  showWeightModal.value = true;
+};
+const closeWaterModal = () => {
+  showWaterModal.value = false;
+};
+const closeWeightModal = () => {
+  showWeightModal.value = false;
+};
 const closeMealModal = () => {
   showMealModal.value = false;
 };
 
-const openWaterModal = () => {
-  showWaterModal.value = true;
+const triggerLevelUp = () => {
+  if (isLevelingUp.value) return;
+
+  isLevelingUp.value = true;
+  dialogText.value = "LEVEL UP! 능력이 상승했다!";
+
+  playRetroSound("levelup");
+  fireConfetti();
+
+  // 캐릭터 점프 애니메이션
+  isBouncing.value = true;
+  setTimeout(() => (isBouncing.value = false), 1000);
+
+  setTimeout(() => {
+    isLevelingUp.value = false;
+    dialogText.value = '"다음 레벨로 가보자!"';
+  }, 3000);
 };
 
-const closeWaterModal = () => {
-  showWaterModal.value = false;
-};
-
-const openWeightModal = () => {
-  showWeightModal.value = true;
-};
-
-const closeWeightModal = () => {
-  showWeightModal.value = false;
-};
+const closeModal = () => (showModal.value = false);
 </script>
 
 <style scoped>
-.home-view {
+/* 폰트: 둥근모꼴 */
+@import url("https://cdn.jsdelivr.net/gh/neodgm/neodgm-webfont@latest/neodgm/style.css");
+
+.retro-theme {
+  --bg-color: #202028;
+  --text-color: #e0e0e0;
+  --primary-color: #ff0055;
+  --secondary-color: #00e5ff;
+  --accent-color: #ffcc00;
+  font-family: "NeoDunggeunmo", monospace;
+  background-color: var(--bg-color);
+  color: var(--text-color);
   height: 100vh;
-  height: 100dvh;
   overflow-y: scroll;
   scroll-snap-type: y mandatory;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior-y: contain;
-  scroll-behavior: smooth;
+}
+
+/* 스캔라인 효과 */
+.scanlines {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
+    linear-gradient(
+      90deg,
+      rgba(255, 0, 0, 0.06),
+      rgba(0, 255, 0, 0.02),
+      rgba(0, 0, 255, 0.06)
+    );
+  background-size: 100% 4px, 6px 100%;
+  pointer-events: none;
+  z-index: 999;
 }
 
 .page {
   height: 100vh;
-  height: 100dvh;
-  min-height: 100vh;
-  min-height: 100dvh;
   scroll-snap-align: start;
-  scroll-snap-stop: always;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: max(env(safe-area-inset-top), 1rem) 1rem
-    calc(env(safe-area-inset-bottom) + 100px) 1rem;
-  position: relative;
+  padding: 1rem;
 }
 
 .page-content {
   width: 100%;
-  max-width: 420px;
+  max-width: 400px;
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
 }
 
-.page-title {
-  font-size: 1.75rem;
-  font-weight: 500;
-  text-align: center;
-  margin: 0;
-  letter-spacing: -0.02em;
+/* === 공통 박스 스타일 === */
+.pixel-box,
+.pixel-card {
+  border: 4px solid #fff;
+  box-shadow: 4px 4px 0px 0px rgba(0, 0, 0, 0.5);
+  position: relative;
+  transition: transform 0.1s;
+  cursor: pointer;
 }
 
-.date {
+.pixel-box {
+  background: #2d2d3a;
+  padding: 1rem;
+}
+.pixel-card {
+  padding: 1.5rem;
   text-align: center;
-  color: rgba(255, 255, 255, 0.85);
-  margin-top: -1rem;
-  font-size: 0.9rem;
+  background: #e6dac3;
+  color: #3e2723;
+  border-color: #5d4037;
 }
 
-/* 페이지별 배경색 */
+.interactive:active {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.5);
+}
+
+/* === 페이지별 디테일 === */
 .daily-page {
-  background: rgba(16, 16, 16, 1);
-  color: white;
+  background: #222034;
 }
-
 .meal-page {
-  background: linear-gradient(135deg, #98d8c8 0%, #6fafaa 100%);
-  color: white;
+  background: #4b692f;
 }
-
 .water-page {
-  background: linear-gradient(135deg, #89cff0 0%, #5dade2 100%);
-  color: white;
+  background: #000022;
 }
-
 .weight-page {
-  background: linear-gradient(135deg, #b39cd0 0%, #8e7cc3 100%);
-  color: white;
+  background: #2a0a29;
 }
 
-/* 오늘의 지표 */
-.calorie-main {
-  display: flex;
-  justify-content: center;
+.retro-header {
   text-align: center;
-  margin: 1rem 0 0.5rem;
-}
-
-.calorie-value {
-  font-size: 4rem;
-  font-weight: 700;
-  color: white;
-  line-height: 1;
-  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-}
-
-.calorie-goal {
-  font-size: 1.1rem;
-  color: rgba(255, 255, 255, 0.9);
-  margin-top: 0.25rem;
-}
-
-/* 영양소 비율 */
-.nutrition-ratio {
-  display: flex;
-  justify-content: center;
-  gap: 1.5rem;
-  margin: 1.5rem 0;
-}
-
-.ratio-item {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.ratio-icon {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: white;
-}
-
-.ratio-icon.carb {
-  background: linear-gradient(135deg, #ff6b6b 0%, #ff8e53 100%);
-}
-
-.ratio-icon.protein {
-  background: linear-gradient(135deg, #4ecdc4 0%, #44a08d 100%);
-}
-
-.ratio-icon.fat {
-  background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
-}
-
-.ratio-value {
-  font-size: 1rem;
-  font-weight: 600;
-  color: white;
-}
-
-/* 캐릭터 */
-.character-container {
-  display: flex;
-  justify-content: center;
-  min-height: 200px;
-  align-items: center;
-}
-
-.character-gif {
-  width: 180px;
-  height: 180px;
-  object-fit: contain;
-  filter: drop-shadow(0 4px 15px rgba(0, 0, 0, 0.15));
-}
-
-/* 영양소 상세 */
-.nutrition-detail {
-  background: rgba(255, 255, 255, 0.15);
-  padding: 0.5rem;
-  border-radius: 1.5rem;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-}
-
-.nutrition-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0.75rem;
-}
-
-.nutrition-card {
-  background: rgba(255, 255, 255, 0.2);
-  padding: 0.875rem 0.5rem;
-  border-radius: 1rem;
-  text-align: center;
-}
-
-.nutrition-label {
-  font-size: 0.8rem;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--secondary-color);
   margin-bottom: 0.5rem;
-  font-weight: 500;
+}
+.blinking-cursor {
+  animation: blink 1s step-end infinite;
+}
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
 }
 
-.nutrition-value {
+/* 프로그레스 바 */
+.retro-progress-container {
+  height: 24px;
+  background: #333;
+  border: 2px solid #fff;
+  padding: 2px;
+  position: relative;
+}
+.retro-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #ff0055, #ff5500);
+  transition: width 0.5s steps(10);
+}
+.click-hint {
+  position: absolute;
+  top: -20px;
+  right: 0;
+  font-size: 0.7rem;
+  color: var(--accent-color);
+  animation: blink 0.5s infinite alternate;
+}
+
+/* 캐릭터 애니메이션 */
+.game-screen-container .pixel-border {
+  border: 8px solid #444;
+  background: #8fb8ca;
+  padding: 4px;
+  border-radius: 8px;
+}
+.screen-bg {
+  background: url("https://i.pinimg.com/originals/10/78/3f/10783f947938361b02390a382c44843b.png")
+    repeat-x bottom;
+  background-size: contain;
+  width: 280px;
+  height: 200px;
   display: flex;
   flex-direction: column;
-  gap: 0.1rem;
+  align-items: center;
+  justify-content: flex-end;
+}
+.character-gif {
+  width: 100px;
+  image-rendering: pixelated;
+  margin-bottom: 10px;
+}
+.bounce {
+  animation: bounce 0.5s infinite alternate;
+}
+@keyframes bounce {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-20px);
+  }
 }
 
-.nutrition-value .current {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: white;
-  line-height: 1;
+.level-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: rgba(0, 0, 0, 0.7);
+  color: #fff;
+  padding: 4px 8px;
+  border: 2px solid #fff;
+}
+.level-up-anim {
+  color: var(--accent-color);
+  border-color: var(--accent-color);
+  animation: blink 0.2s infinite;
 }
 
-.nutrition-value .total {
-  font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.8);
-}
-
-/* 기록 카드 */
-.record-card {
-  background: rgba(255, 255, 255, 0.2);
-  padding: 2rem 1.5rem;
-  border-radius: 1.75rem;
+.dialog-box {
+  width: 90%;
+  background: rgba(0, 40, 150, 0.9);
+  border: 2px solid #fff;
+  padding: 8px;
+  margin-bottom: 10px;
   text-align: center;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
-  cursor: pointer;
-  transition: transform 0.15s ease-out;
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
-  user-select: none;
+  font-size: 0.8rem;
 }
 
-.record-card:active {
-  transform: scale(0.97);
-}
-
-.record-icon {
-  font-size: 3.5rem;
-  margin-bottom: 1rem;
-}
-
-.record-card h2 {
-  color: white;
-  font-size: 1.2rem;
-  margin-bottom: 0.5rem;
-  font-weight: 600;
-}
-
-.record-card p {
-  color: rgba(255, 255, 255, 0.85);
-  margin-bottom: 1.5rem;
-  font-size: 0.9rem;
-}
-
-.record-btn {
-  width: 80%;
-  padding: 1rem 2rem;
-  font-size: 1rem;
-  font-weight: 600;
-  color: white;
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(5px);
-  -webkit-backdrop-filter: blur(5px);
-  border: 1.5px solid rgba(255, 255, 255, 0.6);
-  border-radius: 3rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.record-btn:hover {
-  background: white;
-  color: #667eea;
-  transform: translateY(-3px);
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-}
-
-.record-btn:active {
-  transform: scale(0.95);
-  background: rgba(255, 255, 255, 0.3);
-  border-color: rgba(255, 255, 255, 1);
-}
-
-/* 최근 식사 */
-.recent-meals {
-  background: rgba(255, 255, 255, 0.2);
-  padding: 1.25rem;
-  border-radius: 1.25rem;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-}
-
-.recent-meals h3 {
-  margin-bottom: 1rem;
-  font-size: 1rem;
-  font-weight: 600;
-}
-
-.meal-item {
+/* 스탯 */
+.stat-row {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 0.875rem 1rem;
-  background: rgba(255, 255, 255, 0.3);
-  border-radius: 0.875rem;
+  gap: 10px;
   margin-bottom: 0.5rem;
-  font-size: 0.9rem;
-  -webkit-tap-highlight-color: transparent;
 }
-
-.meal-item:last-child {
-  margin-bottom: 0;
+.stat-icon {
+  width: 80px;
+  font-size: 0.8rem;
 }
-
-.calories {
-  font-weight: 600;
-}
-
-/* 물 섭취 */
-.water-progress {
+.stat-bar-group {
+  flex: 1;
   display: flex;
-  align-items: baseline;
-  justify-content: center;
-  gap: 0.5rem;
-  margin: 1rem 0;
+  align-items: center;
+  gap: 10px;
 }
-
-.water-amount {
-  font-size: 3rem;
-  font-weight: bold;
-  color: white;
-}
-
-.water-goal {
-  font-size: 1.5rem;
-  color: rgba(255, 255, 255, 0.85);
-}
-
-.progress-bar {
-  width: 100%;
+.retro-bar-bg {
+  flex: 1;
   height: 12px;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 1rem;
-  overflow: hidden;
-  margin: 1.5rem 0;
+  background: #111;
+  border: 1px solid #555;
 }
-
-.progress-fill {
+.retro-bar-fill {
   height: 100%;
-  background: linear-gradient(90deg, #3b82f6 0%, #60a5fa 100%);
-  transition: width 0.3s;
+}
+.retro-bar-fill.carb {
+  background: #ffd700;
+}
+.retro-bar-fill.protein {
+  background: #ff0055;
+}
+.retro-bar-fill.fat {
+  background: #00e5ff;
 }
 
-/* 체중 */
-.weight-record-card {
-  padding: 1.5rem 1.25rem;
+/* 버튼 및 기타 */
+.retro-btn {
+  margin-top: 1rem;
+  background: #ff0055;
+  color: #fff;
+  border: 2px solid #fff;
+  padding: 10px 20px;
+  font-family: inherit;
+  cursor: pointer;
+  box-shadow: 4px 4px 0 #000;
+}
+.blue-theme {
+  border-color: #00e5ff;
+  color: #00e5ff;
+  background: #000;
+}
+.blue-btn {
+  background: #00e5ff;
+  color: #000;
+}
+.purple-theme {
+  border-color: #d500f9;
+  color: #d500f9;
+  background: #000;
+}
+.purple-btn {
+  background: #d500f9;
+  color: #fff;
 }
 
-.weight-display {
-  display: flex;
-  align-items: baseline;
-  justify-content: center;
-  gap: 0.5rem;
-  margin: 0.75rem 0;
-}
-
-.weight-value {
-  font-size: 3rem;
-  font-weight: bold;
-  color: white;
-}
-
-.weight-unit {
-  font-size: 1.25rem;
-  color: rgba(255, 255, 255, 0.85);
-}
-
-.weight-change {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-  font-size: 0.9rem;
-}
-
-.change-label {
-  color: rgba(255, 255, 255, 0.85);
-}
-
-.change-value {
-  font-weight: 600;
-  font-size: 1rem;
-}
-
-.change-value.positive {
-  color: #10b981;
-}
-
-.change-value.negative {
-  color: #ef4444;
-}
-
-/* 스크롤바 숨기기 */
-.home-view::-webkit-scrollbar {
-  display: none;
-}
-
-.home-view {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
-/* 모바일 환경 최적화 */
-@media (max-width: 390px) {
-  .page-content {
-    gap: 1rem;
-  }
-
-  .calorie-value {
-    font-size: 3.5rem;
-  }
-
-  .calorie-goal {
-    font-size: 1rem;
-  }
-
-  .nutrition-ratio {
-    gap: 1rem;
-  }
-
-  .ratio-icon {
-    width: 28px;
-    height: 28px;
-    font-size: 0.75rem;
-  }
-
-  .ratio-value {
-    font-size: 0.9rem;
-  }
-
-  .character-gif {
-    width: 150px;
-    height: 150px;
-  }
-
-  .character-container {
-    min-height: 170px;
-  }
-
-  .nutrition-detail {
-    padding: 0.5rem;
-  }
-
-  .nutrition-value .current {
-    font-size: 1.3rem;
-  }
-
-  .record-icon {
-    font-size: 3rem;
-  }
-
-  .record-card h2 {
-    font-size: 1.1rem;
-  }
-
-  .weight-value {
-    font-size: 2.5rem;
-  }
-}
-
-/* 아이폰 노치 대응 */
-@supports (padding: max(0px)) {
-  .page {
-    padding-top: max(env(safe-area-inset-top), 1rem);
-    padding-bottom: calc(env(safe-area-inset-bottom) + 100px);
-  }
+.pixelated {
+  image-rendering: pixelated;
 }
 </style>

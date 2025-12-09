@@ -1,48 +1,263 @@
+<template>
+  <div class="calendar-view retro-theme">
+    <div class="scanlines"></div>
+
+    <header class="header">
+      <div class="retro-box month-control">
+        <button @click="changeMonth(-1)" class="pixel-arrow">◀</button>
+
+        <div class="month-display" @click.stop="openYearMonthModal">
+          <span class="label">DATE:</span>
+          <span class="value"
+            >{{ currentYear }}.{{
+              String(currentMonth + 1).padStart(2, "0")
+            }}</span
+          >
+          <span class="blink-cursor">_</span>
+        </div>
+
+        <button @click="changeMonth(1)" class="pixel-arrow">▶</button>
+      </div>
+    </header>
+
+    <div class="content">
+      <div class="legend-box">
+        <div class="pixel-label-sm">STATUS LEGEND</div>
+        <div class="tracking-states">
+          <div
+            v-for="state in trackingStates"
+            :key="state.key"
+            class="state-chip"
+            :class="state.key"
+          >
+            <span class="chip-icon">{{ state.emoji }}</span>
+            <span class="chip-text">{{ state.label }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="calendar-frame">
+        <div class="frame-decor tl"></div>
+        <div class="frame-decor tr"></div>
+        <div class="frame-decor bl"></div>
+        <div class="frame-decor br"></div>
+
+        <div class="days-of-week">
+          <span
+            v-for="day in daysOfWeek"
+            :key="day"
+            class="weekday-header"
+            :class="{ weekend: day === '일' || day === '토' }"
+          >
+            {{ day }}
+          </span>
+        </div>
+
+        <div class="date-grid">
+          <div
+            v-for="(day, index) in calendarDays"
+            :key="index"
+            class="date-cell-wrapper"
+          >
+            <button
+              v-if="day.isCurrentMonth"
+              :class="[
+                'date-tile',
+                {
+                  'is-today': day.isToday,
+                  'is-selected': day.isSelected,
+                  'has-record': day.records.length > 0,
+                  'long-pressing':
+                    isLongPress && pressingDateKey === day.dateKey,
+                },
+              ]"
+              @mousedown.prevent="startPress(day)"
+              @mouseup.prevent="endPress(day)"
+              @mouseleave.prevent="cancelPress"
+              @touchstart.prevent="startPress(day)"
+              @touchend.prevent="endPress(day)"
+              @touchcancel.prevent="cancelPress"
+            >
+              <span class="tile-number">{{ day.day }}</span>
+
+              <div v-if="day.records.length > 0" class="tile-loot">
+                <img
+                  v-if="getRecordIconUrl(day.records)"
+                  :src="getRecordIconUrl(day.records)"
+                  class="loot-icon pixelated"
+                />
+                <span v-else class="loot-emoji">
+                  {{ getRecordEmoji(day.records) }}
+                </span>
+              </div>
+
+              <div v-if="day.isToday" class="player-cursor">P1</div>
+            </button>
+
+            <div v-else class="empty-tile"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <Footer />
+  </div>
+
+  <Teleport to="body">
+    <div
+      v-if="isColorModalOpen"
+      class="modal-overlay"
+      @click.self="closeColorModal"
+    >
+      <div class="retro-modal color-select-modal">
+        <h2 class="modal-title">EVENT TRIGGERED!</h2>
+        <div class="modal-subtitle">
+          Day: {{ modalTargetDay?.day }} - Choose Action
+        </div>
+
+        <div class="action-list">
+          <button
+            v-for="state in trackingStates"
+            :key="state.key"
+            class="action-btn"
+            :class="{ active: modalTargetDay?.records?.includes(state.key) }"
+            @click="selectColorForRecord(state.key)"
+          >
+            <span class="action-icon">{{ state.emoji }}</span>
+            <span class="action-label">{{ state.label }}</span>
+            <span
+              class="action-check"
+              v-if="modalTargetDay?.records?.includes(state.key)"
+              >[EQUIPPED]</span
+            >
+          </button>
+        </div>
+        <button @click="closeColorModal" class="retro-btn close-btn">
+          CLOSE
+        </button>
+      </div>
+    </div>
+  </Teleport>
+
+  <Teleport to="body">
+    <div
+      v-if="isYearMonthModalOpen"
+      class="modal-overlay"
+      @click.self="closeYearMonthModal"
+    >
+      <div class="retro-modal time-modal">
+        <h2 class="modal-title">TIME WARP</h2>
+
+        <div class="control-group">
+          <label>YEAR</label>
+          <div class="stepper">
+            <button @click="tempSelectedYear--" class="step-btn">-</button>
+            <span class="step-val">{{ tempSelectedYear }}</span>
+            <button @click="tempSelectedYear++" class="step-btn">+</button>
+          </div>
+        </div>
+
+        <div class="control-group">
+          <label>MONTH</label>
+          <div class="month-grid">
+            <button
+              v-for="month in availableMonths"
+              :key="month"
+              :class="['month-chip', { active: tempSelectedMonth === month }]"
+              @click="tempSelectedMonth = month"
+            >
+              {{ month + 1 }}
+            </button>
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button @click="closeYearMonthModal" class="retro-btn cancel">
+            CANCEL
+          </button>
+          <button @click="applyYearMonth" class="retro-btn confirm">
+            WARP
+          </button>
+        </div>
+      </div>
+    </div>
+  </Teleport>
+</template>
+
 <script setup>
 import { ref, computed, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
-import Footer from '../components/utils/Footer.vue';  
+import Footer from "../components/utils/Footer.vue";
+
 const router = useRouter();
 const route = useRoute();
 
+// === 🔊 Sound FX (간단 버전) ===
+const playSound = (type) => {
+  const AudioContext = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContext) return;
+  const ctx = new AudioContext();
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  const now = ctx.currentTime;
+
+  if (type === "select") {
+    osc.type = "square";
+    osc.frequency.setValueAtTime(440, now);
+    gain.gain.setValueAtTime(0.05, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+    osc.start(now);
+    osc.stop(now + 0.1);
+  } else if (type === "warp") {
+    osc.type = "sawtooth";
+    osc.frequency.setValueAtTime(200, now);
+    osc.frequency.linearRampToValueAtTime(800, now + 0.2);
+    gain.gain.setValueAtTime(0.05, now);
+    gain.gain.linearRampToValueAtTime(0, now + 0.2);
+    osc.start(now);
+    osc.stop(now + 0.2);
+  }
+};
+
 // ----------------------------------------------------
-// 1. 상태 관리 및 Long Press 로직
+// 1. 상태 관리
 // ----------------------------------------------------
 const currentDate = ref(new Date());
 const selectedDate = ref(new Date().toDateString());
-
-// Long Press 관련 상태
 const pressTimer = ref(null);
 const isLongPress = ref(false);
+const pressingDateKey = ref(null); // 롱프레스 중인 날짜 시각효과용
 
-// 모달 관련 상태
 const isColorModalOpen = ref(false);
 const modalTargetDay = ref(null);
-
-// 💡 년/월 선택 모달 상태
 const isYearMonthModalOpen = ref(false);
 const tempSelectedYear = ref(currentDate.value.getFullYear());
-const tempSelectedMonth = ref(currentDate.value.getMonth()); // 0부터 시작 (0: 1월)
+const tempSelectedMonth = ref(currentDate.value.getMonth());
 
-// 트래킹 상태 정의
+// RPG 테마에 맞춘 트래킹 상태 (이모지 추가)
 const trackingStates = ref([
   {
     key: "ate",
-    label: "식사",
+    label: "HP 회복 (식사)",
     color: "#4CAF50",
+    emoji: "🍖", // RPG 고기
     icon: new URL("/src/assets/images/stickers/jinji.png", import.meta.url)
       .href,
   },
   {
     key: "burned",
-    label: "운동",
+    label: "EXP 획득 (운동)",
     color: "#F5C857",
+    emoji: "⚔️", // 전투/운동
     icon: new URL("/src/assets/images/stickers/sad.png", import.meta.url).href,
   },
   {
     key: "weight",
-    label: "몸무게",
+    label: "RANK 갱신 (체중)",
     color: "#FF3838",
+    emoji: "🏆", // 랭킹
     icon: new URL("/src/assets/images/stickers/smile.png", import.meta.url)
       .href,
   },
@@ -57,48 +272,38 @@ const dailyRecords = ref({
 });
 
 // ----------------------------------------------------
-// 2. 날짜 로직 및 Computed 속성
+// 2. Computed
 // ----------------------------------------------------
-
-// 💡 선택 가능한 년도와 월 목록
 const availableYears = computed(() => {
   const currentYear = new Date().getFullYear();
   return Array.from({ length: 11 }, (_, i) => currentYear - 5 + i);
 });
 
-const availableMonths = computed(() => {
-  return Array.from({ length: 12 }, (_, i) => i);
-});
+const availableMonths = computed(() => Array.from({ length: 12 }, (_, i) => i));
 
-const displayMonth = computed(() => {
-  return currentDate.value.toLocaleDateString("ko-KR", {
-    year: "numeric",
-    month: "long",
-  });
-});
+const currentYear = computed(() => currentDate.value.getFullYear());
+const currentMonth = computed(() => currentDate.value.getMonth());
 
-const daysOfWeek = ["일", "월", "화", "수", "목", "금", "토"];
+const daysOfWeek = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
 
 const calendarDays = computed(() => {
   const year = currentDate.value.getFullYear();
   const month = currentDate.value.getMonth();
-
   const firstDay = new Date(year, month, 1).getDay();
   const lastDate = new Date(year, month + 1, 0).getDate();
-
   const days = [];
 
-  // 1. 이전 달의 빈 칸 채우기
   for (let i = 0; i < firstDay; i++) {
     days.push({ day: "", isCurrentMonth: false, dateKey: null });
   }
 
-  // 2. 이번 달 날짜 채우기
   for (let i = 1; i <= lastDate; i++) {
     const fullDate = new Date(year, month, i);
-    const dateKey = `${year}-${String(month + 1).padStart(2, "0")}-${String(
-      i
-    ).padStart(2, "0")}`;
+    // 로컬 시간 기준 날짜 문자열 생성 (YYYY-MM-DD)
+    const yearStr = fullDate.getFullYear();
+    const monthStr = String(fullDate.getMonth() + 1).padStart(2, "0");
+    const dayStr = String(fullDate.getDate()).padStart(2, "0");
+    const dateKey = `${yearStr}-${monthStr}-${dayStr}`;
 
     days.push({
       day: i,
@@ -110,42 +315,33 @@ const calendarDays = computed(() => {
     });
   }
 
-  // 3. 다음 달의 빈 칸 채우기
   const totalCells = 42;
   const remainingCells = totalCells - days.length;
   for (let i = 0; i < remainingCells; i++) {
     days.push({ day: "", isCurrentMonth: false, dateKey: null });
   }
-
   return days;
 });
 
 // ----------------------------------------------------
-// 3. 이벤트 핸들러 및 액션 함수
+// 3. Methods
 // ----------------------------------------------------
-
 const changeMonth = (delta) => {
+  playSound("select");
   const newDate = new Date(currentDate.value);
   newDate.setMonth(newDate.getMonth() + delta);
   currentDate.value = newDate;
 };
 
-const selectToday = () => {
-  const today = new Date();
-  currentDate.value = today;
-  selectedDate.value = today.toDateString();
-  selectDayAndNavigate({ dateKey: today.toISOString().slice(0, 10) });
-};
-
 const startPress = (day) => {
   if (!day.dateKey) return;
-
   if (pressTimer.value) clearTimeout(pressTimer.value);
-
   isLongPress.value = false;
+  pressingDateKey.value = day.dateKey;
 
   pressTimer.value = setTimeout(() => {
     isLongPress.value = true;
+    playSound("warp"); // 롱프레스 성공음
     openColorModal(day);
   }, 500);
 };
@@ -153,8 +349,10 @@ const startPress = (day) => {
 const endPress = (day) => {
   clearTimeout(pressTimer.value);
   pressTimer.value = null;
+  pressingDateKey.value = null;
 
   if (!isLongPress.value) {
+    playSound("select");
     selectDayAndNavigate(day);
   }
   isLongPress.value = false;
@@ -164,18 +362,13 @@ const cancelPress = () => {
   if (pressTimer.value) clearTimeout(pressTimer.value);
   pressTimer.value = null;
   isLongPress.value = false;
+  pressingDateKey.value = null;
 };
 
 const selectDayAndNavigate = (day) => {
   if (day.dateKey) {
-    const selectedDateKey = day.dateKey;
-
-    selectedDate.value = new Date(selectedDateKey).toDateString();
-
-    router.push({
-      path: "/",
-      query: { date: selectedDateKey },
-    });
+    selectedDate.value = new Date(day.dateKey).toDateString();
+    router.push({ path: "/", query: { date: day.dateKey } });
   }
 };
 
@@ -183,745 +376,544 @@ const openColorModal = (day) => {
   modalTargetDay.value = day;
   isColorModalOpen.value = true;
 };
-
 const closeColorModal = () => {
   isColorModalOpen.value = false;
   modalTargetDay.value = null;
 };
 
 const selectColorForRecord = (recordKey) => {
+  playSound("select");
   if (modalTargetDay.value && modalTargetDay.value.dateKey) {
     const dateKey = modalTargetDay.value.dateKey;
-
     const currentRecords = dailyRecords.value[dateKey] || [];
-    const isCurrentlySelected = currentRecords.includes(recordKey);
 
-    if (isCurrentlySelected) {
-      // 이미 선택된 상태를 다시 클릭하면 해제 (토글 방식)
+    // 토글 로직
+    if (currentRecords.includes(recordKey)) {
       dailyRecords.value[dateKey] = [];
     } else {
-      // 새로운 상태를 클릭하면 이전 상태 해제 후 새로운 상태 기록 (단일 선택 방식)
       dailyRecords.value[dateKey] = [recordKey];
     }
 
-    dailyRecords.value = { ...dailyRecords.value };
-
     closeColorModal();
-    selectDayAndNavigate(modalTargetDay.value);
+    // 강제 반응성 트리거 (Vue3 ref 객체 교체)
+    dailyRecords.value = { ...dailyRecords.value };
   }
 };
 
 const getRecordIconUrl = (records) => {
   if (records && records.length > 0) {
-    const recordKey = records[0];
-    const state = trackingStates.value.find((s) => s.key === recordKey);
+    const state = trackingStates.value.find((s) => s.key === records[0]);
+    // 이미지 파일이 실제 존재하는지 확인하기 어려우므로,
+    // 예제에서는 일단 icon 속성을 반환. 없으면 이모지 사용.
     return state ? state.icon : "";
   }
   return "";
 };
 
-// 💡 추가된 년/월 모달 함수
+const getRecordEmoji = (records) => {
+  if (records && records.length > 0) {
+    const state = trackingStates.value.find((s) => s.key === records[0]);
+    return state ? state.emoji : "🚩";
+  }
+  return "";
+};
+
+// 년/월 모달
 const openYearMonthModal = () => {
+  playSound("select");
   tempSelectedYear.value = currentDate.value.getFullYear();
   tempSelectedMonth.value = currentDate.value.getMonth();
   isYearMonthModalOpen.value = true;
 };
-
 const closeYearMonthModal = () => {
   isYearMonthModalOpen.value = false;
 };
 
 const applyYearMonth = () => {
+  playSound("warp");
   const currentDayOfMonth = currentDate.value.getDate();
+  // 말일 처리
   let newDate = new Date(
     tempSelectedYear.value,
     tempSelectedMonth.value,
     currentDayOfMonth
   );
-
   if (newDate.getMonth() !== tempSelectedMonth.value) {
     newDate = new Date(tempSelectedYear.value, tempSelectedMonth.value + 1, 0);
   }
-
   currentDate.value = newDate;
   closeYearMonthModal();
 };
 
-// ----------------------------------------------------
-// 4. 오류 방지 watch
-// ----------------------------------------------------
 watch(
   () => router.currentRoute.value.path,
   () => {
-    if (isColorModalOpen.value) {
-      closeColorModal();
-    }
+    if (isColorModalOpen.value) closeColorModal();
   }
 );
 </script>
 
-<template>
-  <div class="calendar-view">
-    <header class="header">
-      <div class="month-header">
-        <button @click="changeMonth(-1)" class="month-btn">◀</button>
-
-        <h1 class="month-display" @click.stop="openYearMonthModal">
-          {{ displayMonth }}
-          <span class="dropdown-icon">▼</span>
-        </h1>
-
-        <button @click="changeMonth(1)" class="month-btn">▶</button>
-      </div>
-    </header>
-
-    <div class="content">
-      <div class="tracking-states">
-        <div
-          v-for="state in trackingStates"
-          :key="state.key"
-          class="state-chip"
-          :style="{ backgroundColor: state.color }"
-        >
-          <img
-            v-if="state.icon"
-            :src="state.icon"
-            :alt="state.label"
-            class="state-chip-icon"
-          />
-          {{ state.label }}
-        </div>
-      </div>
-
-      <div class="calendar-card">
-        <div class="days-of-week">
-          <span v-for="day in daysOfWeek" :key="day" class="weekday-header">{{
-            day
-          }}</span>
-        </div>
-
-        <div class="date-grid">
-          <div
-            v-for="(day, index) in calendarDays"
-            :key="index"
-            class="date-cell-wrapper"
-          >
-            <button
-              v-if="day.isCurrentMonth"
-              :class="[
-                'date-cell',
-                {
-                  'is-today': day.isToday,
-                  'is-selected': day.isSelected,
-                  'has-icon': day.records.length > 0,
-                },
-              ]"
-              @mousedown.prevent="startPress(day)"
-              @mouseup.prevent="endPress(day)"
-              @mouseleave.prevent="cancelPress"
-              @touchstart.prevent="startPress(day)"
-              @touchend.prevent="endPress(day)"
-              @touchcancel.prevent="cancelPress"
-              :aria-label="`${displayMonth} ${day.day}일`"
-            >
-              <img
-                v-if="day.records.length > 0"
-                :src="getRecordIconUrl(day.records)"
-                :alt="`기록 아이콘`"
-                class="date-content date-icon-overlay"
-              />
-              <span v-else class="date-content date-number">
-                {{ day.day }}
-              </span>
-            </button>
-            <span v-else class="empty-cell"></span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <Footer></Footer>
-  </div>
-
-  <Teleport to="body">
-    <div
-      v-if="isColorModalOpen"
-      class="modal-overlay"
-      @click.self="closeColorModal"
-    >
-      <div class="color-modal">
-        <h2>{{ modalTargetDay?.day }}일 기록 선택</h2>
-        <p class="modal-info">
-          선택 시, 이전 상태는 해제되고 새로운 상태가 기록됩니다.
-        </p>
-
-        <div class="color-options">
-          <button
-            v-for="state in trackingStates"
-            :key="state.key"
-            :style="{ '--color-code': state.color }"
-            :class="[
-              'color-option-btn',
-              {
-                'is-active': modalTargetDay?.records?.includes(state.key),
-              },
-            ]"
-            @click="selectColorForRecord(state.key)"
-          >
-            <img
-              v-if="state.icon"
-              :src="state.icon"
-              :alt="state.label"
-              class="color-option-icon"
-            />
-            {{ state.label }}
-          </button>
-        </div>
-        <button @click="closeColorModal" class="close-btn">닫기</button>
-      </div>
-    </div>
-  </Teleport>
-
-  <Teleport to="body">
-    <div
-      v-if="isYearMonthModalOpen"
-      class="modal-overlay"
-      @click.self="closeYearMonthModal"
-    >
-      <div class="year-month-modal">
-        <h2>날짜 선택</h2>
-
-        <div class="select-group">
-          <label for="year-select">년도</label>
-          <select
-            id="year-select"
-            v-model.number="tempSelectedYear"
-            class="date-select"
-          >
-            <option v-for="year in availableYears" :key="year" :value="year">
-              {{ year }}년
-            </option>
-          </select>
-        </div>
-
-        <div class="select-group">
-          <label for="month-select">월</label>
-          <select
-            id="month-select"
-            v-model.number="tempSelectedMonth"
-            class="date-select"
-          >
-            <option
-              v-for="month in availableMonths"
-              :key="month"
-              :value="month"
-            >
-              {{ month + 1 }}월
-            </option>
-          </select>
-        </div>
-
-        <div class="modal-actions">
-          <button @click="closeYearMonthModal" class="cancel-btn">취소</button>
-          <button @click="applyYearMonth" class="apply-btn">적용</button>
-        </div>
-      </div>
-    </div>
-  </Teleport>
-</template>
-
 <style scoped>
-/* --- 기본 변수 정의 --- */
-:root {
-  --color-primary: #98d8c8;
-  --color-primary-dark: #6fafaa;
-  --color-accent: #ff6b9d;
-  --color-accent-light: #ffb6d3;
-  --color-warning: #ffa726;
-  --color-success: #66bb6a;
-  --color-text-default: #2c3e50;
-  --color-text-secondary: #7f8c8d;
-  --color-text-muted: #95a5a6;
-  --color-red: #e74c3c;
-}
+/* 폰트: 둥근모꼴 */
+@import url("https://cdn.jsdelivr.net/gh/neodgm/neodgm-webfont@latest/neodgm/style.css");
 
-/* --- 캘린더 전체 레이아웃 --- */
-.calendar-view {
+.calendar-view.retro-theme {
   min-height: 100vh;
   padding-bottom: 80px;
-  /* 💡 수정: 전체 뷰에 그라데이션 적용 */
-  /* background: linear-gradient(135deg, #98d8c8 0%, #6fafaa 100%); */
-  background: rgba(16, 16, 16, 1);
-  color: white;
+  background-color: #202028;
+  font-family: "NeoDunggeunmo", monospace;
+  color: #e0e0e0;
+  overflow-x: hidden;
 }
 
-.header {
-  /* 💡 수정: 배경색과 그림자 제거하여 투명하게 만듦 */
-  /* background: linear-gradient(135deg, #98d8c8 0%, #6fafaa 100%); (제거) */
-  /* box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12); (제거) */
-  color: white;
-  padding: 2rem 1.5rem 1rem;
-}
-
-.month-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 1rem;
-}
-
-.month-display {
-  font-size: 1.5rem;
-  font-weight: bold;
-  margin: 0;
-  flex-grow: 1;
-  text-align: center;
-  color: white;
-  cursor: pointer;
-}
-
-.dropdown-icon {
-  margin-left: 5px;
-  opacity: 0.9;
-  transition: opacity 0.2s;
-  display: none;
-}
-
-.month-btn {
-  background: rgba(255, 255, 255, 0.25);
-  border: none;
-  color: white;
-  font-size: 1.2rem;
-  cursor: pointer;
-  padding: 8px 12px;
-  border-radius: 8px;
-  transition: all 0.2s;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.month-btn:hover {
-  background: rgba(255, 255, 255, 0.35);
-}
-
-.month-btn:active {
-  transform: scale(0.95);
-}
-
-/* --- 트래킹 상태 칩 스타일 --- */
-.content {
-  padding: 0 1.5rem;
-}
-
-.tracking-states {
-  display: flex;
-  gap: 0.5rem;
-  overflow-x: auto;
-  white-space: nowrap;
-  padding: 1.5rem 0;
-  margin-bottom: 0;
-}
-
-.state-chip {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 0.6rem 1.2rem;
-  border-radius: 20px;
-  color: white;
-  font-size: 0.85rem;
-  font-weight: 600;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
-  transition: transform 0.2s, box-shadow 0.2s;
-  flex-shrink: 0;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.state-chip:active {
-  transform: translateY(1px);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
-}
-
-.state-chip-icon {
-  width: 18px;
-  height: 18px;
-}
-
-/* --- 캘린더 카드 (글래스모피즘) --- */
-.calendar-card {
-  background: rgba(255, 255, 255, 0.2);
-  padding: 1.5rem 1.5rem 2rem 1.5rem;
-  border-radius: 1.75rem;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
-  margin-bottom: 1.5rem;
-  overflow: hidden;
-}
-
-/* --- 요일 헤더 --- */
-.days-of-week {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  text-align: center;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.9);
-  padding-bottom: 1rem;
-  border-bottom: 2px solid rgba(255, 255, 255, 0.2);
-  font-size: 0.9rem;
-}
-
-.weekday-header:first-child {
-  color: #ffb6d3;
-}
-
-.weekday-header:last-child {
-  color: #ffb6d3;
-}
-
-/* --- 날짜 그리드 --- */
-.date-grid {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  text-align: center;
-  gap: 4px 0;
-  padding: 1rem 0;
-}
-
-.date-cell-wrapper {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 2px 0;
-}
-
-.date-cell {
-  width: 100%;
-  max-width: 44px;
-  aspect-ratio: 1 / 1;
-
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background: rgba(255, 255, 255, 0.15);
-  border: 2px solid transparent;
-  font-size: 1rem;
-  font-weight: 500;
-  cursor: pointer;
-  position: relative;
-  padding: 0;
-  color: white;
-  border-radius: 12px;
-  transition: all 0.2s ease;
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
-  user-select: none;
-}
-
-.date-cell:hover {
-  background-color: rgba(255, 255, 255, 0.25);
-  transform: scale(1.08);
-  border-color: rgba(255, 255, 255, 0.4);
-}
-
-.date-cell:active {
-  transform: scale(0.97);
-}
-
-.is-today {
-  background: rgba(255, 255, 255, 0.3);
-  border-color: rgba(255, 255, 255, 0.6);
-  font-weight: 600;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.is-selected {
-  background: rgba(255, 255, 255, 0.3);
-  border-color: rgba(255, 255, 255, 0.6);
-  font-weight: bold;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-/* 💡 아이콘/날짜 오버레이 스타일 */
-.date-content {
-  position: absolute;
+/* 스캔라인 */
+.scanlines {
+  position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
+  pointer-events: none;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
+    linear-gradient(
+      90deg,
+      rgba(255, 0, 0, 0.06),
+      rgba(0, 255, 0, 0.02),
+      rgba(0, 0, 255, 0.06)
+    );
+  background-size: 100% 4px, 6px 100%;
+  z-index: 999;
+}
+
+/* 헤더 */
+.header {
+  padding: 1.5rem;
+}
+.retro-box {
+  background: #000;
+  border: 2px solid #fff;
+  box-shadow: 4px 4px 0 #000;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px;
+}
+.pixel-arrow {
+  background: #333;
+  color: #fff;
+  border: 1px solid #fff;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+}
+.pixel-arrow:active {
+  background: #fff;
+  color: #000;
+}
+
+.month-display {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  cursor: pointer;
+}
+.label {
+  color: #888;
+  font-size: 0.8rem;
+}
+.value {
+  color: #00e5ff;
+  font-size: 1.2rem;
+  text-shadow: 0 0 5px #00e5ff;
+}
+.blink-cursor {
+  animation: blink 1s infinite;
+}
+
+/* 범례 */
+.content {
+  padding: 0 1rem;
+}
+.legend-box {
+  margin-bottom: 1rem;
+}
+.pixel-label-sm {
+  font-size: 0.7rem;
+  color: #ffd700;
+  margin-bottom: 5px;
+  border-bottom: 1px dashed #555;
+  display: inline-block;
+}
+.tracking-states {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 5px;
+}
+.state-chip {
+  background: #222;
+  border: 1px solid #555;
+  padding: 4px 8px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.7rem;
+}
+.state-chip.ate {
+  border-color: #4caf50;
+  color: #4caf50;
+}
+.state-chip.burned {
+  border-color: #f5c857;
+  color: #f5c857;
+}
+.state-chip.weight {
+  border-color: #ff3838;
+  color: #ff3838;
+}
+
+/* 캘린더 프레임 */
+.calendar-frame {
+  background: #111;
+  border: 2px solid #333;
+  padding: 10px;
+  position: relative;
+  margin-bottom: 2rem;
+}
+.frame-decor {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border: 2px solid #fff;
+}
+.tl {
+  top: -2px;
+  left: -2px;
+  border-right: none;
+  border-bottom: none;
+}
+.tr {
+  top: -2px;
+  right: -2px;
+  border-left: none;
+  border-bottom: none;
+}
+.bl {
+  bottom: -2px;
+  left: -2px;
+  border-right: none;
+  border-top: none;
+}
+.br {
+  bottom: -2px;
+  right: -2px;
+  border-left: none;
+  border-top: none;
+}
+
+.days-of-week {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  text-align: center;
+  margin-bottom: 10px;
+  border-bottom: 1px solid #333;
+}
+.weekday-header {
+  font-size: 0.8rem;
+  color: #888;
+  padding: 5px 0;
+}
+.weekday-header.weekend {
+  color: #ff0055;
+}
+
+/* 날짜 그리드 */
+.date-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+.date-tile {
+  width: 100%;
+  aspect-ratio: 1;
+  background: #222;
+  border: 1px solid #444;
+  position: relative;
+  cursor: pointer;
   display: flex;
   justify-content: center;
   align-items: center;
-  border-radius: 12px;
+  padding: 0;
+  color: #aaa;
+}
+.date-tile:active {
+  transform: translateY(2px);
+}
+.tile-number {
+  position: absolute;
+  top: 2px;
+  left: 3px;
+  font-size: 0.7rem;
 }
 
-.has-icon .date-content {
-  background: rgba(255, 255, 255, 0.1);
+/* 상태별 타일 스타일 */
+.is-today {
+  border-color: #00e5ff;
+  background: #001a1a;
+  box-shadow: inset 0 0 5px #00e5ff;
+}
+.is-selected {
+  background: #333;
+  border: 2px solid #fff;
+  color: #fff;
+}
+.has-record {
+  background: #2a2a2a;
 }
 
-.date-number {
-  font-size: 1rem;
-  line-height: 1;
+/* 롱프레스 효과 */
+.long-pressing {
+  animation: shake 0.5s infinite;
+  background: #ff0055 !important;
+  color: #fff;
+}
+@keyframes shake {
+  0% {
+    transform: translate(1px, 1px) rotate(0deg);
+  }
+  10% {
+    transform: translate(-1px, -2px) rotate(-1deg);
+  }
+  20% {
+    transform: translate(-3px, 0px) rotate(1deg);
+  }
+  30% {
+    transform: translate(3px, 2px) rotate(0deg);
+  }
+  40% {
+    transform: translate(1px, -1px) rotate(1deg);
+  }
+  50% {
+    transform: translate(-1px, 2px) rotate(-1deg);
+  }
+  60% {
+    transform: translate(-3px, 1px) rotate(0deg);
+  }
+  70% {
+    transform: translate(3px, 1px) rotate(-1deg);
+  }
+  80% {
+    transform: translate(-1px, -1px) rotate(1deg);
+  }
+  90% {
+    transform: translate(1px, 2px) rotate(0deg);
+  }
+  100% {
+    transform: translate(1px, -2px) rotate(-1deg);
+  }
 }
 
-/* .date-icon-overlay {
-  width: 28px;
-  height: 28px;
+/* 아이템/플레이어 표시 */
+.tile-loot {
+  width: 70%;
+  height: 70%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+.loot-icon {
+  width: 100%;
+  height: 100%;
   object-fit: contain;
-} */
-
-.empty-cell {
-  visibility: hidden;
+}
+.loot-emoji {
+  font-size: 1.2rem;
+  filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.5));
+}
+.player-cursor {
+  position: absolute;
+  bottom: 1px;
+  right: 1px;
+  font-size: 0.5rem;
+  background: #00e5ff;
+  color: #000;
+  padding: 0 2px;
+}
+.empty-tile {
+  background: transparent;
+  border: 1px dashed #222;
+  opacity: 0.5;
 }
 
-/* --- 모달 스타일 (기록/색상) --- */
+/* === 모달 공통 === */
 .modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(44, 62, 80, 0.6);
+  background: rgba(0, 0, 0, 0.8);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 1000;
-  backdrop-filter: blur(2px);
+  font-family: "NeoDunggeunmo", monospace;
 }
-
-.color-modal {
-  background: white;
-  padding: 2rem;
-  border-radius: 1.75rem;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+.retro-modal {
+  background: #202028;
+  border: 4px solid #fff;
+  padding: 1.5rem;
   width: 90%;
-  max-width: 400px;
+  max-width: 350px;
+  box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.5);
+  color: #fff;
+}
+.modal-title {
+  color: #ff0055;
+  margin-top: 0;
+  text-align: center;
+  font-size: 1.2rem;
+  text-shadow: 2px 2px #000;
+}
+.modal-subtitle {
+  text-align: center;
+  color: #888;
+  font-size: 0.8rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px dashed #555;
+  padding-bottom: 0.5rem;
 }
 
-.color-modal h2 {
-  font-size: 1.3rem;
-  margin-bottom: 0.5rem;
-  color: var(--color-text-default);
-  font-weight: 700;
-}
-
-.modal-info {
-  font-size: 0.9rem;
-  color: var(--color-text-secondary);
-  margin-bottom: 1.5rem;
-}
-
-.color-options {
+/* 기록 선택 모달 */
+.action-list {
   display: flex;
   flex-direction: column;
   gap: 10px;
   margin-bottom: 1.5rem;
 }
-
-.color-option-btn {
+.action-btn {
+  background: #000;
+  border: 2px solid #555;
+  color: #fff;
+  padding: 10px;
   display: flex;
   align-items: center;
-  justify-content: flex-start;
-  padding: 1rem;
-  border: 2px solid rgba(152, 216, 200, 0.3);
-  background: rgba(255, 255, 255, 0.8);
-  border-radius: 0.875rem;
-  font-size: 1rem;
+  gap: 10px;
   cursor: pointer;
   transition: all 0.2s;
-  position: relative;
-  color: var(--color-text-default);
-  font-weight: 500;
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
-  user-select: none;
+  font-family: inherit;
 }
-
-.color-option-btn:hover {
-  background: rgba(152, 216, 200, 0.2);
-  border-color: rgba(152, 216, 200, 0.6);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+.action-btn:hover,
+.action-btn.active {
+  border-color: #00e5ff;
+  background: #111;
 }
-
-.color-option-btn:active {
-  transform: scale(0.97);
-}
-
-.color-option-btn.is-active {
-  border-color: var(--color-code);
-  background: var(--color-code);
-  color: white;
+.action-btn.active .action-label {
+  color: #00e5ff;
   font-weight: bold;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
-
-.color-option-icon {
-  width: 24px;
-  height: 24px;
-  margin-right: 12px;
-  transition: filter 0.2s;
+.action-check {
+  margin-left: auto;
+  font-size: 0.7rem;
+  color: #00e5ff;
 }
-
-.color-option-btn.is-active::after {
-  content: "✓";
-  position: absolute;
-  right: 15px;
-  font-size: 1.5rem;
-  font-weight: bold;
-  color: white;
-}
-
 .close-btn {
   width: 100%;
-  padding: 1rem 2rem;
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
-  border: 1.5px solid rgba(255, 255, 255, 0.6);
-  border-radius: 3rem;
-  cursor: pointer;
-  font-size: 1rem;
-  font-weight: 600;
-  transition: all 0.2s ease;
-  backdrop-filter: blur(5px);
-  -webkit-backdrop-filter: blur(5px);
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
-  user-select: none;
 }
 
-.close-btn:hover {
-  background: white;
-  color: #6fafaa;
-  transform: translateY(-3px);
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+/* 년/월 모달 */
+.time-modal {
+  border-color: #00e5ff;
 }
-
-.close-btn:active {
-  transform: scale(0.95);
-  background: rgba(255, 255, 255, 0.3);
-  border-color: rgba(255, 255, 255, 1);
+.time-modal .modal-title {
+  color: #00e5ff;
 }
-
-/* ---------------------------------------------------- */
-/* 💡 년/월 선택 모달 스타일 */
-/* ---------------------------------------------------- */
-
-.year-month-modal {
-  background: white;
-  padding: 2rem;
-  border-radius: 1.75rem;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
-  width: 90%;
-  max-width: 400px;
-}
-
-.year-month-modal h2 {
-  font-size: 1.3rem;
+.control-group {
   margin-bottom: 1.5rem;
-  color: var(--color-text-default);
-  text-align: center;
-  font-weight: 700;
+}
+.control-group label {
+  display: block;
+  color: #ffd700;
+  font-size: 0.8rem;
+  margin-bottom: 5px;
 }
 
-.select-group {
+.stepper {
   display: flex;
-  flex-direction: column;
-  margin-bottom: 1rem;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  background: #000;
+  padding: 5px;
+  border: 1px solid #333;
 }
-
-.select-group label {
-  font-weight: 600;
-  margin-bottom: 0.5rem;
-  color: var(--color-text-default);
-  font-size: 0.95rem;
-}
-
-.date-select {
-  padding: 0.85rem;
-  border: 2px solid rgba(152, 216, 200, 0.3);
-  border-radius: 0.875rem;
-  font-size: 1rem;
-  appearance: none;
-  background-color: white;
+.step-btn {
+  width: 30px;
+  height: 30px;
+  background: #333;
+  color: #fff;
+  border: 1px solid #fff;
   cursor: pointer;
-  transition: all 0.2s;
-  font-weight: 500;
-  color: var(--color-text-default);
-  -webkit-tap-highlight-color: transparent;
+}
+.step-val {
+  font-size: 1.2rem;
+  width: 80px;
+  text-align: center;
 }
 
-.date-select:hover {
-  border-color: rgba(152, 216, 200, 0.6);
-  background-color: rgba(152, 216, 200, 0.05);
+.month-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 5px;
 }
-
-.date-select:focus {
-  outline: none;
-  border-color: #98d8c8;
-  box-shadow: 0 0 0 3px rgba(152, 216, 200, 0.2);
+.month-chip {
+  background: #222;
+  color: #aaa;
+  border: 1px solid #444;
+  padding: 8px 0;
+  cursor: pointer;
+  font-family: inherit;
+}
+.month-chip.active {
+  background: #00e5ff;
+  color: #000;
+  border-color: #fff;
 }
 
 .modal-actions {
   display: flex;
-  justify-content: space-between;
-  margin-top: 2rem;
   gap: 10px;
 }
-
-/* 취소 버튼 스타일 (기준) */
-.cancel-btn {
+.retro-btn {
   flex: 1;
-  padding: 0.85rem;
-  background-color: rgba(255, 255, 255, 0.8);
-  color: var(--color-text-default);
-  border: 2px solid rgba(152, 216, 200, 0.3);
-  border-radius: 0.875rem;
+  padding: 10px;
+  border: 2px solid #fff;
+  font-family: inherit;
   cursor: pointer;
-  font-size: 1rem;
-  font-weight: 600;
-  transition: all 0.2s;
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
-  user-select: none;
+  font-weight: bold;
+}
+.retro-btn.cancel {
+  background: #333;
+  color: #fff;
+}
+.retro-btn.confirm {
+  background: #00e5ff;
+  color: #000;
+}
+.retro-btn.close-btn {
+  background: #ff0055;
+  color: #fff;
 }
 
-.cancel-btn:hover {
-  background-color: rgba(152, 216, 200, 0.2);
-  border-color: rgba(152, 216, 200, 0.6);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+/* Utils */
+.pixelated {
+  image-rendering: pixelated;
 }
-
-.cancel-btn:active {
-  transform: scale(0.97);
-}
-
-/* 💡 적용 버튼 스타일: cancel-btn과 동일하게 설정 */
-.apply-btn {
-  flex: 1;
-  padding: 0.85rem;
-  background-color: rgba(255, 255, 255, 0.8);
-  color: var(--color-text-default);
-  border: 2px solid rgba(152, 216, 200, 0.3);
-  border-radius: 0.875rem;
-  cursor: pointer;
-  font-size: 1rem;
-  font-weight: 600;
-  transition: all 0.2s;
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
-  user-select: none;
-}
-
-.apply-btn:hover {
-  background-color: rgba(152, 216, 200, 0.2);
-  border-color: rgba(152, 216, 200, 0.6);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  color: var(--color-text-default);
-}
-
-.apply-btn:active {
-  transform: scale(0.97);
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
 }
 </style>

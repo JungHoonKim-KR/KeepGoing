@@ -7,227 +7,303 @@ import characterImage from "../assets/images/characters/test.gif";
 // 1. 상태 관리
 // ----------------------------------------------------
 const profile = ref({
-  name: "홍길동",
+  name: "Hero_GD",
   age: 30,
   gender: "male",
   height: 175,
   weight: 70,
-  activityLevel: "moderate", // 활동량: 낮음(low), 보통(moderate), 높음(high)
+  activityLevel: "moderate",
   sleepHours: 7,
   weeklyWorkout: 3,
-  bodyType: "balanced", // 체형: 하체(lower), 상체(upper), 골고루(balanced)
+  bodyType: "balanced",
+  class: "Adventurer",
+  level: 24,
 });
 
 const isEditing = ref(false);
 
 const activityOptions = [
-  { value: "low", label: "낮음 (주로 앉아있음)" },
-  { value: "moderate", label: "보통 (규칙적인 활동)" },
-  { value: "high", label: "높음 (격렬한 운동)" },
+  { value: "low", label: "LOW (휴식)", icon: "💤" },
+  { value: "moderate", label: "NORMAL (활동)", icon: "🚶" },
+  { value: "high", label: "HIGH (운동)", icon: "🔥" },
 ];
 
 const bodyTypeOptions = [
-  { value: "lower", label: "하체 발달형" },
-  { value: "upper", label: "상체 발달형" },
-  { value: "balanced", label: "골고루형" },
+  { value: "lower", label: "SPEED (하체)", icon: "🦵" },
+  { value: "upper", label: "POWER (상체)", icon: "💪" },
+  { value: "balanced", label: "BALANCE (균형)", icon: "⚖️" },
 ];
 
 // ----------------------------------------------------
 // 2. 이벤트 핸들러
 // ----------------------------------------------------
+const playSound = (type) => {
+  const AudioContext = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContext) return;
+  const ctx = new AudioContext();
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+
+  const now = ctx.currentTime;
+  if (type === "click") {
+    osc.type = "square";
+    osc.frequency.setValueAtTime(600, now);
+    gain.gain.setValueAtTime(0.05, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+    osc.start(now);
+    osc.stop(now + 0.1);
+  } else if (type === "save") {
+    osc.type = "triangle";
+    osc.frequency.setValueAtTime(440, now);
+    osc.frequency.linearRampToValueAtTime(880, now + 0.2);
+    gain.gain.setValueAtTime(0.05, now);
+    gain.gain.linearRampToValueAtTime(0, now + 0.3);
+    osc.start(now);
+    osc.stop(now + 0.3);
+  }
+};
+
 const startEdit = () => {
+  playSound("click");
   isEditing.value = true;
 };
-
 const saveProfile = () => {
-  // 💡 여기에 서버 통신 로직을 추가하여 profile.value 데이터를 저장합니다.
-  console.log("프로필 저장:", profile.value);
+  playSound("save");
+  console.log("Save:", profile.value);
   isEditing.value = false;
-  alert("프로필 정보가 저장되었습니다.");
 };
-
 const cancelEdit = () => {
-  // 실제 앱에서는 저장되지 않은 변경 사항을 되돌리는 로직이 필요합니다.
-  // 여기서는 단순히 수정 모드를 닫습니다.
+  playSound("click");
   isEditing.value = false;
 };
 </script>
 
 <template>
-  <div class="profile-view">
+  <div class="profile-view retro-theme">
+    <div class="scanlines"></div>
+
     <div class="content">
       <header class="header">
-        <div class="header-content">
-          <div>
-            <div class="character-container">
-              <img
-                :src="characterImage"
-                alt="건강 캐릭터"
-                class="character-gif"
-              />
-            </div>
-            {{ profile.name }}님
+        <div class="player-info">
+          <div class="name-group">
+            <span class="player-badge">ID</span>
+            <span class="player-name">{{ profile.name }}</span>
           </div>
-          <button v-if="!isEditing" @click="startEdit" class="edit-btn">
-            수정
-          </button>
-          <button v-if="isEditing" @click="cancelEdit" class="edit-btn">
-            닫기
-          </button>
+          <span class="level-badge">Lv.{{ profile.level }}</span>
         </div>
+        <button v-if="!isEditing" @click="startEdit" class="retro-btn sm-btn">
+          EDIT
+        </button>
+        <button
+          v-if="isEditing"
+          @click="cancelEdit"
+          class="retro-btn sm-btn cancel"
+        >
+          CANCEL
+        </button>
       </header>
-      <div class="info-card">
+
+      <div class="character-showcase">
+        <div class="holo-pad"></div>
+        <img :src="characterImage" alt="Avatar" class="character-sprite" />
+        <div class="class-label">{{ profile.class }}</div>
+      </div>
+
+      <div class="stats-container">
         <template v-if="!isEditing">
-          <div class="profile-item">
-            <label>나이</label>
-            <span class="display-value">{{ profile.age }}세</span>
+          <div class="section-title pixel-font">PLAYER STATS</div>
+
+          <div class="stats-grid">
+            <div class="stat-box">
+              <span class="label">AGE</span>
+              <span class="val">{{ profile.age }}</span>
+            </div>
+            <div class="stat-box">
+              <span class="label">SEX</span>
+              <span class="val">{{
+                profile.gender === "male" ? "M" : "F"
+              }}</span>
+            </div>
+            <div class="stat-box">
+              <span class="label">HGT</span>
+              <span class="val">{{ profile.height }}<small>cm</small></span>
+            </div>
+            <div class="stat-box">
+              <span class="label">WGT</span>
+              <span class="val">{{ profile.weight }}<small>kg</small></span>
+            </div>
           </div>
-          <div class="profile-item">
-            <label>성별</label>
-            <span class="display-value">{{
-              profile.gender === "male" ? "남성" : "여성"
-            }}</span>
-          </div>
-          <div class="profile-item">
-            <label>키/몸무게</label>
-            <span class="display-value"
-              >{{ profile.height }}cm / {{ profile.weight }}kg</span
-            >
-          </div>
-          <div class="profile-item">
-            <label>활동량</label>
-            <span class="display-value">{{
-              activityOptions.find((o) => o.value === profile.activityLevel)
-                ?.label
-            }}</span>
-          </div>
-          <div class="profile-item">
-            <label>수면 시간</label>
-            <span class="display-value">{{ profile.sleepHours }}시간</span>
-          </div>
-          <div class="profile-item">
-            <label>주간 운동 횟수</label>
-            <span class="display-value">{{ profile.weeklyWorkout }}회</span>
-          </div>
-          <div class="profile-item">
-            <label>체형</label>
-            <span class="display-value body-type">{{
-              bodyTypeOptions.find((o) => o.value === profile.bodyType)?.label
-            }}</span>
+
+          <div class="section-title pixel-font">TRAITS</div>
+
+          <div class="traits-list">
+            <div class="trait-row">
+              <div class="trait-icon">⚡</div>
+              <div class="trait-info">
+                <div class="trait-label">ACTIVITY LEVEL</div>
+                <div class="trait-val">
+                  {{
+                    activityOptions.find(
+                      (o) => o.value === profile.activityLevel
+                    )?.label
+                  }}
+                </div>
+              </div>
+            </div>
+            <div class="trait-row">
+              <div class="trait-icon">💤</div>
+              <div class="trait-info">
+                <div class="trait-label">SLEEP RECOVERY</div>
+                <div class="trait-val">
+                  {{ profile.sleepHours }} HOURS / DAY
+                </div>
+              </div>
+            </div>
+            <div class="trait-row">
+              <div class="trait-icon">⚔️</div>
+              <div class="trait-info">
+                <div class="trait-label">TRAINING FREQ</div>
+                <div class="trait-val">
+                  {{ profile.weeklyWorkout }} TIMES / WEEK
+                </div>
+              </div>
+            </div>
+            <div class="trait-row">
+              <div class="trait-icon">🧬</div>
+              <div class="trait-info">
+                <div class="trait-label">BODY TYPE</div>
+                <div class="trait-val">
+                  {{
+                    bodyTypeOptions.find((o) => o.value === profile.bodyType)
+                      ?.label
+                  }}
+                </div>
+              </div>
+            </div>
           </div>
         </template>
 
         <template v-else>
-          <div class="profile-edit-wrapper">
-            <div class="form-group">
-              <label for="age">나이</label>
-              <input
-                id="age"
-                type="number"
-                v-model.number="profile.age"
-                min="1"
-              />
-            </div>
+          <div class="section-title pixel-font blink">MODIFY DATA...</div>
 
-            <div class="form-group">
-              <label>성별</label>
-              <div class="radio-group">
+          <div class="edit-form">
+            <div class="form-row">
+              <div class="form-group">
+                <label>AGE</label>
                 <input
-                  id="gender-male"
-                  type="radio"
-                  value="male"
-                  v-model="profile.gender"
-                />
-                <label for="gender-male">남성</label>
-                <input
-                  id="gender-female"
-                  type="radio"
-                  value="female"
-                  v-model="profile.gender"
-                />
-                <label for="gender-female">여성</label>
-              </div>
-            </div>
-
-            <div class="form-group-inline">
-              <div class="form-group sub-group">
-                <label for="height">키 (cm)</label>
-                <input
-                  id="height"
                   type="number"
-                  v-model.number="profile.height"
-                  min="100"
+                  v-model.number="profile.age"
+                  class="retro-input"
                 />
               </div>
-              <div class="form-group sub-group">
-                <label for="weight">몸무게 (kg)</label>
-                <input
-                  id="weight"
-                  type="number"
-                  v-model.number="profile.weight"
-                  min="30"
-                />
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label for="activity">활동량</label>
-              <select id="activity" v-model="profile.activityLevel">
-                <option
-                  v-for="option in activityOptions"
-                  :key="option.value"
-                  :value="option.value"
-                >
-                  {{ option.label }}
-                </option>
-              </select>
-            </div>
-
-            <div class="form-group">
-              <label for="sleepHours">평균 수면 시간 (시간)</label>
-              <input
-                id="sleepHours"
-                type="number"
-                v-model.number="profile.sleepHours"
-                min="1"
-                max="15"
-              />
-            </div>
-
-            <div class="form-group">
-              <label for="weeklyWorkout">주간 운동 횟수</label>
-              <input
-                id="weeklyWorkout"
-                type="number"
-                v-model.number="profile.weeklyWorkout"
-                min="0"
-                max="7"
-              />
-            </div>
-
-            <div class="form-group">
-              <div class="radio-group body-type-select">
-                <div
-                  v-for="option in bodyTypeOptions"
-                  :key="option.value"
-                  class="radio-item"
-                >
-                  <input
-                    :id="'body-' + option.value"
-                    type="radio"
-                    :value="option.value"
-                    v-model="profile.bodyType"
-                  />
-                  <label :for="'body-' + option.value">{{
-                    option.label
-                  }}</label>
+              <div class="form-group">
+                <label>SEX</label>
+                <div class="radio-pill-group">
+                  <label
+                    class="pill"
+                    :class="{ active: profile.gender === 'male' }"
+                  >
+                    <input
+                      type="radio"
+                      value="male"
+                      v-model="profile.gender"
+                      hidden
+                    />
+                    M
+                  </label>
+                  <label
+                    class="pill"
+                    :class="{ active: profile.gender === 'female' }"
+                  >
+                    <input
+                      type="radio"
+                      value="female"
+                      v-model="profile.gender"
+                      hidden
+                    />
+                    F
+                  </label>
                 </div>
               </div>
             </div>
 
-            <div class="action-buttons">
-              <button @click="saveProfile" class="save-btn">저장</button>
+            <div class="form-row">
+              <div class="form-group">
+                <label>HEIGHT (cm)</label>
+                <input
+                  type="number"
+                  v-model.number="profile.height"
+                  class="retro-input"
+                />
+              </div>
+              <div class="form-group">
+                <label>WEIGHT (kg)</label>
+                <input
+                  type="number"
+                  v-model.number="profile.weight"
+                  class="retro-input"
+                />
+              </div>
             </div>
+
+            <div class="form-group">
+              <label>ACTIVITY LEVEL</label>
+              <select v-model="profile.activityLevel" class="retro-select">
+                <option
+                  v-for="opt in activityOptions"
+                  :key="opt.value"
+                  :value="opt.value"
+                >
+                  {{ opt.icon }} {{ opt.label }}
+                </option>
+              </select>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label>SLEEP (H)</label>
+                <input
+                  type="number"
+                  v-model.number="profile.sleepHours"
+                  class="retro-input"
+                />
+              </div>
+              <div class="form-group">
+                <label>WORKOUT/WK</label>
+                <input
+                  type="number"
+                  v-model.number="profile.weeklyWorkout"
+                  class="retro-input"
+                />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label>BODY TYPE</label>
+              <div class="body-type-grid">
+                <label
+                  v-for="opt in bodyTypeOptions"
+                  :key="opt.value"
+                  class="type-card"
+                  :class="{ active: profile.bodyType === opt.value }"
+                >
+                  <input
+                    type="radio"
+                    :value="opt.value"
+                    v-model="profile.bodyType"
+                    hidden
+                  />
+                  <div class="type-icon">{{ opt.icon }}</div>
+                  <div class="type-name">{{ opt.label }}</div>
+                </label>
+              </div>
+            </div>
+
+            <button @click="saveProfile" class="retro-btn full-btn">
+              SAVE CHANGES
+            </button>
           </div>
         </template>
       </div>
@@ -238,215 +314,398 @@ const cancelEdit = () => {
 </template>
 
 <style scoped>
-/* --- 기본 변수 정의 (캘린더 뷰와 통일) --- */
+/* 레트로 폰트 */
+@import url("https://cdn.jsdelivr.net/gh/neodgm/neodgm-webfont@latest/neodgm/style.css");
+
 :root {
-  --color-primary: #8e7cc3;
-  --color-secondary: #764ba2;
-  --color-text-default: #333;
-  --color-text-secondary: #555;
-  --color-red: #ff3b30;
-  --color-green: #4caf50;
-  --color-accent: #ff9800; /* 강조 색상 */
+  --neon-blue: #00e5ff;
+  --neon-pink: #ff0055;
+  --neon-green: #00ff00;
+  --bg-dark: #101018;
+  --card-bg: #1a1a24;
 }
 
-/* --- 레이아웃 및 헤더 --- */
-.profile-view {
+/* === 전체 컨테이너 === */
+/* 배경색을 강제로 지정하여 흰색 배경 방지 */
+.profile-view.retro-theme {
   min-height: 100vh;
-  background: rgba(16, 16, 16, 1);
-  padding-bottom: 80px; /* 네비게이션 공간 확보 */
+  background-color: #101018 !important; /* 강제 적용 */
+  font-family: "NeoDunggeunmo", monospace;
+  color: #e0e0e0;
+  padding-bottom: 120px; /* 푸터 공간 확보 */
+  position: relative;
+  overflow-x: hidden;
+  box-sizing: border-box;
 }
 
-.header {
-  color: white;
-  padding: 1rem 1.5rem;
+/* 스캔라인 효과 (가독성을 위해 투명도 낮춤) */
+.scanlines {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%),
+    linear-gradient(
+      90deg,
+      rgba(255, 0, 0, 0.03),
+      rgba(0, 255, 0, 0.01),
+      rgba(0, 0, 255, 0.03)
+    );
+  background-size: 100% 4px, 6px 100%;
+  z-index: 1;
 }
 
-.header-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.header-content div {
-  font-size: 1.75rem;
-  font-weight: 500;
-  text-align: center;
-  margin: 0;
-  letter-spacing: -0.02em;
-  display: flex;
-  flex-direction: row;
-  justify-content: center;
-  align-items: center;
-}
-.character-container img {
-  max-width: 3rem;
-  max-height: 3rem;
-}
-
-.edit-btn {
-  background-color: rgba(255, 255, 255, 0.2);
-  color: white;
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  border-radius: 20px;
-  padding: 0.5rem 1rem;
-  font-size: 0.8rem;
-  font-weight: 500;
-  cursor: pointer;
-}
-
-/* --- 컨텐츠 카드 --- */
 .content {
-  padding: 1rem 1.5rem;
+  padding: 1rem;
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 500px; /* 태블릿/데스크탑 대응 */
+  margin: 0 auto;
+  box-sizing: border-box;
 }
 
-.info-card {
-  background: linear-gradient(
-    to right,
-    rgba(16, 185, 129, 0.1),
-    rgba(5, 150, 105, 0.05)
-  );
-
-  /* 수정된 부분: 색상을 포함하여 한 줄로 작성 */
-  border: 1px solid rgba(16, 185, 129, 0.3);
-
-  backdrop-filter: blur(4px);
-  color: white;
-  padding: 1.5rem;
-  border-radius: 1.75rem;
-  text-align: center;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
-  cursor: pointer;
-  transition: transform 0.15s ease-out;
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
-  user-select: none;
-}
-
-/* --- 정보 표시 모드 스타일 --- */
-.profile-item {
+/* === 헤더 === */
+.header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.75rem 0;
-  /* border-bottom: 1px solid #eee; */
+  margin-bottom: 2rem;
+  border-bottom: 2px solid #333;
+  padding-bottom: 1rem;
+}
+.player-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.name-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.profile-item:last-child {
-  border-bottom: none;
+.player-badge {
+  background: var(--neon-blue);
+  color: #000;
+  padding: 2px 6px;
+  font-weight: bold;
+  font-size: 0.7rem;
 }
-
-.profile-item label {
-  font-weight: 400;
-  /* color: var(--color-text-secondary); */
-  color: #757575;
+.player-name {
+  font-size: 1.1rem;
+  color: #fff;
+  text-shadow: 0 0 5px var(--neon-blue);
 }
-
-.display-value {
-  color: white;
-}
-
-.body-type {
-  color: #245b42;
-  background-color: #f3fff7;
-  padding: 2px 8px;
+.level-badge {
+  color: var(--neon-green);
+  font-size: 0.8rem;
+  border: 1px solid var(--neon-green);
+  padding: 2px 4px;
   border-radius: 4px;
+  display: inline-block;
+  width: fit-content;
+}
+
+/* 버튼 스타일 */
+.retro-btn {
+  background: transparent;
+  border: 2px solid #fff;
+  color: #fff;
+  padding: 8px 12px;
+  font-family: inherit;
+  cursor: pointer;
+  box-shadow: 2px 2px 0 #000;
+  transition: all 0.1s;
   font-size: 0.9rem;
 }
-
-/* --- 폼 수정 모드 스타일 --- */
-.form-group {
-  margin-bottom: 1rem;
+.retro-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: none;
 }
-
-.form-group label {
-  display: block;
-  font-weight: 600;
-  margin-bottom: 0.4rem;
-  color: var(--color-text-default);
+.sm-btn {
+  font-size: 0.8rem;
+  padding: 6px 10px;
 }
-
-.form-group input[type="number"],
-.form-group select {
+.sm-btn.cancel {
+  border-color: var(--neon-pink);
+  color: var(--neon-pink);
+}
+.full-btn {
   width: 100%;
-  padding: 0.75rem 1rem;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  font-size: 1rem;
-  box-sizing: border-box;
-  transition: border-color 0.2s;
+  background: var(--neon-green);
+  color: #000;
+  font-weight: bold;
+  border: none;
+  padding: 15px;
+  font-size: 1.1rem;
+  margin-top: 1rem;
 }
 
-.form-group input[type="number"]:focus,
-.form-group select:focus {
-  border-color: var(--color-primary);
-  outline: none;
-}
-
-.form-group-inline {
+/* === 캐릭터 아바타 === */
+.character-showcase {
   display: flex;
-  gap: 1rem;
-  margin-bottom: 1rem;
-}
-
-.form-group-inline .sub-group {
-  flex: 1;
-  margin-bottom: 0;
-}
-
-.radio-group {
-  display: flex;
-  gap: 1.5rem;
+  flex-direction: column;
   align-items: center;
+  justify-content: center;
+  margin-bottom: 2rem;
+  position: relative;
+  height: 160px;
+}
+.character-sprite {
+  width: 100px;
+  height: 100px;
+  object-fit: contain;
+  image-rendering: pixelated;
+  z-index: 2;
+  animation: float 3s infinite ease-in-out;
+}
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
 }
 
-.radio-group input[type="radio"] {
-  display: none;
+.holo-pad {
+  position: absolute;
+  bottom: 20px;
+  width: 120px;
+  height: 30px;
+  border: 2px solid var(--neon-blue);
+  border-radius: 50%;
+  background: rgba(0, 229, 255, 0.1);
+  transform: rotateX(60deg);
+  box-shadow: 0 0 20px var(--neon-blue);
+  z-index: 1;
+  animation: pulsePad 2s infinite;
+}
+@keyframes pulsePad {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
 }
 
-.radio-group label {
-  padding: 0.5rem 1rem;
-  border: 1px solid;
-  border-radius: 20px;
-  cursor: pointer;
-  font-weight: normal;
-  transition: all 0.2s;
+.class-label {
+  margin-top: 10px;
+  font-size: 0.9rem;
+  color: var(--neon-pink);
+  letter-spacing: 2px;
+  border-bottom: 1px solid var(--neon-pink);
+  padding-bottom: 2px;
 }
 
-.radio-group input[type="radio"]:checked + label {
-  color: #245b42;
-  background-color: #f3fff7;
-  /* color: #245b42; */
-  /* border-color: var(--color-primary); 경계선 색 고민중 ..ㅜ */
-  font-weight: 600;
+/* === STATS 컨테이너 === */
+.stats-container {
+  background: #1a1a24; /* 명시적 배경색 */
+  border: 2px solid #333;
+  padding: 1.25rem;
+  position: relative;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  border-radius: 4px;
+}
+.section-title {
+  font-size: 0.9rem;
+  color: var(--neon-green);
+  margin-bottom: 1rem;
+  border-left: 4px solid var(--neon-green);
+  padding-left: 10px;
+}
+.blink {
+  animation: blink 1s infinite;
+}
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
 }
 
-.body-type-select {
-  flex-wrap: wrap;
-  gap: 0.75rem;
+/* 그리드 (읽기 모드) */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-bottom: 2rem;
 }
-
-/* --- 액션 버튼 --- */
-.action-buttons {
+.stat-box {
+  background: #222;
+  padding: 12px;
+  border: 1px solid #444;
   display: flex;
   justify-content: space-between;
-  margin-top: 2rem;
-  gap: 1rem;
+  align-items: center;
 }
-
-.save-btn,
-.cancel-btn {
-  flex: 1;
-  padding: 1rem;
-  border: none;
-  border-radius: 8px;
+.stat-box .label {
+  color: #888;
+  font-size: 0.7rem;
+}
+.stat-box .val {
+  color: #fff;
   font-size: 1rem;
   font-weight: bold;
-  cursor: pointer;
-  transition: background-color 0.2s;
+}
+.stat-box .val small {
+  font-size: 0.7rem;
+  color: #aaa;
+  margin-left: 2px;
+  font-weight: normal;
 }
 
-.save-btn {
-  background-color: #7cc399;
-  color: white;
+.traits-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.trait-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px dashed #333;
+  padding-bottom: 8px;
+}
+.trait-icon {
+  font-size: 1.4rem;
+  width: 30px;
+  text-align: center;
+}
+.trait-info {
+  flex: 1;
+}
+.trait-label {
+  font-size: 0.65rem;
+  color: #888;
+  margin-bottom: 3px;
+  display: block;
+}
+.trait-val {
+  font-size: 0.9rem;
+  color: var(--neon-blue);
+  line-height: 1.2;
+}
+
+/* === 수정 모드 (Edit Form) === */
+.edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* 모바일 대응: 기본적으로 flex-wrap을 허용하여 좁을 땐 떨어지게 함 */
+.form-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-width: 140px; /* 너무 좁아지지 않게 */
+}
+.form-group label {
+  font-size: 0.75rem;
+  color: #aaa;
+}
+
+/* 입력창 스타일 강화 (흰색 방지) */
+.retro-input,
+.retro-select {
+  background-color: #000 !important; /* 배경 검정 강제 */
+  border: 2px solid #555;
+  color: #fff !important; /* 글씨 흰색 강제 */
+  padding: 12px;
+  font-family: inherit;
+  font-size: 1rem;
+  outline: none;
+  border-radius: 0;
+  width: 100%;
+  box-sizing: border-box;
+  -webkit-appearance: none; /* 아이폰 기본 스타일 제거 */
+}
+.retro-input:focus,
+.retro-select:focus {
+  border-color: var(--neon-blue);
+}
+
+/* 라디오 버튼 (알약 형태) */
+.radio-pill-group {
+  display: flex;
+  gap: 8px;
+  height: 48px;
+}
+.pill {
+  flex: 1;
+  border: 2px solid #555;
+  color: #888;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-weight: bold;
+  background: #222;
+  transition: all 0.2s;
+}
+.pill.active {
+  border-color: var(--neon-blue);
+  background: rgba(0, 229, 255, 0.2);
+  color: #fff;
+}
+
+/* 체형 그리드 (모바일 1단 -> 큰화면 3단) */
+.body-type-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.type-card {
+  background: #222;
+  border: 2px solid #444;
+  padding: 12px 5px;
+  text-align: center;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.type-card.active {
+  border-color: var(--neon-green);
+  opacity: 1;
+  transform: scale(1.02);
+  background: #000;
+}
+.type-icon {
+  font-size: 1.5rem;
+  margin-bottom: 5px;
+}
+.type-name {
+  font-size: 0.7rem;
+  color: #fff;
+}
+
+/* 모바일 미디어 쿼리 (매우 작은 화면용) */
+@media (max-width: 380px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  } /* 스탯 한 줄로 */
+  .body-type-grid {
+    grid-template-columns: 1fr;
+  } /* 체형 선택 한 줄로 */
+  .form-row {
+    flex-direction: column;
+    gap: 15px;
+  } /* 입력창 세로 배치 */
 }
 </style>

@@ -1,952 +1,864 @@
 <template>
-    <div class="meal-modal-overlay" @click="handleOverlayClick">
-        <div class="meal-modal" @click.stop>
-            <div class="modal-header">
-                <button @click="closeModal" class="close-btn">
-                    <span class="close-icon">✕</span>
-                </button>
-                <h2 class="modal-title">식사 기록</h2>
-                <button @click="saveMeal" class="save-btn">완료</button>
-            </div>
+  <div class="modal-overlay" @click="handleOverlayClick">
+    <div class="scanlines"></div>
 
-            <div class="date-section">
-                <div class="date-display">{{ formattedDate }}</div>
-            </div>
-
-            <div class="meal-type-section">
-                <h3 class="section-title">식사 시간</h3>
-                <div class="meal-type-buttons">
-                    <button
-                        v-for="time in mealTimes"
-                        :key="time.id"
-                        :class="['meal-type-btn', { active: selectedMealTime === time.name }]"
-                        @click="selectedMealTime = time.name"
-                    >
-                        <span class="meal-emoji">{{ time.emoji }}</span>
-                        <span class="meal-name">{{ time.name }}</span>
-                    </button>
-                </div>
-            </div>
-
-            <div class="food-input-section">
-                <h3 class="section-title">무엇을 드셨나요?</h3>
-                
-                <div class="food-input-container">
-                    <input
-                        :value="foodName" @input="handleInput" @keydown="handleKeydown"
-                        type="text"
-                        class="food-input"
-                        placeholder="예: 김치찌개, 삼겹살, 샐러드..."
-                        autocomplete="off"
-                    />
-                    
-                    <div v-if="isLoading" class="loading-indicator">
-                        <svg class="animate-spin h-5 w-5 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                    </div>
-
-                    <button @click="addFood()" class="add-btn">추가</button>
-                    
-                    <ul 
-                        v-if="suggestions.length > 0" 
-                        class="suggestions-dropdown"
-                    >
-                        <li
-                            v-for="(suggestion, index) in suggestions"
-                            :key="index"
-                            @click="selectFood(suggestion)"
-                            @mouseover="selectedFoodIndex = index"
-                            :class="['suggestion-item', { active: index === selectedFoodIndex }]"
-                        >
-                            {{ suggestion.name }}
-                        </li>
-                    </ul>
-
-                </div>
-
-                <div v-if="selectedFoodList.length > 0" class="food-list">
-                    <div v-for="(foodItem, index) in selectedFoodList" :key="index" class="food-item">
-                        <span class="food-item-name">{{ foodItem.name }}</span>
-                        
-                        <div class="count-control">
-                            <button 
-                                @click="changeFoodCount(index, -1)" 
-                                :disabled="foodItem.servings <= 1"
-                                class="count-btn count-minus-btn"
-                            >
-                                -
-                            </button>
-                            
-                            <span class="food-count">{{ foodItem.servings }}</span>
-                            
-                            <button 
-                                @click="changeFoodCount(index, 1)" 
-                                class="count-btn count-plus-btn"
-                            >
-                                +
-                            </button>
-                        </div>
-                        
-                        <button @click="removeFood(index)" class="remove-food-btn">
-                            ✕
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="photo-section">
-                <h3 class="section-title">사진 (선택)</h3>
-                <div class="photo-upload-area" @click="triggerFileInput">
-                    <input
-                        ref="fileInput"
-                        type="file"
-                        accept="image/*"
-                        style="display: none"
-                        @change="handleFileUpload"
-                    />
-                    <div v-if="!photoPreview" class="photo-placeholder">
-                        <span class="camera-icon">📷</span>
-                        <span class="photo-text">사진 추가하기</span>
-                    </div>
-                    <div v-else class="photo-preview">
-                        <img :src="photoPreview" alt="식사 사진" />
-                        <button @click.stop="removePhoto" class="remove-photo-btn">
-                            ✕
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="memo-section">
-                <h3 class="section-title">메모 (선택)</h3>
-                <textarea
-                    v-model="memo"
-                    class="memo-input"
-                    placeholder="맛있었던 점, 느낀 점을 자유롭게 적어보세요..."
-                    rows="3"
-                ></textarea>
-            </div>
-
-            <div class="today-meals-section">
-                <h3 class="section-title">오늘의 식사</h3>
-                <div class="today-meals-grid">
-                    <div
-                        v-for="meal in todayMeals"
-                        :key="meal.type"
-                        :class="['meal-card', { completed: meal.completed }]"
-                    >
-                        <span class="meal-card-emoji">{{ meal.emoji }}</span>
-                        <span class="meal-card-name">{{ meal.name }}</span>
-                        <span v-if="meal.completed" class="check-icon">✓</span>
-                    </div>
-                </div>
-            </div>
+    <div class="retro-modal" @click.stop>
+      <div class="modal-header">
+        <div class="header-title">
+          <span class="icon">💾</span> SYSTEM: MEAL_LOG.EXE
         </div>
+        <button @click="closeModal" class="pixel-close-btn">X</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="terminal-text">
+          > CONNECTED TO SERVER...<br />
+          > DATE: {{ formattedDate }}
+        </div>
+
+        <div class="section-container">
+          <div class="pixel-label">1. SELECT MISSION</div>
+          <div class="mission-grid">
+            <button
+              v-for="time in mealTimes"
+              :key="time.id"
+              :class="[
+                'mission-card',
+                { active: selectedMealTime === time.name },
+              ]"
+              @click="selectMealTime(time.name)"
+            >
+              <div class="mission-icon">{{ getPixelIcon(time.id) }}</div>
+              <div class="mission-name">{{ time.name }}</div>
+              <div
+                class="selection-indicator"
+                v-if="selectedMealTime === time.name"
+              >
+                ◀
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <div class="section-container">
+          <div class="pixel-label">2. SCAN ITEMS (FOOD)</div>
+
+          <div class="terminal-input-box">
+            <span class="prompt">INPUT ></span>
+            <input
+              :value="foodName"
+              @input="handleInput"
+              @keydown="handleKeydown"
+              type="text"
+              class="retro-input"
+              placeholder="Enter item name..."
+              autocomplete="off"
+            />
+
+            <div v-if="isLoading" class="loading-status">[PROCESSING...]</div>
+
+            <button @click="manualAdd" class="retro-btn-sm">ADD</button>
+
+            <ul v-if="suggestions.length > 0" class="retro-dropdown">
+              <li
+                v-for="(suggestion, index) in suggestions"
+                :key="index"
+                @click="selectFood(suggestion)"
+                @mouseover="selectedFoodIndex = index"
+                :class="[
+                  'dropdown-item',
+                  { active: index === selectedFoodIndex },
+                ]"
+              >
+                {{ suggestion.name }}
+              </li>
+            </ul>
+          </div>
+
+          <div class="inventory-box">
+            <div class="inventory-header">=== CURRENT INVENTORY ===</div>
+            <div v-if="selectedFoodList.length === 0" class="empty-msg">
+              NO ITEMS DETECTED.
+            </div>
+            <div v-else class="inventory-list">
+              <div
+                v-for="(foodItem, index) in selectedFoodList"
+                :key="index"
+                class="inventory-slot"
+              >
+                <div class="slot-info">
+                  <span class="slot-icon">🍖</span>
+                  <span class="slot-name">{{ foodItem.name }}</span>
+                </div>
+                <div class="slot-controls">
+                  <button
+                    @click="changeFoodCount(index, -1)"
+                    :disabled="foodItem.servings <= 1"
+                    class="qty-btn"
+                  >
+                    -
+                  </button>
+                  <span class="slot-qty">x{{ foodItem.servings }}</span>
+                  <button @click="changeFoodCount(index, 1)" class="qty-btn">
+                    +
+                  </button>
+                  <button @click="removeFood(index)" class="trash-btn">
+                    🗑
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-container">
+          <div class="pixel-label">3. UPLOAD EVIDENCE</div>
+          <div class="evidence-box" @click="triggerFileInput">
+            <input
+              ref="fileInput"
+              type="file"
+              accept="image/*"
+              style="display: none"
+              @change="handleFileUpload"
+            />
+
+            <div v-if="!photoPreview" class="placeholder-content">
+              <div class="scan-icon">[ + ]</div>
+              <span>CLICK TO SCAN IMAGE</span>
+            </div>
+
+            <div v-else class="preview-content">
+              <img :src="photoPreview" alt="Evidence" />
+              <div class="scan-overlay">
+                <div class="corner tl"></div>
+                <div class="corner tr"></div>
+                <div class="corner bl"></div>
+                <div class="corner br"></div>
+                <div class="rec-badge">REC ●</div>
+              </div>
+              <button @click.stop="removePhoto" class="delete-evidence-btn">
+                DISCARD
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-container">
+          <div class="pixel-label">4. DATA LOG</div>
+          <textarea
+            v-model="memo"
+            class="retro-textarea"
+            placeholder="Additional notes..."
+            rows="2"
+          ></textarea>
+        </div>
+
+        <div class="footer-actions">
+          <button @click="saveMeal" class="retro-btn-lg">
+            <span class="btn-text">SAVE TO DATABASE</span>
+          </button>
+        </div>
+      </div>
     </div>
+  </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from "vue";
-import dayjs from "dayjs"; 
+import dayjs from "dayjs";
 
-const emit = defineEmits(['close']);
+const emit = defineEmits(["close"]);
+const API_ENDPOINT = "http://localhost:8080";
 
-// ===================================
-// 1. 디바운싱 유틸리티 함수
-// ===================================
-const debounce = (func, delay) => {
-    let timeoutId;
-    return function(...args) {
-        clearTimeout(timeoutId);
-        timeoutId = setTimeout(() => {
-            func.apply(this, args);
-        }, delay);
-    };
+// === 🔊 8-bit Sound FX ===
+const playSound = (type) => {
+  const AudioContext = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContext) return;
+  const ctx = new AudioContext();
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  const now = ctx.currentTime;
+
+  if (type === "type") {
+    // 타이핑 소리
+    osc.type = "square";
+    osc.frequency.setValueAtTime(800, now);
+    gain.gain.setValueAtTime(0.02, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+    osc.start(now);
+    osc.stop(now + 0.05);
+  } else if (type === "blip") {
+    // 선택/클릭
+    osc.type = "square";
+    osc.frequency.setValueAtTime(440, now);
+    gain.gain.setValueAtTime(0.05, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+    osc.start(now);
+    osc.stop(now + 0.1);
+  } else if (type === "coin") {
+    // 아이템 추가
+    osc.type = "triangle";
+    osc.frequency.setValueAtTime(900, now);
+    osc.frequency.linearRampToValueAtTime(1200, now + 0.1);
+    gain.gain.setValueAtTime(0.05, now);
+    gain.gain.linearRampToValueAtTime(0, now + 0.2);
+    osc.start(now);
+    osc.stop(now + 0.2);
+  } else if (type === "save") {
+    // 저장 성공
+    osc.type = "square";
+    osc.frequency.setValueAtTime(440, now);
+    osc.frequency.setValueAtTime(554, now + 0.1);
+    osc.frequency.setValueAtTime(659, now + 0.2);
+    gain.gain.setValueAtTime(0.05, now);
+    gain.gain.linearRampToValueAtTime(0, now + 0.4);
+    osc.start(now);
+    osc.stop(now + 0.4);
+  }
 };
 
-// 실제 Spring Boot API 엔드포인트
-const API_ENDPOINT = 'http://localhost:8080';
+// === Icons ===
+const getPixelIcon = (id) => {
+  const icons = {
+    breakfast: "⚡", // Energy
+    lunch: "🔋", // Battery
+    dinner: "🌙", // Moon
+    snack: "💊", // Pill/Potion
+  };
+  return icons[id] || "❓";
+};
 
-// ===================================
-// 2. Data
-// ===================================
+// === Utils ===
+const debounce = (func, delay) => {
+  let timeoutId;
+  return function (...args) {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => func.apply(this, args), delay);
+  };
+};
+
+// === Data ===
 const selectedMealTime = ref("아침");
 const foodName = ref("");
-
-// 💡 수정: 음식 객체에 count 속성이 포함됩니다.
-const selectedFoodList = ref([]); 
-
+const selectedFoodList = ref([]);
 const memo = ref("");
 const photoPreview = ref(null);
 const fileInput = ref(null);
-
-// Search State
-const suggestions = ref([]); 
+const suggestions = ref([]);
 const isLoading = ref(false);
-const selectedFoodIndex = ref(0); 
-const isSelectingFood = ref(false); // 💡 추가: 자동 선택 중 플래그
+const selectedFoodIndex = ref(0);
+const isSelectingFood = ref(false);
 
 const mealTimes = [
-    { id: "breakfast", name: "아침", emoji: "🌅" },
-    { id: "lunch", name: "점심", emoji: "🌞" },
-    { id: "dinner", name: "저녁", emoji: "🌙" },
-    { id: "snack", name: "간식", emoji: "🍪" },
+  { id: "breakfast", name: "아침" },
+  { id: "lunch", name: "점심" },
+  { id: "dinner", name: "저녁" },
+  { id: "snack", name: "간식" },
 ];
 
-const todayMeals = ref([
-    { type: "breakfast", name: "아침", emoji: "🌅", completed: false },
-    { type: "lunch", name: "점심", emoji: "🌞", completed: true },
-    { type: "dinner", name: "저녁", emoji: "🌙", completed: false },
-    { type: "snack", name: "간식", emoji: "🍪", completed: false },
-]);
+const formattedDate = computed(() => dayjs().format("YYYY-MM-DD HH:mm:ss"));
 
-// Computed
-const formattedDate = computed(() => {
-    return dayjs().format("YYYY년 M월 D일");
-});
-
-// ===================================
-// 3. 음식검색 로직
-// ===================================
-
+// === API Logic ===
 async function fetchSuggestions(query) {
-    
-    isLoading.value = true;
-    let suggestionsList = []; 
-
-    try {
-        const url = `${API_ENDPOINT}/food?foodName=${encodeURIComponent(query)}`;
-        
-        const response = await fetch(url);
-
-        if (!response.ok) {
-            console.error(`HTTP 에러 발생: ${response.status}`);
-            throw new Error(`API 호출 실패 (Status: ${response.status})`);
-        }
-
-        const data = await response.json();
-        
-        if (Array.isArray(data)) {
-            suggestionsList = data
-                .filter(food => food && food.name && food.name.includes(query.trim())) 
-                .filter((food, index, self) => food.name && self.findIndex(f => f.name === food.name) === index);
-        }
-
-    } catch (error) {
-        console.error('검색 API 호출 최종 오류:', error);
-        suggestionsList = []; 
-    } finally {
-        isLoading.value = false;
-        return suggestionsList;
+  isLoading.value = true;
+  let suggestionsList = [];
+  try {
+    const url = `${API_ENDPOINT}/food?foodName=${encodeURIComponent(query)}`;
+    const response = await fetch(url);
+    if (!response.ok) throw new Error("API Error");
+    const data = await response.json();
+    if (Array.isArray(data)) {
+      suggestionsList = data
+        .filter((food) => food && food.name && food.name.includes(query.trim()))
+        .filter(
+          (food, index, self) =>
+            food.name && self.findIndex((f) => f.name === food.name) === index
+        );
     }
+  } catch (error) {
+    console.error("Scan Failed:", error);
+  } finally {
+    isLoading.value = false;
+    return suggestionsList;
+  }
 }
 
 const debouncedSearch = debounce(async (query) => {
-    if (query.trim().length < 1) { 
-        suggestions.value = [];
-        return;
-    }
-    
-    // 💡 수정: isSelectingFood 플래그가 true면 검색 API 호출을 막습니다.
-    if (isSelectingFood.value) {
-        return; 
-    }
-    
-    const results = await fetchSuggestions(query.trim());
-    suggestions.value = results;
-    selectedFoodIndex.value = 0; 
-}, 100); 
+  if (query.trim().length < 1) {
+    suggestions.value = [];
+    return;
+  }
+  if (isSelectingFood.value) return;
+  const results = await fetchSuggestions(query.trim());
+  suggestions.value = results;
+  selectedFoodIndex.value = 0;
+}, 300);
 
 const handleInput = (event) => {
-    foodName.value = event.target.value;
-    
-    // 💡 수정: isSelectingFood가 true면 검색을 건너뜁니다.
-    if (isSelectingFood.value) {
-        return;
-    }
-    
-    debouncedSearch(foodName.value);
+  playSound("type");
+  foodName.value = event.target.value;
+  if (isSelectingFood.value) return;
+  debouncedSearch(foodName.value);
 };
 
-// ===================================
-// 4. Methods (핵심 CRUD 로직)
-// ===================================
+// === Logic ===
+const selectMealTime = (name) => {
+  playSound("blip");
+  selectedMealTime.value = name;
+};
 
 const addFood = (food) => {
-    // 1. 자동완성 항목을 선택한 경우 (food 객체가 넘어옴)
-    if (food && typeof food === 'object' && food['name']) {
-        // 💡 수정: count: 1을 추가하여 selectedFoodList에 푸시
-        selectedFoodList.value.push({ ...food, servings: 1 });
-    } 
-    // 2. 직접 입력 후 '추가' 버튼을 누르거나 Enter를 누른 경우
-    else if (foodName.value.trim() !== '') {
-        const customFoodName = foodName.value.trim();
-        
-        // 💡 수정: count: 1을 추가하여 selectedFoodList에 푸시
-        selectedFoodList.value.push({ name: customFoodName, servings: 1 });
-    }
-    
-    // ✨ 드롭다운 닫기 & Input 초기화 (핵심: 이로써 다음 검색을 막고 인풋을 비움)
-    foodName.value = ''; 
-    suggestions.value = []; 
-    selectedFoodIndex.value = 0;
+  playSound("coin");
+  if (food && typeof food === "object" && food["name"]) {
+    selectedFoodList.value.push({ ...food, servings: 1 });
+  } else if (foodName.value.trim() !== "") {
+    selectedFoodList.value.push({ name: foodName.value.trim(), servings: 1 });
+  }
+  foodName.value = "";
+  suggestions.value = [];
+  selectedFoodIndex.value = 0;
 };
 
-// 💡 추가: 음식 수량을 변경하는 함수
+const manualAdd = () => {
+  playSound("blip");
+  addFood();
+};
+
 const changeFoodCount = (index, delta) => {
-    const foodItem = selectedFoodList.value[index];
-    const servings = foodItem.servings + delta;
-    
-    // 최소 수량 1 제한
-    if (servings >= 1) {
-        foodItem.servings = servings;
-    } 
-    // 수량이 1 미만이 될 경우, disabled 상태이므로 이 로직은 보통 실행되지 않음 (템플릿에서 막힘)
-    // 안전을 위해 항목 제거 로직은 removeFood를 직접 호출하는 것에 맡깁니다.
+  playSound("blip");
+  const foodItem = selectedFoodList.value[index];
+  const servings = foodItem.servings + delta;
+  if (servings >= 1) foodItem.servings = servings;
 };
 
 const removeFood = (index) => {
-    // 💡 수정: selectedFoodList에서 제거
-    selectedFoodList.value.splice(index, 1);
+  playSound("blip");
+  selectedFoodList.value.splice(index, 1);
 };
 
 function selectFood(food) {
-    // 💡 수정 1: 플래그를 켜서 foodName 변경 없이 addFood를 호출해도 혹시 발생할 수 있는 이벤트를 막음
-    isSelectingFood.value = true; 
-    
-    // 💡 수정 2: foodName.value를 설정하는 코드를 제거하고 바로 addFood 호출
-    addFood(food); 
-
-    // 💡 수정 3: 다음 틱(Next Tick)에서 플래그를 해제하여 다음 사용자 입력은 허용
-    setTimeout(() => {
-        isSelectingFood.value = false;
-    }, 100); 
+  isSelectingFood.value = true;
+  addFood(food);
+  setTimeout(() => {
+    isSelectingFood.value = false;
+  }, 100);
 }
 
-const saveMeal = async() => {
-    
-    // API에 보낼 데이터 (foods 리스트에 count 포함됨)
-    const mealData = {
-        memberId : 1, // 임시 하드코딩
-        mealTime : selectedMealTime.value,
-        foods: selectedFoodList.value, // foods 객체 리스트 (name, count 포함)
-       // photo: ... (Blob 또는 fileId)
-       // memo: memo.value,
-       // member : ...
-    }
+const triggerFileInput = () => {
+  playSound("blip");
+  fileInput.value?.click();
+};
+const handleFileUpload = (event) => {
+  const file = event.target.files?.[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      playSound("coin");
+      photoPreview.value = e.target?.result;
+    };
+    reader.readAsDataURL(file);
+  }
+};
+const removePhoto = () => {
+  playSound("blip");
+  photoPreview.value = null;
+  if (fileInput.value) fileInput.value.value = "";
+};
 
-    try{
-        const response = await fetch(`${API_ENDPOINT}/diets/meal`,{
-            method:'POST',
-            headers:{
-                'Content-Type' : 'application/json'
-            },
-            body:JSON.stringify(mealData)
-        });
-
-        if (!response.ok) {
-            console.error(`저장 API 실패: ${response.status}`);
-            throw new Error(`저장 API 호출 실패 (Status: ${response.status})`);
-        }
-    }
-    catch(error){
-        console.error("식사 기록 저장 중 오류 발생:", error);
-    }
+const saveMeal = async () => {
+  playSound("save");
+  const mealData = {
+    memberId: 1,
+    mealTime: selectedMealTime.value,
+    foods: selectedFoodList.value,
+  };
+  try {
+    const response = await fetch(`${API_ENDPOINT}/diets/meal`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(mealData),
+    });
+    if (!response.ok) throw new Error("Save Failed");
+    setTimeout(() => closeModal(), 500);
+  } catch (error) {
+    console.error("Critical Failure:", error);
     closeModal();
+  }
 };
 
 function handleKeydown(event) {
-    const maxIndex = suggestions.value.length - 1;
-    
-    if (event.key === 'ArrowDown') {
-        event.preventDefault(); 
-        selectedFoodIndex.value = Math.min(maxIndex, selectedFoodIndex.value + 1);
-    } else if (event.key === 'ArrowUp') {
-        event.preventDefault(); 
-        selectedFoodIndex.value = Math.max(0, selectedFoodIndex.value - 1);
-    } else if (event.key === 'Enter') {
-        event.preventDefault();
-        if (suggestions.value.length > 0 && selectedFoodIndex.value >= 0) {
-            // 자동 완성 목록 중 선택된 항목 추가
-            selectFood(suggestions.value[selectedFoodIndex.value]);
-        } else if (foodName.value.trim() !== '') {
-            // 직접 입력된 텍스트 추가
-            addFood(); 
-        }
+  const maxIndex = suggestions.value.length - 1;
+  if (event.key === "ArrowDown") {
+    event.preventDefault();
+    selectedFoodIndex.value = Math.min(maxIndex, selectedFoodIndex.value + 1);
+  } else if (event.key === "ArrowUp") {
+    event.preventDefault();
+    selectedFoodIndex.value = Math.max(0, selectedFoodIndex.value - 1);
+  } else if (event.key === "Enter") {
+    event.preventDefault();
+    if (suggestions.value.length > 0 && selectedFoodIndex.value >= 0) {
+      selectFood(suggestions.value[selectedFoodIndex.value]);
+    } else if (foodName.value.trim() !== "") {
+      addFood();
     }
+  }
 }
-    
-// --- 모달/사진 로직 ---
 
-const triggerFileInput = () => { fileInput.value?.click(); };
-const handleFileUpload = (event) => {
-    const file = event.target.files?.[0];
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = (e) => { photoPreview.value = e.target?.result; };
-        reader.readAsDataURL(file);
-    }
+const closeModal = () => {
+  emit("close");
 };
-const removePhoto = () => {
-    photoPreview.value = null;
-    if (fileInput.value) { fileInput.value.value = ""; }
-};
-
-const closeModal = () => { 
-    console.log("모달 닫힘 요청"); 
-    emit('close'); 
-}; 
-
 const handleOverlayClick = (e) => {
-    if (e.target === e.currentTarget) { closeModal(); }
+  if (e.target === e.currentTarget) closeModal();
 };
 
-
-// Lifecycle (스크롤 방지)
-onMounted(() => { document.body.style.overflow = "hidden"; });
-onUnmounted(() => { document.body.style.overflow = ""; });
+onMounted(() => {
+  document.body.style.overflow = "hidden";
+});
+onUnmounted(() => {
+  document.body.style.overflow = "";
+});
 </script>
 
 <style scoped>
-/* Inter 폰트 적용은 index.html이나 App.vue에서 처리되어야 하지만, SFC 내에 유지합니다. */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+/* 레트로 폰트 */
+@import url("https://cdn.jsdelivr.net/gh/neodgm/neodgm-webfont@latest/neodgm/style.css");
 
-/* --- 사용자 제공 모달 CSS 시작 --- */
-
-/* 모달 오버레이 */
-.meal-modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    display: flex;
-    align-items: flex-end;
-    justify-content: center;
-    z-index: 9999;
-    animation: fadeIn 0.3s ease-out;
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  font-family: "NeoDunggeunmo", monospace;
+  color: #00ff00; /* Terminal Green */
 }
 
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+/* Scanlines */
+.scanlines {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
+    linear-gradient(
+      90deg,
+      rgba(255, 0, 0, 0.06),
+      rgba(0, 255, 0, 0.02),
+      rgba(0, 0, 255, 0.06)
+    );
+  background-size: 100% 4px, 6px 100%;
+  z-index: 1;
 }
 
-/* 모달 컨테이너 */
-.meal-modal {
-    background: white;
-    width: 100%;
-    max-width: 500px;
-    max-height: 90vh;
-    border-radius: 1.5rem 1.5rem 0 0;
-    overflow-y: auto;
-    animation: slideUp 0.3s ease-out;
-    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+.retro-modal {
+  background: #0d1117;
+  width: 95%;
+  max-width: 480px;
+  max-height: 90vh;
+  border: 4px solid #30363d;
+  box-shadow: 0 0 20px rgba(0, 255, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  z-index: 2;
+  overflow: hidden;
+  animation: modalPop 0.2s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+}
+@keyframes modalPop {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
-@keyframes slideUp {
-    from { transform: translateY(100%); }
-    to { transform: translateY(0); }
-}
-
-/* 헤더 */
+/* Header */
 .modal-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 1.25rem 1.5rem;
-    border-bottom: 1px solid #f3f4f6;
-    position: sticky;
-    top: 0;
-    background: white;
-    z-index: 10;
+  background: #161b22;
+  border-bottom: 2px solid #30363d;
+  padding: 10px 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.header-title {
+  font-size: 1rem;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.pixel-close-btn {
+  background: #ff0055;
+  color: #fff;
+  border: 2px solid #fff;
+  width: 28px;
+  height: 28px;
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 2px 2px 0 #000;
+}
+.pixel-close-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: none;
 }
 
-.modal-title {
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: #111827;
-    margin: 0;
+.modal-body {
+  padding: 15px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.terminal-text {
+  font-size: 0.8rem;
+  color: #58a6ff;
+  margin-bottom: 5px;
+  line-height: 1.4;
+  border-bottom: 1px dashed #30363d;
+  padding-bottom: 10px;
 }
 
-.close-btn, .save-btn {
-    background: none;
-    border: none;
-    font-size: 1rem;
-    cursor: pointer;
-    padding: 0.5rem;
-    -webkit-tap-highlight-color: transparent;
-    touch-action: manipulation;
-    transition: transform 0.2s;
+/* Sections */
+.section-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.pixel-label {
+  font-size: 0.9rem;
+  color: #ffd700;
+  text-shadow: 1px 1px 0 #000;
 }
 
-.close-btn:active, .save-btn:active {
-    transform: scale(0.9);
+/* 1. Mission Grid (Meal Time) */
+.mission-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+.mission-card {
+  background: #21262d;
+  border: 2px solid #30363d;
+  color: #8b949e;
+  padding: 10px 5px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  position: relative;
+  transition: all 0.1s;
+}
+.mission-card.active {
+  background: #238636;
+  color: #fff;
+  border-color: #fff;
+  box-shadow: 0 0 10px #238636;
+}
+.mission-icon {
+  font-size: 1.5rem;
+}
+.mission-name {
+  font-size: 0.8rem;
+  font-weight: bold;
+}
+.selection-indicator {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  font-size: 0.6rem;
+  color: #ffd700;
+  animation: blink 1s infinite;
+}
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
 }
 
-.close-icon {
-    font-size: 1.5rem;
-    color: #6b7280;
+/* 2. Input Box */
+.terminal-input-box {
+  display: flex;
+  align-items: center;
+  background: #000;
+  border: 2px solid #30363d;
+  padding: 8px;
+  position: relative;
+}
+.prompt {
+  color: #00ff00;
+  margin-right: 8px;
+  font-weight: bold;
+}
+.retro-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: #fff;
+  font-family: inherit;
+  font-size: 1rem;
+  outline: none;
+}
+.retro-btn-sm {
+  background: #1f6feb;
+  color: #fff;
+  border: 1px solid #fff;
+  padding: 4px 10px;
+  font-family: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+.loading-status {
+  color: #ff0055;
+  font-size: 0.8rem;
+  margin-right: 10px;
+  animation: blink 0.5s infinite;
 }
 
-.save-btn {
-    color: #98d8c8;
-    font-weight: 600;
+/* Dropdown */
+.retro-dropdown {
+  position: absolute;
+  top: 100%;
+  left: -2px;
+  width: calc(100% + 4px);
+  background: #0d1117;
+  border: 2px solid #1f6feb;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  z-index: 10;
+  max-height: 200px;
+  overflow-y: auto;
+}
+.dropdown-item {
+  padding: 10px;
+  border-bottom: 1px solid #30363d;
+  cursor: pointer;
+  color: #c9d1d9;
+}
+.dropdown-item.active {
+  background: #1f6feb;
+  color: #fff;
 }
 
-/* 날짜 섹션 */
-.date-section {
-    padding: 1rem 1.5rem;
-    text-align: center;
+/* Inventory */
+.inventory-box {
+  border: 2px solid #30363d;
+  background: #161b22;
+  padding: 10px;
+  min-height: 80px;
+}
+.inventory-header {
+  font-size: 0.7rem;
+  color: #8b949e;
+  text-align: center;
+  margin-bottom: 10px;
+  border-bottom: 1px solid #30363d;
+  padding-bottom: 5px;
+}
+.empty-msg {
+  text-align: center;
+  color: #484f58;
+  padding: 10px;
+  font-size: 0.8rem;
+}
+.inventory-slot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #21262d;
+  border: 1px solid #30363d;
+  padding: 5px 8px;
+  margin-bottom: 5px;
+}
+.slot-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.slot-name {
+  color: #fff;
+  font-size: 0.9rem;
+}
+.slot-controls {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.qty-btn {
+  width: 20px;
+  height: 20px;
+  background: #000;
+  border: 1px solid #8b949e;
+  color: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.slot-qty {
+  min-width: 25px;
+  text-align: center;
+  color: #ffd700;
+  font-size: 0.9rem;
+}
+.trash-btn {
+  background: none;
+  border: none;
+  font-size: 1rem;
+  cursor: pointer;
+  margin-left: 5px;
 }
 
-.date-display {
-    font-size: 0.95rem;
-    color: #6b7280;
-    font-weight: 500;
+/* 3. Evidence (Photo) */
+.evidence-box {
+  border: 2px dashed #30363d;
+  background: #0d1117;
+  padding: 15px;
+  text-align: center;
+  cursor: pointer;
+  position: relative;
+}
+.evidence-box:hover {
+  border-color: #58a6ff;
+  background: #161b22;
+}
+.placeholder-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: #8b949e;
+  gap: 5px;
+  font-size: 0.8rem;
+}
+.scan-icon {
+  font-size: 1.5rem;
+  color: #58a6ff;
 }
 
-/* 섹션 타이틀 */
-.section-title {
-    font-size: 1rem;
-    font-weight: 600;
-    color: #111827;
-    margin-bottom: 1rem;
+.preview-content img {
+  width: 100%;
+  max-height: 200px;
+  object-fit: contain;
+  border: 1px solid #30363d;
+}
+.scan-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  padding: 10px;
+  box-sizing: border-box;
+}
+.corner {
+  position: absolute;
+  width: 15px;
+  height: 15px;
+  border-color: #ff0055;
+  border-style: solid;
+}
+.tl {
+  top: 10px;
+  left: 10px;
+  border-width: 2px 0 0 2px;
+}
+.tr {
+  top: 10px;
+  right: 10px;
+  border-width: 2px 2px 0 0;
+}
+.bl {
+  bottom: 10px;
+  left: 10px;
+  border-width: 0 0 2px 2px;
+}
+.br {
+  bottom: 10px;
+  right: 10px;
+  border-width: 0 2px 2px 0;
+}
+.rec-badge {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  color: #ff0055;
+  font-size: 0.7rem;
+  animation: blink 1s infinite;
+  background: rgba(0, 0, 0, 0.5);
+  padding: 2px 5px;
+}
+.delete-evidence-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: #ff0055;
+  color: #fff;
+  border: 1px solid #fff;
+  font-family: inherit;
+  font-size: 0.7rem;
+  padding: 4px 8px;
+  cursor: pointer;
 }
 
-/* 식사 시간 선택 */
-.meal-type-section {
-    padding: 1.5rem;
-    border-top: 8px solid #f9fafb;
+/* 4. Memo */
+.retro-textarea {
+  width: 100%;
+  background: #0d1117;
+  border: 2px solid #30363d;
+  color: #fff;
+  padding: 10px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  outline: none;
+  box-sizing: border-box;
+}
+.retro-textarea:focus {
+  border-color: #58a6ff;
 }
 
-.meal-type-buttons {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 0.75rem;
+/* Footer */
+.footer-actions {
+  margin-top: 10px;
+  text-align: center;
+}
+.retro-btn-lg {
+  width: 100%;
+  background: #238636;
+  color: #fff;
+  border: 2px solid #fff;
+  padding: 15px;
+  font-family: inherit;
+  cursor: pointer;
+  box-shadow: 4px 4px 0 #000;
+  position: relative;
+  overflow: hidden;
+}
+.retro-btn-lg:active {
+  transform: translate(4px, 4px);
+  box-shadow: none;
+}
+.btn-text {
+  font-size: 1.1rem;
+  font-weight: bold;
+  letter-spacing: 1px;
 }
 
-.meal-type-btn {
-    background: white;
-    border: 2px solid #e5e7eb;
-    padding: 1rem 0.5rem;
-    border-radius: 1rem;
-    cursor: pointer;
-    transition: all 0.2s;
-    -webkit-tap-highlight-color: transparent;
-    touch-action: manipulation;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.meal-type-btn:active {
-    transform: scale(0.95);
-}
-
-.meal-type-btn.active {
-    background: linear-gradient(135deg, #98d8c8 0%, #6fafaa 100%);
-    border-color: #6fafaa;
-}
-
-.meal-type-btn.active .meal-emoji, .meal-type-btn.active .meal-name {
-    filter: brightness(1.2);
-}
-
-.meal-emoji {
-    font-size: 2rem;
-}
-
-.meal-name {
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: #374151;
-}
-
-.meal-type-btn.active .meal-name {
-    color: white;
-}
-
-/* 음식 입력 */
-.food-input-section {
-    padding: 1.5rem;
-    border-top: 8px solid #f9fafb;
-    position: relative; /* 연관 검색어 드롭다운을 위한 포지션 */
-}
-
-/* --- 검색 자동완성 스타일 --- */
-.food-input-container {
-    display: flex;
-    gap: 0.75rem;
-    margin-bottom: 1rem;
-    position: relative; /* 드롭다운 기준점 */
-}
-
-.food-input {
-    flex: 1;
-    padding: 0.875rem 1rem;
-    border: 2px solid #e5e7eb;
-    border-radius: 0.875rem;
-    font-size: 0.95rem;
-    outline: none;
-    transition: border-color 0.2s;
-    z-index: 100; /* 인풋이 드롭다운 위에 오도록 */
-}
-
-.food-input:focus {
-    border-color: #98d8c8;
-}
-
-.add-btn {
-    background: linear-gradient(135deg, #98d8c8 0%, #6fafaa 100%);
-    color: white;
-    border: none;
-    padding: 0.875rem 1.5rem;
-    border-radius: 0.875rem;
-    font-size: 0.95rem;
-    font-weight: 600;
-    cursor: pointer;
-    -webkit-tap-highlight-color: transparent;
-    transition: transform 0.2s;
-    z-index: 100;
-}
-
-.add-btn:active {
-    transform: scale(0.95);
-}
-
-/* 연관 검색어 드롭다운 */
-.suggestions-dropdown {
-    position: absolute;
-    top: 100%; /* input 아래에 위치 */
-    left: 0;
-    width: calc(100% - 70px); /* input width와 비슷하게 조정 (버튼 너비만큼 제외) */
-    
-    /* 💡 스크롤 가능하도록 높이 증가 */
-    max-height: 250px; 
-    overflow-y: auto;
-    
-    background: white;
-    border: 1px solid #e5e7eb;
-    border-radius: 0 0 0.875rem 0.875rem;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    z-index: 90;
-    list-style: none;
-    padding: 0;
-    margin-top: -10px; /* input과 겹치도록 */
-}
-
-.suggestion-item {
-    padding: 0.75rem 1rem;
-    cursor: pointer;
-    color: #374151;
-    transition: background-color 0.1s;
-}
-
-.suggestion-item:hover, .suggestion-item.active {
-    background: #f0fdfa; /* Tailwind mint-50 */
-    font-weight: 600;
-}
-
-/* 로딩 인디케이터 */
-.loading-indicator {
-    position: absolute;
-    right: 80px; /* input 필드 근처 */
-    top: 50%;
-    transform: translateY(-50%);
-    z-index: 101;
-}
-/* --- 검색 자동완성 스타일 종료 --- */
-
-
-/* 음식 목록 */
-.food-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-}
-
-.food-item {
-    /* 💡 수정: 수량 조절 버튼과의 공간 확보 및 정렬 */
-    display: flex;
-    align-items: center;
-    justify-content: space-between; 
-    gap: 0.75rem; /* 항목 내부 간격 증가 */
-    background: #f9fafb;
-    /* 💡 수정: 내부 패딩 조정 (세로) */
-    padding: 0.4rem 0.75rem; 
-    border-radius: 2rem;
-    font-size: 0.9rem;
-    flex-grow: 1; /* flex-wrap과 함께 사용 시 항목이 늘어나도록 */
-    max-width: 100%; 
-}
-
-.food-item-name {
-    color: #374151;
-    /* 💡 수정: 이름이 길어도 옆 버튼에 영향을 덜 주도록 */
-    white-space: nowrap; 
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-/* 💡 추가: 수량 조절 컨테이너 */
-.count-control {
-    display: flex;
-    align-items: center;
-    gap: 0.3rem;
-    margin-left: auto; /* 이름과 수량 조절 버튼을 최대한 멀리 떨어뜨림 */
-}
-
-/* 💡 추가: 수량 버튼 스타일 */
-.count-btn {
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    border: 1px solid #d1d5db;
-    background: white;
-    font-size: 1rem;
-    font-weight: 500;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    transition: all 0.2s;
-}
-
-.count-btn:active {
-    transform: scale(0.9);
-}
-
-.count-minus-btn:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-    background: #f9fafb;
-}
-
-.count-plus-btn {
-    background: #98d8c8;
-    color: white;
-    border-color: #98d8c8;
-}
-
-/* 💡 추가: 수량 표시 */
-.food-count {
-    font-size: 0.95rem;
-    font-weight: 600;
-    color: #111827;
-    min-width: 18px; /* 수량이 두 자릿수여도 공간 확보 */
-    text-align: center;
-}
-
-
-/* 기존 제거 버튼 (✕) 스타일 수정 */
-.remove-food-btn {
-    background: none;
-    /* 💡 수정: count-control과 붙지 않도록 margin-left: 0 */
-    margin-left: 0; 
-    border: none;
-    /* 💡 수정: 디자인 통일 */
-    color: #9ca3af; 
-    font-size: 1.1rem;
-    cursor: pointer;
-    padding: 0;
-    line-height: 1;
-    -webkit-tap-highlight-color: transparent;
-}
-
-
-/* 사진 업로드 */
-.photo-section {
-    padding: 1.5rem;
-    border-top: 8px solid #f9fafb;
-}
-
-.photo-upload-area {
-    border: 2px dashed #d1d5db;
-    border-radius: 1rem;
-    padding: 2rem;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.2s;
-    -webkit-tap-highlight-color: transparent;
-}
-
-.photo-upload-area:active {
-    transform: scale(0.98);
-    background: #f9fafb;
-}
-
-.photo-placeholder {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.camera-icon {
-    font-size: 3rem;
-}
-
-.photo-text {
-    font-size: 0.9rem;
-    color: #6b7280;
-}
-
-.photo-preview {
-    position: relative;
-}
-
-.photo-preview img {
-    width: 100%;
-    max-height: 200px;
-    object-fit: cover;
-    border-radius: 0.875rem;
-}
-
-.remove-photo-btn {
-    position: absolute;
-    top: 0.5rem;
-    right: 0.5rem;
-    background: rgba(0, 0, 0, 0.6);
-    color: white;
-    border: none;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    font-size: 1.25rem;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    -webkit-tap-highlight-color: transparent;
-}
-
-/* 메모 */
-.memo-section {
-    padding: 1.5rem;
-    border-top: 8px solid #f9fafb;
-}
-
-.memo-input {
-    width: 100%;
-    padding: 1rem;
-    border: 2px solid #e5e7eb;
-    border-radius: 0.875rem;
-    font-size: 0.9rem;
-    color: #111827;
-    resize: none;
-    font-family: inherit;
-    outline: none;
-    transition: border-color 0.2s;
-}
-
-.memo-input:focus {
-    border-color: #98d8c8;
-}
-
-.memo-input::placeholder {
-    color: #9ca3af;
-}
-
-/* 오늘의 식사 */
-.today-meals-section {
-    padding: 1.5rem;
-    border-top: 8px solid #f9fafb;
-}
-
-.today-meals-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 0.75rem;
-}
-
-.meal-card {
-    background: #f9fafb;
-    padding: 1rem 0.5rem;
-    border-radius: 1rem;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.5rem;
-    position: relative;
-    border: 2px solid transparent;
-}
-
-.meal-card.completed {
-    background: linear-gradient(135deg, #e0f2f1 0%, #b2dfdb 100%);
-    border-color: #4db6ac;
-}
-
-.meal-card-emoji {
-    font-size: 1.75rem;
-}
-
-.meal-card-name {
-    font-size: 0.8rem;
-    color: #6b7280;
-    font-weight: 500;
-}
-
-.meal-card.completed .meal-card-name {
-    color: #00796b;
-    font-weight: 600;
-}
-
-.check-icon {
-    position: absolute;
-    top: 0.25rem;
-    right: 0.25rem;
-    background: #4db6ac;
-    color: white;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.75rem;
-    font-weight: bold;
-}
-
-/* 모바일 최적화 */
+/* Mobile Optimization */
 @media (max-width: 390px) {
-    .meal-type-buttons {
-        grid-template-columns: repeat(2, 1fr);
-    }
-
-    .meal-emoji {
-        font-size: 1.75rem;
-    }
-
-    .today-meals-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
+  .mission-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
-
-/* 스크롤바 스타일링 */
-.meal-modal::-webkit-scrollbar {
-    width: 6px;
-}
-
-.meal-modal::-webkit-scrollbar-track {
-    background: transparent;
-}
-
-.meal-modal::-webkit-scrollbar-thumb {
-    background: #d1d5db;
-    border-radius: 3px;
-}
-
-.meal-modal::-webkit-scrollbar-thumb:hover {
-    background: #9ca3af;
-}
-
-/* --- 사용자 제공 모달 CSS 종료 --- */
 </style>

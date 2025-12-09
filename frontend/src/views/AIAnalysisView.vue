@@ -1,637 +1,805 @@
 <script setup>
-import { ref, onMounted } from 'vue';
-import { Sparkles, TrendingUp } from 'lucide-vue-next';
-// Footer 컴포넌트 import는 그대로 유지합니다.
-import Footer from '../components/utils/Footer.vue'; 
-
-// Vue Router 관련 import
-import { useRouter, useRoute } from 'vue-router';
+import { ref, onMounted, computed } from "vue";
+import { useRouter, useRoute } from "vue-router";
+import Footer from "../components/utils/Footer.vue";
 
 const router = useRouter();
-const route = useRoute(); // 현재 라우트 정보를 가져옵니다.
+const route = useRoute();
 
 // ----------------------------------------------------
 // 1. 상태 관리
 // ----------------------------------------------------
 const isLoading = ref(true);
 const analysisData = ref(null);
+const bootLogs = ref([]); // 로딩 중 표시할 로그
 
-// computed 속성을 사용하여 현재 AI 분석 대시보드를 보여줄지 결정합니다.
-// 자식 라우트(diet-plan)로 이동하면 이 대시보드는 숨겨집니다.
-// route.path가 '/ai-analysis'일 때만 대시보드를 표시하고, 로딩이 완료되었는지 확인합니다.
 const showAnalysisDashboard = () => {
-    return route.path === '/ai-analysis' && !isLoading.value;
+  return route.path === "/ai-analysis" && !isLoading.value;
 };
 
+// ----------------------------------------------------
+// 2. 랭크 시스템 (게임 요소)
+// ----------------------------------------------------
+const getRank = (score) => {
+  if (score >= 90) return "S";
+  if (score >= 80) return "A";
+  if (score >= 70) return "B";
+  if (score >= 50) return "C";
+  return "F";
+};
+
+const getRankColor = (score) => {
+  if (score >= 90) return "#ffd700"; // Gold
+  if (score >= 80) return "#00e5ff"; // Cyan
+  if (score >= 70) return "#00ff00"; // Green
+  if (score >= 50) return "#ffaa00"; // Orange
+  return "#ff0055"; // Red
+};
 
 // ----------------------------------------------------
-// 2. 데이터 로드 시뮬레이션
+// 3. 데이터 로드 & 부팅 시뮬레이션
 // ----------------------------------------------------
 onMounted(() => {
-    // 실제 API 호출로 교체해야 하는 부분입니다.
-    const timer = setTimeout(() => {
-        analysisData.value = {
-            overallScore: 78,
-            insights: [
-                {
-                    id: 1,
-                    type: 'positive',
-                    title: '단백질 섭취 우수',
-                    description: '오늘 단백질 목표를 충족했습니다. 근력 유지에 좋습니다.',
-                    icon: '✓'
-                },
-                {
-                    id: 2,
-                    type: 'warning',
-                    title: '나트륨 섭취량 높음',
-                    description: '권장 수치의 120% 수준입니다. 소금 섭취를 줄여보세요.',
-                    icon: '!'
-                },
-                {
-                    id: 3,
-                    type: 'positive',
-                    title: '균형잡힌 영양소 비율',
-                    description: '탄수화물, 단백질, 지방의 균형이 건강합니다.',
-                    icon: '✓'
-                },
-                {
-                    id: 4,
-                    type: 'suggestion',
-                    title: '내일을 위한 제안',
-                    description: '채소 섭취를 50g 정도 늘리면 더 좋은 결과를 기대할 수 있습니다.',
-                    icon: '→'
-                }
-            ],
-            recommendation: '현재 식단은 좋은 방향입니다. 나트륨 조절과 채소 다양성을 높이면 더욱 개선될 수 있습니다.',
-            trend: 'up' // 또는 'down', 'stable'
-        };
-        isLoading.value = false;
-    }, 2000); // 2초 후 데이터 로드 시뮬레이션
+  // 부팅 로그 애니메이션
+  const logs = [
+    "INITIALIZING SYSTEM...",
+    "CONNECTING TO NEURAL NET...",
+    "SCANNING BIOMETRICS...",
+    "DECRYPTING FOOD LOGS...",
+    "CALCULATING POWER LEVEL...",
+    "ACCESS GRANTED.",
+  ];
 
-    // 컴포넌트 언마운트 시 타이머 정리
-    return () => clearTimeout(timer);
+  let logIndex = 0;
+  const logInterval = setInterval(() => {
+    if (logIndex < logs.length) {
+      bootLogs.value.push(logs[logIndex]);
+      logIndex++;
+    } else {
+      clearInterval(logInterval);
+    }
+  }, 300);
+
+  // 실제 데이터 로드 시뮬레이션
+  setTimeout(() => {
+    analysisData.value = {
+      overallScore: 78,
+      insights: [
+        {
+          id: 1,
+          type: "positive",
+          title: "STR 증가 (단백질)",
+          description:
+            "근육량 유지에 필요한 단백질이 충분합니다. 공격력이 상승했습니다!",
+          iconType: "sword",
+        },
+        {
+          id: 2,
+          type: "warning",
+          title: "TOXIC 경고 (나트륨)",
+          description:
+            "나트륨 수치가 위험 수준입니다. 해독 포션(물)이 필요합니다.",
+          iconType: "skull",
+        },
+        {
+          id: 3,
+          type: "positive",
+          title: "BALANCE 양호",
+          description: "3대 영양소 비율이 황금 밸런스를 유지하고 있습니다.",
+          iconType: "scale",
+        },
+        {
+          id: 4,
+          type: "suggestion",
+          title: "NEXT QUEST",
+          description: "채소 50g 섭취 시 방어력이 추가 상승합니다.",
+          iconType: "scroll",
+        },
+      ],
+      recommendation:
+        "현재 상태는 매우 안정적입니다. 나트륨 수치만 조절한다면 S랭크 도달이 가능합니다.",
+      trend: "up",
+    };
+    isLoading.value = false;
+  }, 2500);
 });
 
-// ----------------------------------------------------
-// 3. 스타일 클래스 매핑 함수
-// ----------------------------------------------------
-const getInsightClass = (type) => {
-    switch(type) {
-        case 'positive': return 'card-positive';
-        case 'warning': return 'card-warning';
-        case 'suggestion': return 'card-suggestion';
-        default: return 'card-default';
-    }
-};
-
-const getScoreClass = (score) => {
-    // analysisData.value가 null일 수 있으므로 안전하게 처리
-    if (!score) return 'score-mid';
-    if (score >= 80) return 'score-high';
-    if (score >= 60) return 'score-mid';
-    return 'score-low';
-};
-
-/**
- * AI Diet Plan 경로로 이동합니다.
- */
 const goToAIDietPlan = () => {
-    console.log("Navigating to AI Diet Plan at /ai-analysis/diet-plan");
-    // Vue Router를 사용하여 '/ai-analysis/diet-plan' 경로로 이동
-    router.push('/ai-analysis/diet-plan');
-}
+  router.push("/ai-analysis/diet-plan");
+};
 </script>
 
 <template>
-    <div class="container">
-        <div class="wrapper">
-            
-            <!-- 헤더 섹션은 항상 표시 -->
-            <div class="header-section">
-                <div class="title-row">
-                    <Sparkles class="icon-sparkle" />
-                    <!-- 현재 라우트에 따라 제목 변경 -->
-                    <h1>{{ route.path === '/ai-analysis/diet-plan' ? 'AI 식단 플랜' : 'AI 식단 분석' }}</h1>
-                </div>
-                <p class="subtitle">{{ route.path === '/ai-analysis/diet-plan' ? '개인 맞춤형 식단 계획을 확인하세요' : '당신의 식단을 AI Agent가 분석하고 있습니다' }}</p>
-            </div>
+  <div class="ai-view retro-theme">
+    <div class="scanlines"></div>
 
-            <!-- 로딩 컨테이너 (경로에 상관없이 데이터 로드 중일 때 표시) -->
-            <div v-if="isLoading" class="loading-container">
-                <div class="loading-box">
-                    <div class="pulse-effect">
-                        <svg viewBox="0 0 200 220" class="agent-svg">
-                            <defs>
-                                <radialGradient id="agentGradient" cx="50%" cy="40%">
-                                    <stop offset="0%" stop-color="#60a5fa" stop-opacity="0.6" />
-                                    <stop offset="100%" stop-color="#3b82f6" stop-opacity="0.3" />
-                                </radialGradient>
-                                <filter id="glow">
-                                    <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
-                                    <feMerge>
-                                        <feMergeNode in="coloredBlur"/>
-                                        <feMergeNode in="SourceGraphic"/>
-                                    </feMerge>
-                                </filter>
-                            </defs>
-                            <circle cx="100" cy="90" r="75" fill="url(#agentGradient)" filter="url(#glow)" />
-                            <circle cx="100" cy="70" r="35" fill="#f3f4f6" />
-                            <circle cx="88" cy="65" r="4" fill="#1f2937" />
-                            <circle cx="112" cy="65" r="4" fill="#1f2937" />
-                            <circle cx="89" cy="63" r="1.5" fill="#fff" />
-                            <circle cx="113" cy="63" r="1.5" fill="#fff" />
-                            <circle cx="100" cy="75" r="3" fill="#e5e7eb" />
-                            <path d="M 95 82 Q 100 85 105 82" stroke="#d1d5db" stroke-width="2" fill="none" stroke-linecap="round" />
-                            <ellipse cx="100" cy="125" rx="28" ry="35" fill="#e0e7ff" />
-                            <ellipse cx="72" cy="120" rx="12" ry="28" fill="#f3f4f6" transform="rotate(-20 72 120)" />
-                            <ellipse cx="128" cy="120" rx="12" ry="28" fill="#f3f4f6" transform="rotate(20 128 120)" />
-                            <circle cx="62" cy="135" r="8" fill="#fcd34d" />
-                            <circle cx="138" cy="135" r="8" fill="#fcd34d" />
-                            <g opacity="0.7">
-                                <circle cx="45" cy="60" r="3" fill="#a78bfa" />
-                                <line x1="45" y1="50" x2="45" y2="70" stroke="#a78bfa" stroke-width="1.5" />
-                                <line x1="35" y1="60" x2="55" y2="60" stroke="#a78bfa" stroke-width="1.5" />
-                            </g>
-                            <g opacity="0.7">
-                                <circle cx="155" cy="50" r="2.5" fill="#c084fc" />
-                                <line x1="155" y1="42" x2="155" y2="58" stroke="#c084fc" stroke-width="1.5" />
-                                <line x1="147" y1="50" x2="163" y2="50" stroke="#c084fc" stroke-width="1.5" />
-                            </g>
-                        </svg>
-                    </div>
-                </div>
-                <div class="loading-dots">
-                    <div class="dot" v-for="i in 3" :key="i" :style="{ animationDelay: `${i * 0.15}s` }"></div>
-                </div>
-            </div>
-
-            <!-- AI 분석 대시보드 (자식 라우트가 아닐 때만 표시) -->
-            <div v-else-if="showAnalysisDashboard()" class="content-container">
-                <div class="main-score-card">
-                    <div class="score-content">
-                        <div class="agent-wrapper">
-                            <svg viewBox="0 0 200 220" class="agent-svg">
-                                <defs>
-                                    <radialGradient id="agentGradient2" cx="50%" cy="40%">
-                                        <stop offset="0%" stop-color="#60a5fa" stop-opacity="0.6" />
-                                        <stop offset="100%" stop-color="#3b82f6" stop-opacity="0.3" />
-                                    </radialGradient>
-                                    <filter id="glow2">
-                                        <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
-                                        <feMerge>
-                                            <feMergeNode in="coloredBlur"/>
-                                            <feMergeNode in="SourceGraphic"/>
-                                        </feMerge>
-                                    </filter>
-                                </defs>
-                                <circle cx="100" cy="90" r="75" fill="url(#agentGradient2)" filter="url(#glow2)" />
-                                <circle cx="100" cy="70" r="35" fill="#f3f4f6" />
-                                <circle cx="88" cy="65" r="4" fill="#1f2937" />
-                                <circle cx="112" cy="65" r="4" fill="#1f2937" />
-                                <circle cx="89" cy="63" r="1.5" fill="#fff" />
-                                <circle cx="113" cy="63" r="1.5" fill="#fff" />
-                                <circle cx="100" cy="75" r="3" fill="#e5e7eb" />
-                                <path d="M 95 82 Q 100 85 105 82" stroke="#d1d5db" stroke-width="2" fill="none" stroke-linecap="round" />
-                                <ellipse cx="100" cy="125" rx="28" ry="35" fill="#e0e7ff" />
-                                <ellipse cx="72" cy="120" rx="12" ry="28" fill="#f3f4f6" transform="rotate(-20 72 120)" />
-                                <ellipse cx="128" cy="120" rx="12" ry="28" fill="#f3f4f6" transform="rotate(20 128 120)" />
-                                <circle cx="62" cy="135" r="8" fill="#fcd34d" />
-                                <circle cx="138" cy="135" r="8" fill="#fcd34d" />
-                                <g opacity="0.7">
-                                    <circle cx="45" cy="60" r="3" fill="#a78bfa" />
-                                    <line x1="45" y1="50" x2="45" y2="70" stroke="#a78bfa" stroke-width="1.5" />
-                                    <line x1="35" y1="60" x2="55" y2="60" stroke="#a78bfa" stroke-width="1.5" />
-                                </g>
-                                <g opacity="0.7">
-                                    <circle cx="155" cy="50" r="2.5" fill="#c084fc" />
-                                    <line x1="155" y1="42" x2="155" y2="58" stroke="#c084fc" stroke-width="1.5" />
-                                    <line x1="147" y1="50" x2="163" y2="50" stroke="#c084fc" stroke-width="1.5" />
-                                </g>
-                            </svg>
-                        </div>
-                        <p class="score-label">분석 완료!</p>
-                        <div class="score-display">
-                            <div class="score-number-box">
-                                <span :class="['score-value', getScoreClass(analysisData.overallScore)]">
-                                    {{ analysisData.overallScore }}
-                                </span>
-                                <span class="score-total">/100</span>
-                            </div>
-                            <div v-if="analysisData.trend === 'up'" class="trend-badge">
-                                <TrendingUp class="icon-trend" />
-                                <span>전일 대비 +5</span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="progress-track">
-                        <div 
-                            class="progress-fill"
-                            :style="{ width: `${analysisData.overallScore}%` }"
-                        ></div>
-                    </div>
-                </div>
-
-                <div class="insights-section">
-                    <h2 class="section-title">
-                        <Sparkles class="icon-sm" />
-                        AI의 분석 결과
-                    </h2>
-                    <div 
-                        v-for="(insight, idx) in analysisData.insights" 
-                        :key="insight.id"
-                        :class="['insight-card', getInsightClass(insight.type)]"
-                        :style="{ animationDelay: `${idx * 100}ms` }"
-                    >
-                        <div class="card-body">
-                            <div class="icon-circle">
-                                {{ insight.icon }}
-                            </div>
-                            <div class="text-content">
-                                <h3>{{ insight.title }}</h3>
-                                <p>{{ insight.description }}</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="advice-card">
-                    <div class="card-body">
-                        <Sparkles class="icon-advice" />
-                        <div class="text-content">
-                            <h3>AI Agent의 조언</h3>
-                            <p>{{ analysisData.recommendation }}</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="button-group">
-                    <!-- @click 이벤트 핸들러는 goToAIDietPlan 함수를 호출하여 라우팅을 수행합니다. -->
-                    <button class="btn btn-primary" @click="goToAIDietPlan">AI Diet Plan</button>
-                    <button class="btn btn-secondary">AI Talk</button>
-                </div>
-            </div>
-            
-            <!-- 중첩 라우트의 내용이 렌더링될 위치 (AiDietPlan.vue가 여기에 로드됨) -->
-            <router-view></router-view>
-
+    <div class="content-wrapper">
+      <div class="retro-header">
+        <div class="system-status">
+          <span class="status-light blink"></span>
+          SYSTEM_ONLINE
         </div>
-        
-        <div class="footer-spacer"></div>
+        <h1 class="page-title">MAINFRAME ANALYSIS</h1>
+      </div>
+
+      <div v-if="isLoading" class="loading-terminal">
+        <div class="terminal-screen">
+          <div v-for="(log, index) in bootLogs" :key="index" class="log-line">
+            > {{ log }}
+          </div>
+          <div class="cursor-line">> <span class="blink-cursor">_</span></div>
+        </div>
+        <div class="loading-bar-container">
+          <div class="loading-bar"></div>
+        </div>
+      </div>
+
+      <div v-else-if="showAnalysisDashboard()" class="dashboard-container">
+        <div class="ai-avatar-section">
+          <div class="cyber-eye-container">
+            <div class="eye-ring"></div>
+            <div class="eye-iris">
+              <div class="eye-pupil"></div>
+              <div class="eye-glint"></div>
+            </div>
+            <div class="scanning-beam"></div>
+          </div>
+          <div class="ai-message-box">
+            <p class="typing-effect">
+              "분석 완료. 당신의 데이터를 확인하십시오."
+            </p>
+          </div>
+        </div>
+
+        <div class="power-card">
+          <div class="card-deco tl"></div>
+          <div class="card-deco tr"></div>
+          <div class="card-deco bl"></div>
+          <div class="card-deco br"></div>
+
+          <div
+            class="rank-badge"
+            :style="{
+              color: getRankColor(analysisData.overallScore),
+              borderColor: getRankColor(analysisData.overallScore),
+            }"
+          >
+            RANK {{ getRank(analysisData.overallScore) }}
+          </div>
+
+          <div class="score-row">
+            <div class="score-label">POWER LEVEL</div>
+            <div
+              class="score-val"
+              :style="{ color: getRankColor(analysisData.overallScore) }"
+            >
+              {{ analysisData.overallScore }} <span class="max">/ 100</span>
+            </div>
+          </div>
+
+          <div class="retro-progress">
+            <div
+              class="fill"
+              :style="{
+                width: `${analysisData.overallScore}%`,
+                background: getRankColor(analysisData.overallScore),
+              }"
+            ></div>
+          </div>
+        </div>
+
+        <div class="insight-grid">
+          <div
+            v-for="(item, idx) in analysisData.insights"
+            :key="item.id"
+            class="insight-card pop-in"
+            :class="item.type"
+            :style="{ animationDelay: `${idx * 0.1}s` }"
+          >
+            <div class="icon-box">
+              <svg
+                v-if="item.iconType === 'sword'"
+                viewBox="0 0 24 24"
+                class="animated-icon sword"
+              >
+                <path d="M14.5 4l-8.5 8.5 2 2 8.5-8.5z" fill="currentColor" />
+                <path d="M4 14.5l2-2 2 2-2 2z" fill="currentColor" />
+              </svg>
+              <svg
+                v-if="item.iconType === 'skull'"
+                viewBox="0 0 24 24"
+                class="animated-icon skull"
+              >
+                <circle cx="9" cy="9" r="2" fill="currentColor" />
+                <circle cx="15" cy="9" r="2" fill="currentColor" />
+                <path d="M8 15h8" stroke="currentColor" stroke-width="2" />
+                <path
+                  d="M12 2a10 10 0 0 0-10 10c0 5.5 4.5 10 10 10s10-4.5 10-10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16z"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                />
+              </svg>
+              <svg
+                v-if="item.iconType === 'scale'"
+                viewBox="0 0 24 24"
+                class="animated-icon scale"
+              >
+                <path d="M12 2L2 12h20L12 2z" fill="currentColor" />
+                <rect x="11" y="12" width="2" height="10" fill="currentColor" />
+              </svg>
+              <svg
+                v-if="item.iconType === 'scroll'"
+                viewBox="0 0 24 24"
+                class="animated-icon scroll"
+              >
+                <rect
+                  x="4"
+                  y="4"
+                  width="16"
+                  height="16"
+                  rx="2"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  fill="none"
+                />
+                <line
+                  x1="8"
+                  y1="8"
+                  x2="16"
+                  y2="8"
+                  stroke="currentColor"
+                  stroke-width="2"
+                />
+                <line
+                  x1="8"
+                  y1="12"
+                  x2="16"
+                  y2="12"
+                  stroke="currentColor"
+                  stroke-width="2"
+                />
+              </svg>
+            </div>
+
+            <div class="text-box">
+              <div class="card-title">{{ item.title }}</div>
+              <div class="card-desc">{{ item.description }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="advice-terminal">
+          <div class="terminal-header">/// ORACLE_ADVICE.TXT ///</div>
+          <div class="terminal-body">
+            {{ analysisData.recommendation }}
+          </div>
+        </div>
+
+        <div class="action-buttons">
+          <button class="retro-btn primary" @click="goToAIDietPlan">
+            <span class="btn-icon">📜</span> VIEW QUEST PLAN
+          </button>
+          <button class="retro-btn secondary">
+            <span class="btn-icon">💬</span> CONSULT ORACLE
+          </button>
+        </div>
+      </div>
+
+      <router-view></router-view>
     </div>
 
-    <div class="footer-fixed temporary-footer">
-        <Footer></Footer>
-    </div>
+    <Footer />
+  </div>
 </template>
 
 <style scoped>
-/* 푸터 겹침 방지를 위한 CSS 수정 */
-.footer-fixed {
-    position: fixed; /* 화면 하단에 고정 */
-    bottom: 0;
-    left: 0;
+/* 폰트: 둥근모꼴 */
+@import url("https://cdn.jsdelivr.net/gh/neodgm/neodgm-webfont@latest/neodgm/style.css");
+
+.ai-view {
+  min-height: 100vh;
+  background-color: #050510;
+  color: #e0e0e0;
+  font-family: "NeoDunggeunmo", monospace;
+  padding-bottom: 100px;
+  overflow-x: hidden;
+}
+
+/* 스캔라인 */
+.scanlines {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
+    linear-gradient(
+      90deg,
+      rgba(255, 0, 0, 0.06),
+      rgba(0, 255, 0, 0.02),
+      rgba(0, 0, 255, 0.06)
+    );
+  background-size: 100% 4px, 6px 100%;
+  z-index: 99;
+}
+
+.content-wrapper {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 1rem;
+  position: relative;
+  z-index: 100;
+}
+
+/* 헤더 */
+.retro-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  border-bottom: 2px solid #333;
+  padding-bottom: 0.5rem;
+}
+.system-status {
+  font-size: 0.7rem;
+  color: #00ff00;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.status-light {
+  width: 8px;
+  height: 8px;
+  background: #00ff00;
+  border-radius: 50%;
+  box-shadow: 0 0 5px #00ff00;
+}
+.blink {
+  animation: blink 1s infinite;
+}
+.page-title {
+  font-size: 1.2rem;
+  color: #fff;
+  text-shadow: 2px 2px #000;
+  margin: 0;
+}
+
+/* 1. 로딩 터미널 */
+.loading-terminal {
+  background: #000;
+  border: 2px solid #00ff00;
+  padding: 1rem;
+  border-radius: 5px;
+  min-height: 300px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.terminal-screen {
+  color: #00ff00;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+.blink-cursor {
+  animation: blink 0.5s infinite;
+}
+.loading-bar-container {
+  height: 20px;
+  border: 2px solid #00ff00;
+  padding: 2px;
+  margin-top: 1rem;
+}
+.loading-bar {
+  height: 100%;
+  background: #00ff00;
+  width: 0%;
+  animation: loadBar 2.5s ease-out forwards;
+}
+@keyframes loadBar {
+  to {
     width: 100%;
-    z-index: 1000; /* 다른 요소 위에 표시 */
+  }
 }
 
-
-
-/* 푸터 높이만큼 하단 공간을 띄워 컨텐츠가 가려지지 않게 합니다. */
-.footer-spacer {
-    height: 100px; /* Footer 컴포넌트의 예상 높이 (필요에 따라 조절) */
-    width: 100%;
+/* 2. 대시보드 - AI 아바타 (눈) */
+.ai-avatar-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 2rem;
 }
-/* ------------------------------------------------------------------- */
-
-
-/* --- 기본 레이아웃 및 배경 --- */
-.container {
-    min-height: 100vh;
-    background-color: #000000;
-    color: #ffffff;
-    padding: 1rem;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+.cyber-eye-container {
+  width: 100px;
+  height: 100px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
-
-.wrapper {
-    max-width: 42rem; /* max-w-2xl */
-    margin: 0 auto;
+/* 눈 테두리 */
+.eye-ring {
+  width: 100%;
+  height: 100%;
+  border: 4px solid #00e5ff;
+  border-radius: 50%;
+  border-left-color: transparent;
+  border-right-color: transparent;
+  animation: spin 4s linear infinite;
+  box-shadow: 0 0 15px #00e5ff;
 }
-
-/* --- 헤더 --- */
-.header-section {
-    margin-bottom: 1.5rem;
+/* 눈동자 */
+.eye-iris {
+  width: 60px;
+  height: 60px;
+  background: rgba(0, 229, 255, 0.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  border: 2px solid #00e5ff;
+  animation: pulseEye 3s infinite;
 }
-
-.title-row {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 0.5rem;
+.eye-pupil {
+  width: 20px;
+  height: 20px;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 10px #00e5ff;
+  animation: lookAround 5s infinite;
 }
-
-.title-row h1 {
-    font-size: 1.5rem;
-    font-weight: 700;
-}
-
-.icon-sparkle {
-    width: 1.25rem;
-    height: 1.25rem;
-    color: #c084fc; /* purple-400 */
-}
-
-.subtitle {
-    color: #9ca3af; /* gray-400 */
-    font-size: 0.875rem;
-}
-
-/* --- 로딩 애니메이션 --- */
-.loading-container {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-}
-
-.loading-box {
-    background: linear-gradient(to right, #1f2937, #111827);
-    border-radius: 1.5rem;
-    padding: 3rem;
-    border: 1px solid rgba(55, 65, 81, 0.5);
-    display: flex;
-    justify-content: center;
+.scanning-beam {
+  position: absolute;
+  width: 100%;
+  height: 2px;
+  background: #00ff00;
+  top: 0;
+  animation: scanDown 2s linear infinite;
+  opacity: 0.5;
+  box-shadow: 0 0 5px #00ff00;
 }
 
-.pulse-effect {
-    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+/* AI 메시지 */
+.ai-message-box {
+  margin-top: 1rem;
+  background: rgba(0, 229, 255, 0.1);
+  border: 1px solid #00e5ff;
+  padding: 0.5rem 1rem;
+  border-radius: 15px 15px 15px 0;
+  color: #00e5ff;
+  font-size: 0.8rem;
 }
 
-.agent-svg {
-    width: 8rem;
-    height: 8rem;
+/* 파워 카드 */
+.power-card {
+  background: #111;
+  border: 2px solid #333;
+  padding: 1.5rem;
+  position: relative;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
+}
+.card-deco {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border: 2px solid #fff;
+}
+.tl {
+  top: -2px;
+  left: -2px;
+  border-right: 0;
+  border-bottom: 0;
+}
+.tr {
+  top: -2px;
+  right: -2px;
+  border-left: 0;
+  border-bottom: 0;
+}
+.bl {
+  bottom: -2px;
+  left: -2px;
+  border-right: 0;
+  border-top: 0;
+}
+.br {
+  bottom: -2px;
+  right: -2px;
+  border-left: 0;
+  border-top: 0;
 }
 
-.loading-dots {
-    display: flex;
-    justify-content: center;
-    gap: 0.75rem;
+.rank-badge {
+  position: absolute;
+  top: -15px;
+  right: 10px;
+  background: #000;
+  border: 2px solid;
+  padding: 2px 10px;
+  font-weight: bold;
+  font-size: 1.2rem;
+  transform: rotate(5deg);
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.5);
 }
 
-.dot {
-    width: 0.5rem;
-    height: 0.5rem;
-    background-color: #4b5563;
-    border-radius: 9999px;
-    animation: bounce 1s infinite;
+.score-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 0.5rem;
 }
-
-/* --- 메인 점수 카드 (어두운 카드 - 원본 세로 배치) --- */
-.main-score-card {
-    background: linear-gradient(to bottom right, #111827, #1f2937, #000000); /* gray-900 to black */
-    border-radius: 1.5rem;
-    padding: 2rem;
-    border: 1px solid rgba(55, 65, 81, 0.5);
-    backdrop-filter: blur(4px);
-    margin-bottom: 1.5rem;
-}
-
-.score-content {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    margin-bottom: 1.5rem;
-}
-
-.agent-wrapper {
-    margin-bottom: 1rem;
-}
-
-.agent-svg {
-    width: 8rem;
-    height: 8rem;
-}
-
 .score-label {
-    color: #9ca3af;
-    font-size: 0.875rem;
-    margin-bottom: 0.75rem;
+  color: #888;
+  font-size: 0.8rem;
+}
+.score-val {
+  font-size: 2.5rem;
+  font-weight: bold;
+  line-height: 1;
+  text-shadow: 0 0 10px currentColor;
+}
+.score-val .max {
+  font-size: 1rem;
+  color: #555;
 }
 
-.score-number-box {
-    display: flex;
-    align-items: baseline;
-    justify-content: center;
-    gap: 0.5rem;
-    margin-bottom: 0.5rem;
+.retro-progress {
+  height: 12px;
+  background: #222;
+  border: 1px solid #555;
+  padding: 1px;
+}
+.retro-progress .fill {
+  height: 100%;
+  transition: width 1s ease-out;
+  box-shadow: 0 0 10px currentColor;
 }
 
-.score-value {
-    font-size: 3.75rem; /* 6xl */
-    font-weight: 700;
+/* 인사이트 그리드 */
+.insight-grid {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
 }
-
-/* 점수 색상 조건부 */
-.score-high { color: #f59e0b; /* amber-400 (이미지처럼 노란색) */ }
-.score-mid { color: #fbbf24; }
-.score-low { color: #f87171; }
-
-.score-total {
-    color: #9ca3af;
-    font-size: 1.25rem;
-}
-
-.trend-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.25rem;
-    background-color: rgba(16, 185, 129, 0.2);
-    padding: 0.25rem 0.75rem;
-    border-radius: 9999px;
-    border: 1px solid rgba(16, 185, 129, 0.3);
-    font-size: 0.75rem;
-    color: #6ee7b7; /* emerald-300 */
-}
-
-.icon-trend {
-    width: 1rem;
-    height: 1rem;
-    color: #34d399;
-}
-
-/* 프로그레스 바 */
-.progress-track {
-    width: 100%;
-    background-color: rgba(55, 65, 81, 0.3);
-    border-radius: 9999px;
-    height: 0.625rem; /* 2.5 */
-    overflow: hidden;
-    border: 1px solid rgba(75, 85, 99, 0.3);
-}
-
-.progress-fill {
-    height: 100%;
-    background: linear-gradient(to right, #a855f7, #ec4899); /* purple to pink */
-    border-radius: 9999px;
-    transition: width 1s ease-out;
-}
-
-/* --- 인사이트 카드 영역 --- */
-.insights-section {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-    margin-bottom: 1.5rem;
-}
-
-.section-title {
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: #d1d5db;
-    padding: 0 0.25rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.icon-sm {
-    width: 1rem;
-    height: 1rem;
-    color: #c084fc;
-}
-
 .insight-card {
-    border-radius: 0.75rem;
-    padding: 1rem;
-    backdrop-filter: blur(4px);
-    border: 1px solid transparent;
-    /* 애니메이션 */
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid #333;
+  padding: 1rem;
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  transition: transform 0.2s;
+  backdrop-filter: blur(5px);
+}
+.insight-card:hover {
+  transform: translateX(5px);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* 카드 타입별 색상 */
+.insight-card.positive {
+  border-left: 4px solid #00ff00;
+}
+.insight-card.positive .icon-box {
+  color: #00ff00;
+}
+
+.insight-card.warning {
+  border-left: 4px solid #ff0055;
+}
+.insight-card.warning .icon-box {
+  color: #ff0055;
+}
+
+.insight-card.suggestion {
+  border-left: 4px solid #00e5ff;
+}
+.insight-card.suggestion .icon-box {
+  color: #00e5ff;
+}
+
+/* 움직이는 아이콘 */
+.icon-box {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+}
+.animated-icon {
+  width: 100%;
+  height: 100%;
+}
+
+/* 아이콘 애니메이션 정의 */
+.sword {
+  animation: swing 2s infinite ease-in-out;
+  transform-origin: bottom left;
+}
+.skull {
+  animation: shake 0.5s infinite;
+}
+.scale {
+  animation: balance 3s infinite ease-in-out;
+  transform-origin: center;
+}
+.scroll {
+  animation: float 3s infinite ease-in-out;
+}
+
+.text-box {
+  flex: 1;
+}
+.card-title {
+  font-size: 0.9rem;
+  font-weight: bold;
+  margin-bottom: 4px;
+  color: #fff;
+}
+.card-desc {
+  font-size: 0.8rem;
+  color: #aaa;
+  line-height: 1.3;
+}
+
+/* 어드바이스 터미널 */
+.advice-terminal {
+  background: #000;
+  border: 1px solid #666;
+  margin-bottom: 1.5rem;
+}
+.terminal-header {
+  background: #333;
+  color: #fff;
+  padding: 5px 10px;
+  font-size: 0.7rem;
+  border-bottom: 1px solid #666;
+}
+.terminal-body {
+  padding: 1rem;
+  color: #ffd700;
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+/* 버튼 */
+.action-buttons {
+  display: flex;
+  gap: 10px;
+}
+.retro-btn {
+  flex: 1;
+  padding: 12px;
+  border: 2px solid #fff;
+  font-family: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 4px 4px 0 #000;
+  transition: transform 0.1s;
+}
+.retro-btn:active {
+  transform: translate(4px, 4px);
+  box-shadow: none;
+}
+.retro-btn.primary {
+  background: #00e5ff;
+  color: #000;
+}
+.retro-btn.secondary {
+  background: #222;
+  color: #fff;
+}
+
+/* 애니메이션 키프레임 */
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+@keyframes pulseEye {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(0.9);
+  }
+}
+@keyframes lookAround {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  25% {
+    transform: translate(-5px, -2px);
+  }
+  50% {
+    transform: translate(5px, 2px);
+  }
+  75% {
+    transform: translate(0, 5px);
+  }
+}
+@keyframes scanDown {
+  0% {
+    top: 0;
     opacity: 0;
-    animation: slideUp 0.5s ease-out forwards;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    top: 100%;
+    opacity: 0;
+  }
 }
-
-.card-body {
-    display: flex;
-    gap: 0.75rem;
+@keyframes swing {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  50% {
+    transform: rotate(15deg);
+  }
 }
-
-/* 카드 타입별 스타일 */
-.card-positive {
-    background: linear-gradient(to right, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.05));
-    border-color: rgba(16, 185, 129, 0.3);
+@keyframes shake {
+  0% {
+    transform: translate(0, 0);
+  }
+  25% {
+    transform: translate(1px, 1px);
+  }
+  75% {
+    transform: translate(-1px, -1px);
+  }
 }
-
-.card-warning {
-    background: linear-gradient(to right, rgba(245, 158, 11, 0.1), rgba(217, 119, 6, 0.05));
-    border-color: rgba(245, 158, 11, 0.3);
+@keyframes balance {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(5deg);
+  }
+  75% {
+    transform: rotate(-5deg);
+  }
 }
-
-.card-suggestion {
-    background: linear-gradient(to right, rgba(59, 130, 246, 0.1), rgba(37, 99, 235, 0.05));
-    border-color: rgba(59, 130, 246, 0.3);
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
 }
-
-.icon-circle {
-    flex-shrink: 0;
-    width: 2rem;
-    height: 2rem;
-    border-radius: 9999px;
-    background-color: rgba(55, 65, 81, 0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.875rem;
-    font-weight: 600;
-    color: #fff;
+@keyframes blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
 }
-
-.text-content {
-    flex: 1;
-    min-width: 0;
+.pop-in {
+  animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  opacity: 0;
+  transform: scale(0.9);
 }
-
-.text-content h3 {
-    font-weight: 600;
-    font-size: 0.875rem;
-    margin-bottom: 0.25rem;
-}
-
-.text-content p {
-    font-size: 0.75rem;
-    color: #d1d5db; /* gray-300 */
-    line-height: 1.4;
-}
-
-/* --- 조언 카드 --- */
-.advice-card {
-    background: linear-gradient(to right, rgba(99, 102, 241, 0.1), rgba(168, 85, 247, 0.1));
-    border-radius: 0.75rem;
-    padding: 1rem;
-    border: 1px solid rgba(99, 102, 241, 0.2);
-    margin-bottom: 1.5rem;
-}
-
-.icon-advice {
-    width: 1.25rem;
-    height: 1.25rem;
-    color: #818cf8;
-    flex-shrink: 0;
-    margin-top: 0.125rem;
-}
-
-/* --- 버튼 그룹 --- */
-.button-group {
-    display: flex;
-    gap: 0.75rem;
-}
-
-.btn {
-    flex: 1;
-    padding: 0.75rem;
-    border-radius: 0.75rem;
-    font-weight: 600;
-    font-size: 0.875rem;
-    cursor: pointer;
-    border: none;
-    transition: all 0.2s;
-}
-
-.btn-primary {
-    background: linear-gradient(to right, #9333ea, #db2777); /* purple to pink */
-    color: white;
-}
-.btn-primary:hover {
-    opacity: 0.9;
-}
-
-.btn-secondary {
-    background-color: #1f2937;
-    color: #e5e7eb;
-    border: 1px solid #4b5563;
-}
-.btn-secondary:hover {
-    background-color: #374151;
-}
-
-/* --- 키프레임 애니메이션 --- */
-@keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: .5; }
-}
-
-@keyframes bounce {
-    0%, 100% { transform: translateY(-25%); animation-timing-function: cubic-bezier(0.8,0,1,1); }
-    50% { transform: none; animation-timing-function: cubic-bezier(0,0,0.2,1); }
-}
-
-@keyframes slideUp {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+@keyframes popIn {
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 </style>
