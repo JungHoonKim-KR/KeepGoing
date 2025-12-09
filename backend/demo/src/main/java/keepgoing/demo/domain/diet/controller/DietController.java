@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import keepgoing.demo.domain.ai.dto.AiResponseDto;
 import keepgoing.demo.domain.diet.dto.DietInsertRequestDTO;
 import keepgoing.demo.domain.diet.dto.WaterInsertRequestDTO;
+import keepgoing.demo.domain.diet.entity.Diet;
 import keepgoing.demo.domain.diet.service.DietService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -13,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/diets")
@@ -30,10 +32,13 @@ public class DietController {
         return ResponseEntity.ok(dietService.analyzeDailyDiet(memberId, date));
     }
 
-    /*
-    식단 저장 호출
-    우선은 회원이 설계되지 않아 음식만 저장(실제로 저장하진 않았음)
-     */
+    @GetMapping("/meal")
+    public ResponseEntity<Map<String, Diet>> getDailyMeal(@RequestParam("memberId") Long memberId,
+                                                          @RequestParam("date") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        Map<String, Diet> dailyMeals = dietService.selectDailyDiet(memberId, date);
+        return ResponseEntity.ok(dailyMeals);
+    }
+
     @PostMapping("/meal")
     public ResponseEntity<?> meal(@RequestBody DietInsertRequestDTO dto) {
         dietService.addDiet(dto);

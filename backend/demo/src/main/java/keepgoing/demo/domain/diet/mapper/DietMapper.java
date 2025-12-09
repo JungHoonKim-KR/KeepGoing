@@ -21,7 +21,7 @@ public interface DietMapper {
     void updateDietNutrients(@Param("dietId") Long dietId, @Param("diet") Diet diet);
 
     Diet selectDiet(@Param("memberId") Long memberId,
-                              @Param("date") String date,
+                              @Param("date") LocalDate date,
                               @Param("mealTime") String mealTime);
 
     // [추가] 1. 특정 날짜의 식단 기록 조회 (Join 쿼리 사용 예정)

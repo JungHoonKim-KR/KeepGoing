@@ -13,6 +13,7 @@ import keepgoing.demo.domain.diet.entity.Diet;
 import keepgoing.demo.domain.diet.entity.Food;
 import keepgoing.demo.domain.diet.entity.HydrationRecord;
 import keepgoing.demo.domain.diet.mapper.DietMapper;
+import keepgoing.demo.domain.diet.norm.MealTime;
 import keepgoing.demo.domain.member.entity.Member;
 import keepgoing.demo.domain.member.mapper.MemberMapper;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -76,6 +77,34 @@ public class DietService {
         return result;
     }
 
+    public Map<String, Diet> selectDailyDiet(Long memberId, LocalDate date) {
+
+        List<Diet> diets = dietMapper.findAllByDate(memberId, date);
+
+        //    (키: "아침", "점심" 등의 Diet 엔티티의 mealTime 값)
+        Map<String, Diet> recordedDiets = diets.stream()
+                .collect(Collectors.toMap(
+                        Diet::getMealTime,
+                        diet -> diet,
+                        (existing, replacement) -> existing, // 키 충돌 방지
+                        () -> new HashMap<>()
+                ));
+
+        Map<String, Diet> allDietsWithNulls = new LinkedHashMap<>();
+
+        for(MealTime mealTime : MealTime.values()){
+            // MealTime Enum의 이름(예: "아침")을 키로 사용
+            String mealKey = mealTime.name();
+
+            // recordedDiets에 해당 키가 있으면 Diet 객체를, 없으면 null을 할당
+            Diet diet = recordedDiets.getOrDefault(mealKey, null);
+
+            allDietsWithNulls.put(mealKey, diet);
+        }
+
+        return allDietsWithNulls;
+    }
+
     @Transactional
     public void addHydration(WaterInsertRequestDTO dto){
         LocalDate recordDate = LocalDate.now();
@@ -86,12 +115,10 @@ public class DietService {
 
     }
 
-
-
     @Transactional
     public int addDiet(DietInsertRequestDTO dto) {
         Diet newDiet = buildDiet(dto);
-        Diet findDiet = dietMapper.selectDiet(dto.getMemberId(), String.valueOf(newDiet.getDate()),dto.getMealTime());
+        Diet findDiet = dietMapper.selectDiet(dto.getMemberId(), newDiet.getDate(),dto.getMealTime());
         Long dietId;
         if(findDiet == null){
             dietMapper.insertDiet(dto.getMemberId(), newDiet);
