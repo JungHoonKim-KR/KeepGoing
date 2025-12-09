@@ -11,6 +11,12 @@ const router = createRouter({
       name: "login",
       component: LoginView,
     },
+    // router/index.js 파일에서 routes 배열 안에 추가
+    {
+      path: "/signup",
+      name: "signup",
+      component: () => import("../views/SignupView.vue"),
+    },
     // 2. 홈 화면 (🔒 로그인 필요)
     {
       path: "/",
@@ -35,7 +41,7 @@ const router = createRouter({
         {
           path: "diet-plan",
           name: "dietPlan",
-          //   component: () => import("../views/AiDietPlan.vue"), 추후 경로 생기면 추가
+          component: () => import("../views/AiDietPlan.vue"),
         },
       ],
     },
