@@ -62,12 +62,51 @@
 
     <section class="page meal-page">
       <div class="page-content">
-        <div class="pixel-card interactive" @click="handleMealClick">
+        <div
+          v-if="todayMeals.length === 0"
+          class="pixel-card interactive"
+          @click="handleMealClick"
+        >
           <div class="card-inner">
             <div class="icon-8bit">🍗</div>
             <h2>LOG ITEM</h2>
-            <p class="pixel-text">식사를 기록하고 경험치를 획득하세요.</p>
+            <p class="pixel-text">
+              인벤토리가 비어있습니다.<br />식사를 기록하세요.
+            </p>
             <button class="retro-btn press-start">INSERT COIN</button>
+          </div>
+        </div>
+
+        <div v-else class="meal-log-container">
+          <div class="retro-header-sm">
+            <span>INVENTORY (MEALS)</span>
+            <span class="total-xp"
+              >TOTAL XP:
+              {{ todayMeals.reduce((acc, cur) => acc + cur.cal, 0) }}</span
+            >
+          </div>
+
+          <div class="meal-list">
+            <div
+              v-for="meal in todayMeals"
+              :key="meal.id"
+              class="meal-slot"
+              @click="handleMealClick"
+            >
+              <div class="slot-icon-box">{{ meal.icon }}</div>
+              <div class="slot-info">
+                <div class="slot-top">
+                  <span class="meal-type-badge">{{ meal.type }}</span>
+                  <span class="meal-cal">{{ meal.cal }} XP</span>
+                </div>
+                <div class="meal-name">{{ meal.name }}</div>
+              </div>
+            </div>
+
+            <div class="meal-slot add-slot" @click="handleMealClick">
+              <span class="plus-icon">+</span>
+              <span class="add-text">ADD NEW ITEM</span>
+            </div>
           </div>
         </div>
       </div>
@@ -132,6 +171,14 @@ import AiRadioModal from "../components/common/AiRadioModal.vue";
 import WaterRecordModal from "@/components/record/WaterRecordModal.vue"; // 경로 확인
 import WeightRecordModal from "@/components/record/WeightRecordModal.vue"; // 경로 확인 필요
 import MealRecordModal from "@/components/record/MealRecordModal.vue"; // 경로 확인 필요
+
+// 💡 [추가] 오늘의 식단 데이터 (나중엔 API로 받아올 부분)
+// 데이터가 비어있으면([]) 'INSERT COIN' 화면이 뜨고, 있으면 리스트가 뜹니다.
+const todayMeals = ref([
+  { id: 1, type: "아침", name: "사과 & 계란", cal: 350, icon: "🍎" },
+  { id: 2, type: "점심", name: "제육볶음 정식", cal: 700, icon: "🍖" },
+  { id: 3, type: "간식", name: "프로틴 쉐이크", cal: 120, icon: "🧪" },
+]);
 
 const showWaterModal = ref(false);
 const showWeightModal = ref(false);
@@ -556,5 +603,129 @@ const closeModal = () => (showModal.value = false);
 
 .pixelated {
   image-rendering: pixelated;
+}
+
+/* === 식단 리스트 스타일 (Inventory Style) === */
+.meal-log-container {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.retro-header-sm {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 2px dashed #fff;
+  padding-bottom: 5px;
+  font-size: 0.9rem;
+  color: #ffd700; /* Gold */
+  text-shadow: 1px 1px 0 #000;
+}
+
+.meal-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 60vh; /* 너무 길어지면 스크롤 */
+  overflow-y: auto;
+  padding-right: 5px; /* 스크롤바 공간 */
+}
+
+/* 스크롤바 커스텀 */
+.meal-list::-webkit-scrollbar {
+  width: 4px;
+}
+.meal-list::-webkit-scrollbar-thumb {
+  background: #ffd700;
+  border-radius: 2px;
+}
+
+/* 개별 슬롯 (아이템 창) */
+.meal-slot {
+  display: flex;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.6);
+  border: 2px solid #fff;
+  padding: 10px;
+  gap: 12px;
+  cursor: pointer;
+  transition: transform 0.1s, background 0.1s;
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.3);
+}
+
+.meal-slot:active {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.3);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* 아이콘 박스 */
+.slot-icon-box {
+  width: 40px;
+  height: 40px;
+  background: #2d2d3a;
+  border: 2px solid #555;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+}
+
+/* 텍스트 정보 */
+.slot-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.slot-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.meal-type-badge {
+  font-size: 0.7rem;
+  background: #ff0055;
+  color: #fff;
+  padding: 2px 6px;
+  border: 1px solid #fff;
+}
+
+.meal-cal {
+  font-size: 0.8rem;
+  color: #00e5ff; /* Cyan */
+}
+
+.meal-name {
+  font-size: 1rem;
+  color: #fff;
+  font-weight: bold;
+}
+
+/* 추가 버튼 (빈 슬롯 스타일) */
+.meal-slot.add-slot {
+  border: 2px dashed #aaa;
+  background: transparent;
+  justify-content: center;
+  color: #aaa;
+  box-shadow: none;
+}
+
+.meal-slot.add-slot:hover {
+  border-color: #ffd700;
+  color: #ffd700;
+  background: rgba(255, 215, 0, 0.1);
+}
+
+.plus-icon {
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+.add-text {
+  font-size: 0.9rem;
 }
 </style>
