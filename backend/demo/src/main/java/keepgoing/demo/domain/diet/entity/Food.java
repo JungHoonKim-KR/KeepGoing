@@ -2,9 +2,12 @@ package keepgoing.demo.domain.diet.entity;
 
 import lombok.*;
 
+@Setter
 @Getter
 @Builder
 @ToString
+@NoArgsConstructor
+@AllArgsConstructor
 public class Food {
     private String code;         // 식품코드
     private String name;         // 식품명

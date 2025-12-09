@@ -19,21 +19,21 @@
     </resultMap>
 
     <select id="findAllByDate" resultMap="DietResultMap">
-        SELECT d.diet_id,
-               d.member_id,
-               d.date,
-               d.meal_time,
-               d.carbs,
-               d.protein,
-               d.fat,
-               d.sugars,
-               f.code AS food_code,
-               f.name AS food_name
-        FROM diet_log d
-                 LEFT JOIN diet_food_mapping m ON d.diet_id = m.diet_id
-                 LEFT JOIN food f ON m.food_code = f.code
+        SELECT
+        d.id,            d.member_id,
+        d.date,
+        d.meal_time,
+        d.energy, d.protein, d.fat, d.carbohydrate, d.sugars, d.sodium,
+
+        f.code AS food_code,
+        f.name AS food_name,
+        f.dataTypeName,
+        f.energy AS f_energy,
+        f.protein AS f_protein
+        FROM diet d
+        LEFT JOIN diet_food_mapping m ON d.id = m.diet_id  LEFT JOIN food f ON m.food_code = f.code
         WHERE d.member_id = #{memberId}
-          AND d.date = #{date}
+        AND d.date = #{date}
     </select>
 
     <insert id="saveAiReport">

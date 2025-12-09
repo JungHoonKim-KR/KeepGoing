@@ -6,8 +6,11 @@ import lombok.*;
 import java.time.LocalDate;
 import java.util.List;
 
+
 @Getter
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class Diet {
     private Long id;
     private Long memberId;
