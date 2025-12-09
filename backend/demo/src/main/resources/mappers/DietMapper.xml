@@ -41,6 +41,29 @@
         VALUES (#{memberId}, #{date}, #{score}, #{feedbackText}, #{recommendJson})
     </insert>
 
+    <select id="selectDiet" resultType="keepgoing.demo.domain.diet.entity.Diet">
+        SELECT *
+        FROM diet
+        WHERE
+            member_id = #{memberId} AND
+            date = #{date} AND
+            meal_time= #{mealTime}
+    </select>
+    
+    <update id="updateDietNutrients">
+        UPDATE diet
+        SET energy = energy + #{diet.energy},
+            water = water + #{diet.water},
+            protein = protein + #{diet.protein},
+            fat = fat + #{diet.fat},
+            carbohydrate = carbohydrate + #{diet.carbohydrate},
+            sugars = sugars + #{diet.sugars},
+            sodium = sodium + #{diet.sodium}
+
+        WHERE id = #{dietId}
+    </update>
+    
+
     <insert id="insertDiet" useGeneratedKeys="true" keyProperty="diet.id">
         INSERT INTO diet (member_id,
                           date,

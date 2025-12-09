@@ -9,12 +9,20 @@ import org.apache.ibatis.annotations.Param;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 @Mapper
 public interface DietMapper {
     void insertDiet(@Param("memberId")Long memberId, @Param("diet") Diet diet);
     void insertHydration(@Param("hydrationRecord") HydrationRecord hydrationRecord);
     void insertFoodMappings(@Param("foods") List<Food> foods, @Param("dietId") Long dietId);
+
+    void updateDietNutrients(@Param("dietId") Long dietId, @Param("diet") Diet diet);
+
+    Diet selectDiet(@Param("memberId") Long memberId,
+                              @Param("date") String date,
+                              @Param("mealTime") String mealTime);
+
     // [추가] 1. 특정 날짜의 식단 기록 조회 (Join 쿼리 사용 예정)
     List<Diet> findAllByDate(@Param("memberId") Long memberId, @Param("date") LocalDate date);
 

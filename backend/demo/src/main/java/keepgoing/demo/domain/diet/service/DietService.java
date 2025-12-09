@@ -79,7 +79,6 @@ public class DietService {
     @Transactional
     public void addHydration(WaterInsertRequestDTO dto){
         LocalDate recordDate = LocalDate.now();
-        System.out.println(dto.getWaterAmount());
         HydrationRecord hydrationRecord = HydrationRecord.builder().memberId(dto.getMemberId()).waterAmount(dto.getWaterAmount()*1000).date(recordDate)
                 .build();
 
@@ -87,11 +86,21 @@ public class DietService {
 
     }
 
+
+
     @Transactional
     public int addDiet(DietInsertRequestDTO dto) {
-        Diet diet = buildDiet(dto);
-        dietMapper.insertDiet(dto.getMemberId(), diet);
-        Long dietId = diet.getId();
+        Diet newDiet = buildDiet(dto);
+        Diet findDiet = dietMapper.selectDiet(dto.getMemberId(), String.valueOf(newDiet.getDate()),dto.getMealTime());
+        Long dietId;
+        if(findDiet == null){
+            dietMapper.insertDiet(dto.getMemberId(), newDiet);
+            dietId = newDiet.getId();
+        }
+        else{
+            dietMapper.updateDietNutrients(findDiet.getId(), newDiet);
+            dietId = findDiet.getId();
+        }
         dietMapper.insertFoodMappings(dto.getFoods(), dietId);
         return 1;// 임시
     }
