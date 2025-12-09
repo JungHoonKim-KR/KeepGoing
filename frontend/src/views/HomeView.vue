@@ -107,7 +107,11 @@
       </div>
     </section>
 
-    <Footer></Footer>
+    <Footer @open-radio="showRadio = true"></Footer>
+
+    <Teleport to="body">
+      <AiRadioModal :isOpen="showRadio" @close="showRadio = false" />
+    </Teleport>
 
     <div v-if="showModal" class="modal-overlay" @click="closeModal"></div>
     <MealRecordModal v-if="showMealModal" @close="closeMealModal" />
@@ -122,6 +126,7 @@ import dayjs from "dayjs";
 import confetti from "canvas-confetti"; // npm install canvas-confetti 필요
 import characterImage from "../assets/images/characters/test.gif";
 import Footer from "../components/utils/Footer.vue";
+import AiRadioModal from "../components/common/AiRadioModal.vue";
 
 // ... import 부분
 import WaterRecordModal from "@/components/record/WaterRecordModal.vue"; // 경로 확인
@@ -131,6 +136,7 @@ import MealRecordModal from "@/components/record/MealRecordModal.vue"; // 경로
 const showWaterModal = ref(false);
 const showWeightModal = ref(false);
 const showMealModal = ref(false);
+const showRadio = ref(false);
 // === 상태 변수 ===
 const showModal = ref(false);
 const isLevelingUp = ref(false);
