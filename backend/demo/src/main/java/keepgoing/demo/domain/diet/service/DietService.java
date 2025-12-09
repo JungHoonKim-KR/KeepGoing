@@ -5,6 +5,7 @@ import keepgoing.demo.domain.ai.dto.AiRequestDto;
 import keepgoing.demo.domain.ai.dto.AiResponseDto;
 import keepgoing.demo.domain.ai.service.AiClient;
 import keepgoing.demo.domain.diet.dto.DietInsertRequestDTO;
+import keepgoing.demo.domain.diet.dto.FoodRecordDTO;
 import keepgoing.demo.domain.diet.dto.NutritionTotalsDTO;
 import keepgoing.demo.domain.diet.dto.WaterInsertRequestDTO;
 import keepgoing.demo.domain.diet.entity.AiReport;
@@ -12,7 +13,6 @@ import keepgoing.demo.domain.diet.entity.Diet;
 import keepgoing.demo.domain.diet.entity.Food;
 import keepgoing.demo.domain.diet.entity.HydrationRecord;
 import keepgoing.demo.domain.diet.mapper.DietMapper;
-import keepgoing.demo.domain.diet.norm.MealTime;
 import keepgoing.demo.domain.member.entity.Member;
 import keepgoing.demo.domain.member.mapper.MemberMapper;
 import lombok.RequiredArgsConstructor;
@@ -109,7 +109,6 @@ public class DietService {
     private Diet buildDiet(DietInsertRequestDTO dto) {
         NutritionTotalsDTO nutritionTotalsDTO = calculateNutritionTotals(dto.getFoods());
         LocalDate recordDate = LocalDate.now();
-//        MealTime mealTime = MealTime.fromMealType(dto.getMealTime());
         return Diet.builder()
                 .memberId(dto.getMemberId())
                 .date(recordDate)
@@ -121,24 +120,22 @@ public class DietService {
                 .sugars(nutritionTotalsDTO.getTotalSugars())
                 .sodium(nutritionTotalsDTO.getTotalSodium())
                 .build();
-
-
     }
-    private NutritionTotalsDTO calculateNutritionTotals(List<Food> foods) {
+    private NutritionTotalsDTO calculateNutritionTotals(List<FoodRecordDTO> foods) {
         double totalEnergy = 0.0, totalWater = 0.0, totalProtein = 0.0, totalFat = 0.0;
         double totalCarbohydrate = 0.0, totalSugars = 0.0, totalSodium = 0.0;
 
-        for (Food food : foods) {
+        for (FoodRecordDTO food : foods) {
             double ratio = food.getFoodWeight() / food.getServingSize();
             // Food 객체의 String 필드를 double로 파싱하여 계산
             try {
-                totalEnergy += food.getEnergy() * ratio;
-                totalWater += food.getWater() * ratio;
-                totalProtein += food.getProtein() * ratio;
-                totalFat += food.getFat() * ratio;
-                totalCarbohydrate += food.getCarbohydrate() * ratio;
-                totalSugars += food.getSugars() * ratio;
-                totalSodium += food.getSodium() * ratio;
+                totalEnergy += food.getEnergy() * ratio * food.getServings();
+                totalWater += food.getWater() * ratio * food.getServings();
+                totalProtein += food.getProtein() * ratio * food.getServings();
+                totalFat += food.getFat() * ratio * food.getServings();
+                totalCarbohydrate += food.getCarbohydrate() * ratio * food.getServings();
+                totalSugars += food.getSugars() * ratio * food.getServings();
+                totalSodium += food.getSodium() * ratio * food.getServings();
             } catch (NumberFormatException e) {
                 // 계산 실패 시 로깅 및 예외 처리
                 throw new RuntimeException("영양 성분 데이터 변환 오류 발생", e);

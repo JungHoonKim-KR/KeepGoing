@@ -1,5 +1,6 @@
 package keepgoing.demo.domain.diet.mapper;
 
+import keepgoing.demo.domain.diet.dto.FoodRecordDTO;
 import keepgoing.demo.domain.diet.entity.AiReport;
 import keepgoing.demo.domain.diet.entity.Diet;
 import keepgoing.demo.domain.diet.entity.Food;
@@ -15,7 +16,7 @@ import java.util.Optional;
 public interface DietMapper {
     void insertDiet(@Param("memberId")Long memberId, @Param("diet") Diet diet);
     void insertHydration(@Param("hydrationRecord") HydrationRecord hydrationRecord);
-    void insertFoodMappings(@Param("foods") List<Food> foods, @Param("dietId") Long dietId);
+    void insertFoodMappings(@Param("foods") List<FoodRecordDTO> foods, @Param("dietId") Long dietId);
 
     void updateDietNutrients(@Param("dietId") Long dietId, @Param("diet") Diet diet);
 

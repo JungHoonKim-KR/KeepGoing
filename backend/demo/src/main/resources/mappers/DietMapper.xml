@@ -89,13 +89,14 @@
 
     <insert id="insertFoodMappings" parameterType="java.util.List">
         INSERT INTO diet_food_mapping (
-        diet_id, food_code
+        diet_id, food_code, servings
         )
         VALUES
         <foreach collection="foods" item="food" separator=",">
             (
             #{dietId},
-            #{food.code} )
+            #{food.code},
+             #{food.servings})
         </foreach>
     </insert>
     <insert id="insertHydration">

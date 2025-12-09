@@ -9,5 +9,5 @@ import java.util.List;
 public class DietInsertRequestDTO {
     Long memberId;
     String mealTime;
-    List<Food> foods;
+    List<FoodRecordDTO> foods;
 }

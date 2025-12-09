@@ -66,9 +66,29 @@
 
                 </div>
 
-                <div v-if="selectedFoodNameList.length > 0" class="food-list">
-                    <div v-for="(foodNameItem, index) in selectedFoodNameList" :key="index" class="food-item">
-                        <span class="food-item-name">{{ foodNameItem }}</span>
+                <div v-if="selectedFoodList.length > 0" class="food-list">
+                    <div v-for="(foodItem, index) in selectedFoodList" :key="index" class="food-item">
+                        <span class="food-item-name">{{ foodItem.name }}</span>
+                        
+                        <div class="count-control">
+                            <button 
+                                @click="changeFoodCount(index, -1)" 
+                                :disabled="foodItem.servings <= 1"
+                                class="count-btn count-minus-btn"
+                            >
+                                -
+                            </button>
+                            
+                            <span class="food-count">{{ foodItem.servings }}</span>
+                            
+                            <button 
+                                @click="changeFoodCount(index, 1)" 
+                                class="count-btn count-plus-btn"
+                            >
+                                +
+                            </button>
+                        </div>
+                        
                         <button @click="removeFood(index)" class="remove-food-btn">
                             ✕
                         </button>
@@ -152,12 +172,11 @@ const API_ENDPOINT = 'http://localhost:8080';
 // ===================================
 // 2. Data
 // ===================================
-const selectedMealTime = ref("breakfast");
+const selectedMealTime = ref("아침");
 const foodName = ref("");
 
-// 최종 목표 변수
-const selectedFoodList = ref([]);     
-const selectedFoodNameList = ref([]); 
+// 💡 수정: 음식 객체에 count 속성이 포함됩니다.
+const selectedFoodList = ref([]); 
 
 const memo = ref("");
 const photoPreview = ref(null);
@@ -258,15 +277,15 @@ const handleInput = (event) => {
 const addFood = (food) => {
     // 1. 자동완성 항목을 선택한 경우 (food 객체가 넘어옴)
     if (food && typeof food === 'object' && food['name']) {
-        selectedFoodList.value.push(food);
-        selectedFoodNameList.value.push(food['name']);
+        // 💡 수정: count: 1을 추가하여 selectedFoodList에 푸시
+        selectedFoodList.value.push({ ...food, servings: 1 });
     } 
     // 2. 직접 입력 후 '추가' 버튼을 누르거나 Enter를 누른 경우
     else if (foodName.value.trim() !== '') {
         const customFoodName = foodName.value.trim();
         
-        selectedFoodList.value.push({ name: customFoodName }); 
-        selectedFoodNameList.value.push(customFoodName);
+        // 💡 수정: count: 1을 추가하여 selectedFoodList에 푸시
+        selectedFoodList.value.push({ name: customFoodName, servings: 1 });
     }
     
     // ✨ 드롭다운 닫기 & Input 초기화 (핵심: 이로써 다음 검색을 막고 인풋을 비움)
@@ -275,8 +294,21 @@ const addFood = (food) => {
     selectedFoodIndex.value = 0;
 };
 
+// 💡 추가: 음식 수량을 변경하는 함수
+const changeFoodCount = (index, delta) => {
+    const foodItem = selectedFoodList.value[index];
+    const servings = foodItem.servings + delta;
+    
+    // 최소 수량 1 제한
+    if (servings >= 1) {
+        foodItem.servings = servings;
+    } 
+    // 수량이 1 미만이 될 경우, disabled 상태이므로 이 로직은 보통 실행되지 않음 (템플릿에서 막힘)
+    // 안전을 위해 항목 제거 로직은 removeFood를 직접 호출하는 것에 맡깁니다.
+};
+
 const removeFood = (index) => {
-    selectedFoodNameList.value.splice(index, 1);
+    // 💡 수정: selectedFoodList에서 제거
     selectedFoodList.value.splice(index, 1);
 };
 
@@ -295,12 +327,11 @@ function selectFood(food) {
 
 const saveMeal = async() => {
     
-    // 사진 파일 처리 로직 (Multipart)은 백엔드에 따라 달라질 수 있으므로,
-    // 현재는 JSON 데이터만 보내는 것으로 가정합니다.
+    // API에 보낼 데이터 (foods 리스트에 count 포함됨)
     const mealData = {
         memberId : 1, // 임시 하드코딩
         mealTime : selectedMealTime.value,
-        foods: selectedFoodList.value,
+        foods: selectedFoodList.value, // foods 객체 리스트 (name, count 포함)
        // photo: ... (Blob 또는 fileId)
        // memo: memo.value,
        // member : ...
@@ -549,7 +580,7 @@ onUnmounted(() => { document.body.style.overflow = ""; });
     position: relative; /* 연관 검색어 드롭다운을 위한 포지션 */
 }
 
-/* --- 검색 자동완성 스타일 추가 --- */
+/* --- 검색 자동완성 스타일 --- */
 .food-input-container {
     display: flex;
     gap: 0.75rem;
@@ -642,29 +673,94 @@ onUnmounted(() => { document.body.style.overflow = ""; });
 }
 
 .food-item {
+    /* 💡 수정: 수량 조절 버튼과의 공간 확보 및 정렬 */
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    justify-content: space-between; 
+    gap: 0.75rem; /* 항목 내부 간격 증가 */
     background: #f9fafb;
-    padding: 0.5rem 0.75rem;
+    /* 💡 수정: 내부 패딩 조정 (세로) */
+    padding: 0.4rem 0.75rem; 
     border-radius: 2rem;
     font-size: 0.9rem;
+    flex-grow: 1; /* flex-wrap과 함께 사용 시 항목이 늘어나도록 */
+    max-width: 100%; 
 }
 
 .food-item-name {
     color: #374151;
+    /* 💡 수정: 이름이 길어도 옆 버튼에 영향을 덜 주도록 */
+    white-space: nowrap; 
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
+/* 💡 추가: 수량 조절 컨테이너 */
+.count-control {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    margin-left: auto; /* 이름과 수량 조절 버튼을 최대한 멀리 떨어뜨림 */
+}
+
+/* 💡 추가: 수량 버튼 스타일 */
+.count-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 1px solid #d1d5db;
+    background: white;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    transition: all 0.2s;
+}
+
+.count-btn:active {
+    transform: scale(0.9);
+}
+
+.count-minus-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    background: #f9fafb;
+}
+
+.count-plus-btn {
+    background: #98d8c8;
+    color: white;
+    border-color: #98d8c8;
+}
+
+/* 💡 추가: 수량 표시 */
+.food-count {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #111827;
+    min-width: 18px; /* 수량이 두 자릿수여도 공간 확보 */
+    text-align: center;
+}
+
+
+/* 기존 제거 버튼 (✕) 스타일 수정 */
 .remove-food-btn {
     background: none;
+    /* 💡 수정: count-control과 붙지 않도록 margin-left: 0 */
+    margin-left: 0; 
     border: none;
-    color: #ef4444;
-    font-size: 1rem;
+    /* 💡 수정: 디자인 통일 */
+    color: #9ca3af; 
+    font-size: 1.1rem;
     cursor: pointer;
     padding: 0;
     line-height: 1;
     -webkit-tap-highlight-color: transparent;
 }
+
 
 /* 사진 업로드 */
 .photo-section {

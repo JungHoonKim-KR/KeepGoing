@@ -1,12 +1,9 @@
-package keepgoing.demo.domain.diet.entity;
+package keepgoing.demo.domain.diet.dto;
 
-import lombok.*;
+import lombok.Data;
 
-
-@Getter
-@Builder
-@ToString
-public class Food {
+@Data
+public class FoodRecordDTO {
     private String code;         // 식품코드
     private String name;         // 식품명
     private String dataTypeName;     // 데이터구분명
@@ -22,6 +19,6 @@ public class Food {
     private double sugars;           // 당류(g)
     private double sodium;           // 나트륨(g)
 
-
+    private int servings;        // 인분
 
 }
