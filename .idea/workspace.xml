@@ -4,11 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="0c66d9b7-a887-45ec-9f8d-eff33a0a86c7" name="Changes" comment="식단 insert">
+    <list default="true" id="0c66d9b7-a887-45ec-9f8d-eff33a0a86c7" name="Changes" comment="수분 보충 추가">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/demo/src/main/java/keepgoing/demo/domain/diet/controller/DietController.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/demo/src/main/java/keepgoing/demo/domain/diet/controller/DietController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/demo/src/main/java/keepgoing/demo/domain/diet/dto/WaterInsertRequestDTO.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/demo/src/main/java/keepgoing/demo/domain/diet/dto/WaterInsertRequestDTO.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/backend/demo/src/main/java/keepgoing/demo/domain/diet/entity/HydrationRecord.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/demo/src/main/java/keepgoing/demo/domain/diet/entity/HydrationRecord.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/demo/src/main/java/keepgoing/demo/domain/diet/mapper/DietMapper.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/demo/src/main/java/keepgoing/demo/domain/diet/mapper/DietMapper.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/demo/src/main/java/keepgoing/demo/domain/diet/service/DietService.java" beforeDir="false" afterPath="$PROJECT_DIR$/backend/demo/src/main/java/keepgoing/demo/domain/diet/service/DietService.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/backend/demo/src/main/resources/mappers/DietMapper.xml" beforeDir="false" afterPath="$PROJECT_DIR$/backend/demo/src/main/resources/mappers/DietMapper.xml" afterDir="false" />
@@ -132,7 +130,7 @@
       <workItem from="1765152301724" duration="584000" />
       <workItem from="1765152927814" duration="8000" />
       <workItem from="1765152956438" duration="22130000" />
-      <workItem from="1765239755414" duration="12130000" />
+      <workItem from="1765239755414" duration="12798000" />
     </task>
     <task id="LOCAL-00001" summary="selectAll 성공">
       <option name="closed" value="true" />
@@ -238,7 +236,15 @@
       <option name="project" value="LOCAL" />
       <updated>1765246866809</updated>
     </task>
-    <option name="localTasksCounter" value="14" />
+    <task id="LOCAL-00014" summary="수분 보충 추가">
+      <option name="closed" value="true" />
+      <created>1765256495657</created>
+      <option name="number" value="00014" />
+      <option name="presentableId" value="LOCAL-00014" />
+      <option name="project" value="LOCAL" />
+      <updated>1765256495657</updated>
+    </task>
+    <option name="localTasksCounter" value="15" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -256,7 +262,8 @@
     <MESSAGE value="연관관계 매핑 제거&#10;(xml에만 필요)" />
     <MESSAGE value="수정" />
     <MESSAGE value="식단 insert" />
-    <option name="LAST_COMMIT_MESSAGE" value="식단 insert" />
+    <MESSAGE value="수분 보충 추가" />
+    <option name="LAST_COMMIT_MESSAGE" value="수분 보충 추가" />
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />

@@ -5,5 +5,5 @@ import lombok.Data;
 @Data
 public class WaterInsertRequestDTO {
     Long memberId;
-    double water;
+    double waterAmount;
 }

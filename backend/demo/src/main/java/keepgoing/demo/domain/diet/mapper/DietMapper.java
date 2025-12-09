@@ -13,7 +13,7 @@ import java.util.List;
 @Mapper
 public interface DietMapper {
     void insertDiet(@Param("memberId")Long memberId, @Param("diet") Diet diet);
-    void insertHydration(@Param("memberId")Long memberId, @Param("hydrationRecord") HydrationRecord hydrationRecord);
+    void insertHydration(@Param("hydrationRecord") HydrationRecord hydrationRecord);
     void insertFoodMappings(@Param("foods") List<Food> foods, @Param("dietId") Long dietId);
     // [추가] 1. 특정 날짜의 식단 기록 조회 (Join 쿼리 사용 예정)
     List<Diet> findAllByDate(@Param("memberId") Long memberId, @Param("date") LocalDate date);

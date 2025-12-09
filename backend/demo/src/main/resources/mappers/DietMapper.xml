@@ -78,9 +78,11 @@
     <insert id="insertHydration">
         INSERT INTO hydration_record(member_id,
                                      water_amount,
-                                     record_date)
-        VALUES (#{memberId}, #{hydrationRecord.waterAmount}, #{hydrationRecord.date})
-            )
+                                     date)
+        VALUES (#{hydrationRecord.memberId}, #{hydrationRecord.waterAmount}, #{hydrationRecord.date})
+            ON DUPLICATE KEY
+        UPDATE
+            water_amount = #{hydrationRecord.waterAmount}
 
     </insert>
 

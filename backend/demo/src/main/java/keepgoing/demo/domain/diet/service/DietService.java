@@ -77,11 +77,13 @@ public class DietService {
     }
 
     @Transactional
-    public void addWater(WaterInsertRequestDTO dto){
+    public void addHydration(WaterInsertRequestDTO dto){
         LocalDate recordDate = LocalDate.now();
-        HydrationRecord hydrationRecord = HydrationRecord.builder().memberId(dto.getMemberId()).waterAmount(dto.getWater()*1000).date(recordDate)
+        System.out.println(dto.getWaterAmount());
+        HydrationRecord hydrationRecord = HydrationRecord.builder().memberId(dto.getMemberId()).waterAmount(dto.getWaterAmount()*1000).date(recordDate)
                 .build();
 
+        dietMapper.insertHydration(hydrationRecord);
 
     }
 
