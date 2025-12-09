@@ -115,37 +115,104 @@
     <section class="page water-page">
       <div class="page-content">
         <div
+          v-if="waterData.current === 0"
           class="pixel-card interactive blue-theme"
           @click="handleWaterClick"
         >
           <h1 class="page-title pixel-font">MANA POTION</h1>
-          <div class="potion-container">
-            <div class="potion-bottle">
-              <div class="potion-liquid" style="height: 75%">
-                <div class="bubbles">
-                  <span></span><span></span><span></span>
-                </div>
-              </div>
+          <div class="empty-state-icon">💧</div>
+          <p class="pixel-text-center">
+            마력이 부족합니다.<br />물을 마셔 회복하세요.
+          </p>
+          <button class="retro-btn blue-btn">RECHARGE MANA</button>
+        </div>
+
+        <div
+          v-else
+          class="pixel-card interactive blue-theme"
+          @click="handleWaterClick"
+        >
+          <div class="hud-top">
+            <span class="hud-label">MANA (H2O)</span>
+            <span class="hud-val"
+              >{{
+                Math.round((waterData.current / waterData.goal) * 100)
+              }}%</span
+            >
+          </div>
+
+          <div class="water-dashboard">
+            <div class="current-water">
+              {{ waterData.current }}<span class="unit">L</span>
+            </div>
+            <div class="goal-water">MAX: {{ waterData.goal }}L</div>
+          </div>
+
+          <div class="mana-bar-container">
+            <div
+              class="mana-bar-fill"
+              :style="{
+                width: (waterData.current / waterData.goal) * 100 + '%',
+              }"
+            >
+              <div class="glare"></div>
             </div>
           </div>
-          <button class="retro-btn blue-btn">DRINK</button>
+
+          <div class="log-msg">> MP RECOVERING...</div>
+          <button class="retro-btn blue-btn sm-btn">DRINK MORE</button>
         </div>
       </div>
     </section>
-
     <section class="page weight-page">
       <div class="page-content">
         <div
+          v-if="!weightData.current"
           class="pixel-card interactive purple-theme"
           @click="handleWeightClick"
         >
           <h1 class="page-title pixel-font">HIGH SCORE</h1>
-          <div class="score-board"></div>
-          <button class="retro-btn purple-btn">UPDATE SCORE</button>
+          <div class="empty-state-icon">⚖️</div>
+          <p class="pixel-text-center">
+            오늘의 스코어(체중)를<br />기록하지 않았습니다.
+          </p>
+          <button class="retro-btn purple-btn">NEW RECORD</button>
+        </div>
+
+        <div
+          v-else
+          class="pixel-card interactive purple-theme"
+          @click="handleWeightClick"
+        >
+          <div class="hud-top">
+            <span class="hud-label">CURRENT RANKING</span>
+            <span class="date-badge">TODAY</span>
+          </div>
+
+          <div class="weight-dashboard">
+            <div class="score-display">
+              <span class="score-val">{{ weightData.current }}</span>
+              <span class="score-unit">KG</span>
+            </div>
+
+            <div
+              class="score-change"
+              :class="weightData.change > 0 ? 'bad' : 'good'"
+            >
+              <span class="change-icon">{{
+                weightData.change > 0 ? "▲" : "▼"
+              }}</span>
+              {{ Math.abs(weightData.change) }}kg
+              <span class="change-text">{{
+                weightData.change > 0 ? "(WARNING)" : "(NICE!)"
+              }}</span>
+            </div>
+          </div>
+
+          <button class="retro-btn purple-btn sm-btn">UPDATE SCORE</button>
         </div>
       </div>
     </section>
-
     <Footer @open-radio="showRadio = true"></Footer>
 
     <Teleport to="body">
@@ -172,6 +239,7 @@ import WaterRecordModal from "@/components/record/WaterRecordModal.vue"; // 경�
 import WeightRecordModal from "@/components/record/WeightRecordModal.vue"; // 경로 확인 필요
 import MealRecordModal from "@/components/record/MealRecordModal.vue"; // 경로 확인 필요
 
+//나중에 백 완성되면 화면 마운트 되거나 데이터 변경될 떄 불러오면 될듯 !
 // 💡 [추가] 오늘의 식단 데이터 (나중엔 API로 받아올 부분)
 // 데이터가 비어있으면([]) 'INSERT COIN' 화면이 뜨고, 있으면 리스트가 뜹니다.
 const todayMeals = ref([
@@ -179,6 +247,17 @@ const todayMeals = ref([
   { id: 2, type: "점심", name: "제육볶음 정식", cal: 700, icon: "🍖" },
   { id: 3, type: "간식", name: "프로틴 쉐이크", cal: 120, icon: "🧪" },
 ]);
+// 💡 [추가] 물 데이터 (0이면 기록 없음 상태)
+const waterData = ref({
+  current: 1.2, // 현재 마신 양 (L)
+  goal: 2.0, // 목표 양 (L)
+});
+
+// 💡 [추가] 체중 데이터 (null이면 기록 없음 상태)
+const weightData = ref({
+  current: 70.5, // 오늘 체중
+  change: -0.3, // 어제 대비 변화 (마이너스면 살 빠짐)
+});
 
 const showWaterModal = ref(false);
 const showWeightModal = ref(false);
@@ -727,5 +806,161 @@ const closeModal = () => (showModal.value = false);
 }
 .add-text {
   font-size: 0.9rem;
+}
+/* === 공통 유틸 === */
+.pixel-text-center {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+.empty-state-icon {
+  font-size: 3rem;
+  text-align: center;
+  margin-bottom: 10px;
+  opacity: 0.8;
+  animation: float 3s infinite ease-in-out;
+}
+.hud-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  border-bottom: 2px dashed rgba(255, 255, 255, 0.3);
+  padding-bottom: 5px;
+}
+.hud-label {
+  font-size: 0.8rem;
+  font-weight: bold;
+}
+.sm-btn {
+  padding: 8px;
+  font-size: 0.9rem;
+  margin-top: 15px;
+  width: 100%;
+}
+
+/* === 물 (Mana) 스타일 === */
+.water-dashboard {
+  text-align: center;
+  margin-bottom: 10px;
+}
+.current-water {
+  font-size: 3.5rem;
+  font-weight: bold;
+  color: #00e5ff;
+  text-shadow: 0 0 10px #00e5ff;
+  line-height: 1;
+}
+.current-water .unit {
+  font-size: 1.5rem;
+  color: #fff;
+  margin-left: 5px;
+}
+.goal-water {
+  color: #888;
+  font-size: 0.9rem;
+  margin-top: 5px;
+}
+
+.mana-bar-container {
+  width: 100%;
+  height: 20px;
+  background: #111;
+  border: 2px solid #fff;
+  padding: 2px;
+  position: relative;
+}
+.mana-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #00e5ff, #0077ff);
+  width: 0%;
+  transition: width 1s ease-out;
+  position: relative;
+  overflow: hidden;
+}
+.glare {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.5);
+}
+.log-msg {
+  font-size: 0.7rem;
+  color: #00e5ff;
+  margin-top: 5px;
+  animation: blink 2s infinite;
+}
+
+/* === 체중 (Score) 스타일 === */
+.weight-dashboard {
+  text-align: center;
+  padding: 10px 0;
+}
+.score-display {
+  display: flex;
+  justify-content: center;
+  align-items: baseline;
+  gap: 5px;
+}
+.score-val {
+  font-size: 3.5rem;
+  font-weight: bold;
+  color: #d500f9;
+  text-shadow: 0 0 10px #d500f9;
+}
+.score-unit {
+  font-size: 1.5rem;
+  color: #fff;
+}
+
+.score-change {
+  font-size: 1rem;
+  margin-top: 10px;
+  display: inline-block;
+  padding: 5px 10px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid;
+}
+.score-change.good {
+  color: #00ff00;
+  border-color: #00ff00;
+} /* 살 빠짐 */
+.score-change.bad {
+  color: #ff0055;
+  border-color: #ff0055;
+} /* 살 찜 */
+.change-text {
+  font-size: 0.7rem;
+  margin-left: 5px;
+}
+
+.date-badge {
+  font-size: 0.7rem;
+  background: #d500f9;
+  color: #fff;
+  padding: 2px 5px;
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+@keyframes blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
 }
 </style>
