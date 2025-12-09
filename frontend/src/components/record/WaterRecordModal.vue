@@ -119,6 +119,7 @@
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import dayjs from "dayjs";
 
+const API_ENDPOINT = "http://localhost:8080";
 // Props & Emits
 const emit = defineEmits(["close"]);
 
@@ -181,8 +182,32 @@ const handleOverlayClick = (e) => {
   }
 };
 
-const saveWater = () => {
+const saveWater = async() => {
   console.log("물 섭취량 저장:", currentAmount.value, "L");
+
+  const hydrationData = {
+      memberId : 1,
+      waterAmount : currentAmount.value,
+  }
+  try{
+          const response = await fetch(`${API_ENDPOINT}/diets/hydration`,{
+              method:'POST',
+              headers:{
+                  'Content-Type' : 'application/json'
+              },
+              body:JSON.stringify(hydrationData)
+          });
+
+          if (!response.ok) {
+              console.error(`저장 API 실패: ${response.status}`);
+              throw new Error(`저장 API 호출 실패 (Status: ${response.status})`);
+          }
+      }
+  catch(error){
+      console.error("식사 기록 저장 중 오류 발생:", error);
+  }
+
+
   closeModal();
 };
 
