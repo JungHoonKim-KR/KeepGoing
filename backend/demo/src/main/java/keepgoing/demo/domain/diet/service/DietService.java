@@ -120,16 +120,16 @@ public class DietService {
         double totalCarbohydrate = 0.0, totalSugars = 0.0, totalSodium = 0.0;
 
         for (Food food : foods) {
-            double ratio = (Double.parseDouble(food.getFoodWeight().substring(0,3)) / Double.parseDouble(food.getServingSize().substring(0,3)));
+            double ratio = food.getFoodWeight() / food.getServingSize();
             // Food 객체의 String 필드를 double로 파싱하여 계산
             try {
-                totalEnergy += Double.parseDouble(food.getEnergy()) * ratio;
-                totalWater += Double.parseDouble(food.getWater()) * ratio;
-                totalProtein += Double.parseDouble(food.getProtein()) * ratio;
-                totalFat += Double.parseDouble(food.getFat()) * ratio;
-                totalCarbohydrate += Double.parseDouble(food.getCarbohydrate()) * ratio;
-                totalSugars += Double.parseDouble(food.getSugars()) * ratio;
-                totalSodium += Double.parseDouble(food.getSodium()) * ratio;
+                totalEnergy += food.getEnergy() * ratio;
+                totalWater += food.getWater() * ratio;
+                totalProtein += food.getProtein() * ratio;
+                totalFat += food.getFat() * ratio;
+                totalCarbohydrate += food.getCarbohydrate() * ratio;
+                totalSugars += food.getSugars() * ratio;
+                totalSodium += food.getSodium() * ratio;
             } catch (NumberFormatException e) {
                 // 계산 실패 시 로깅 및 예외 처리
                 throw new RuntimeException("영양 성분 데이터 변환 오류 발생", e);
