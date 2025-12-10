@@ -1,7 +1,7 @@
 <script setup>
 import { ref } from "vue";
 import { useRouter } from "vue-router";
-import axios from "axios";
+import { signupApi } from "../api/auth/auth";
 
 const router = useRouter();
 
@@ -188,7 +188,7 @@ const handleSignup = async () => {
   };
 
   try {
-    await axios.post("http://localhost:8080/api/auth/signup", payload);
+    await signupApi(payload);
     alert("캐릭터 생성 완료! 로그인해주세요.");
     router.push("/login");
   } catch (error) {

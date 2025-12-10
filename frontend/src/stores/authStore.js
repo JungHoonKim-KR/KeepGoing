@@ -1,6 +1,5 @@
 import { defineStore } from "pinia";
-import axios from "axios";
-import router from "../router";
+import { logoutApi } from "@/api/auth/auth";
 export const useAuthStore = defineStore("auth", {
   state: () => ({
     accessToken: null,
@@ -17,36 +16,29 @@ export const useAuthStore = defineStore("auth", {
       this.memberId = data.memberId;
       this.name = data.name;
       this.isAuthenticated = true;
-
-      // Axios 헤더에 토큰 자동 탑재 (이제 요청할 때마다 토큰 신경 안 써도 됨)
-      axios.defaults.headers.common[
-        "Authorization"
-      ] = `Bearer ${data.accessToken}`;
     },
     async logout() {
       try {
         // 1. 백엔드에 "나 갈게, DB 토큰 지워줘" 요청 (실패해도 진행)
         if (this.memberId) {
-          await axios.post(
-            `http://localhost:8080/api/auth/logout?memberId=${this.memberId}`
-          );
+          await logoutApi(this.memberId);
         }
       } catch (error) {
-        console.warn("로그아웃 서버 처리 실패(무시하고 진행):", error);
+        console.warn("로그아웃 서버 처리 실패:", error);
       } finally {
-        // 2. 클라이언트 정보 싹 지우기
+        // 1. 상태 초기화
         this.accessToken = null;
         this.refreshToken = null;
         this.memberId = null;
         this.name = null;
         this.isAuthenticated = false;
 
-        // 3. 헤더 삭제
-        delete axios.defaults.headers.common["Authorization"];
+        // 2. [중요] 저장된 데이터(Persist) 강제 삭제
+        // Pinia Persist가 'auth'라는 이름으로 로컬스토리지에 저장합니다.
+        localStorage.removeItem("auth");
 
-        // 4. 로그인 페이지로 튕겨내기
-        window.location.href = "/login"; // <-- 이걸 쓰면 import 없어도 되고 확실하게 이동합니다.
-        alert("시스템 접속을 종료합니다.");
+        // 3. 페이지 새로고침하며 이동 (메모리 완전 초기화)
+        window.location.href = "/login";
       }
     },
   },

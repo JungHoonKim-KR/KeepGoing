@@ -1,8 +1,8 @@
 <script setup>
 import { ref } from "vue";
 import { useRouter } from "vue-router";
-import axios from "axios"; // 1. Axios 추가
 import { useAuthStore } from "@/stores/authStore"; // 2. Pinia Store 추가
+import { loginApi } from "../api/auth/auth";
 
 const router = useRouter();
 const authStore = useAuthStore(); // 스토어 초기화
@@ -70,7 +70,8 @@ const handleLogin = async () => {
 
   try {
     // 1. 백엔드 통신
-    const response = await axios.post("http://localhost:8080/api/auth/login", {
+    // [수정 후] 훨씬 깔끔해졌죠? URL 몰라도 됨!
+    const response = await loginApi({
       email: email.value,
       password: password.value,
     });

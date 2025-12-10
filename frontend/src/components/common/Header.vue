@@ -12,7 +12,7 @@ const handleLogout = () => {
 };
 
 const goHome = () => {
-  router.push("/ai-analysis");
+  router.push("/");
 };
 </script>
 
