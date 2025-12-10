@@ -75,7 +75,7 @@ router.beforeEach((to, from, next) => {
 
   // 2. [로그인 금지] 페이지(로그인/회원가입)인데 이미 로그인을 했다? -> 메인으로 튕겨내기
   if (to.meta.noAuth && authStore.isAuthenticated) {
-    next("/ai-analysis"); // "이미 로그인했잖아요, 분석하러 가세요"
+    next("/");
     return;
   }
 
