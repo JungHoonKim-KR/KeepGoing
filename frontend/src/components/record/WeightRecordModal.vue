@@ -101,14 +101,17 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import dayjs from "dayjs";
-
+import { useConfigStore } from '@/stores/configStore'; // Pinia Store 경로를 정확히 확인해주세요.
 const emit = defineEmits(["close"]);
 
 // Data
 const weightInput = ref("70.0");
 const weightSlider = ref(70);
 const memo = ref("");
-
+const MEMBER_ID = config.MEMBER_ID;
+const API_ENDPOINT = config.API_ENDPOINT;
+const formattedDate = computed(() => config.currentDate); 
+const getCurrentDateForAPI = config.getCurrentDateForAPI; // 함수이므로 그대로 사용합니다.
 // 더미 데이터 (실제 데이터로 교체 가능)
 const recentRecords = [
   { date: "YESTERDAY", weight: 70.3, change: -0.2 },
@@ -117,7 +120,6 @@ const recentRecords = [
 ];
 
 // Computed
-const formattedDate = computed(() => dayjs().format("YYYY-MM-DD"));
 
 // 🔊 8-bit 사운드 효과 (모달 내부 조작용)
 const playSound = (type) => {
@@ -176,16 +178,56 @@ const handleOverlayClick = (e) => {
   if (e.target === e.currentTarget) closeModal();
 };
 
-const saveWeight = () => {
+const saveWeight = async() => {
   playSound("save");
   // API 호출 로직은 여기에 추가
+    const weightData = {
+        memberId : MEMBER_ID,
+        weight : weightInput,
+        memo: memo.value
+    }
+
+    try {
+    const response = await fetch(`${API_ENDPOINT}/api/members/weight`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(weightData),
+    });
+    if (!response.ok) throw new Error("Save Failed");
+    setTimeout(() => closeModal(), 500);
+  } catch (error) {
+    console.error("Critical Failure:", error);
+    closeModal();
+  }
+
+
   console.log("Saving Score:", weightInput.value);
 
   // 소리 들을 시간 주고 닫기
   setTimeout(() => closeModal(), 400);
 };
 
-onMounted(() => (document.body.style.overflow = "hidden"));
+
+
+
+onMounted(async() => {
+
+    document.body.style.overflow = "hidden"
+    const url = `${API_ENDPOINT}/members/weight/${MEMBER_ID}`;
+    try{
+    const response = await fetch(url);
+
+     if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+
+    recentRecords = await response.json();
+    }
+    catch (error) {
+        console.error("일일 식단 데이터를 불러오는 데 실패했습니다. Mock 데이터를 사용합니다.", error);
+    }
+
+});
 onUnmounted(() => (document.body.style.overflow = ""));
 </script>
 

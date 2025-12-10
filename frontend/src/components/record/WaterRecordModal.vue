@@ -116,21 +116,19 @@ import { useConfigStore } from '@/stores/configStore'; // Pinia Store 경로를 
 const emit = defineEmits(["close"]);
 
 // Data
-const currentAmount = ref(1.5);
+const currentAmount = ref(0.0);
 const goalAmount = ref(2.0);
 const sliderValue = ref(15);const config = useConfigStore();
 
 const MEMBER_ID = config.MEMBER_ID;
 const API_ENDPOINT = config.API_ENDPOINT;
-const displayDate = computed(() => config.currentDate); 
+const formattedDate = computed(() => config.currentDate); 
 const getCurrentDateForAPI = config.getCurrentDateForAPI; // 함수이므로 그대로 사용합니다.
 const todayRecords = ref([
-  { time: "14:30", amount: "0.5" },
-  { time: "12:00", amount: "0.3" },
+
 ]);
 
 // Computed
-const formattedDate = computed(() => dayjs().format("YYYY-MM-DD"));
 const waterPercentage = computed(() => {
   const percentage = (currentAmount.value / goalAmount.value) * 100;
   return Math.min(Math.round(percentage), 100);
@@ -211,7 +209,7 @@ const saveWater = async () => {
   console.log("SAVE GAME :: Water Amount:", currentAmount.value, "L");
 
   const hydrationData = {
-    memberId: 1,
+    memberId: MEMBER_ID,
     waterAmount: currentAmount.value,
   };
 
@@ -263,9 +261,8 @@ onUnmounted(() => {
   justify-content: center;
   z-index: 9999;
   font-family: "NeoDunggeunmo", monospace;
-  /* 작은 화면에서 스크롤 허용 */
   overflow-y: auto;
-  padding: 10px; /* 모바일에서 잘림 방지 */
+  padding: 10px;
 }
 
 /* 스캔라인 */
