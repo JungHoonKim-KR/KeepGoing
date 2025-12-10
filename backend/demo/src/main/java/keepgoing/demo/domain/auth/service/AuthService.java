@@ -83,4 +83,15 @@ public class AuthService {
         // 새 Access Token 발급
         return jwtTokenProvider.createToken(member.getId(), member.getEmail());
     }
+
+    //로그아웃 (DB에서 리프레쉬 토큰 삭제)
+    @Transactional
+    public void logout(Long memberId) {
+        Member member = memberMapper.findById(memberId)
+                .orElseThrow(() -> new IllegalArgumentException("회원 없음"));
+
+        // 토큰을 null로 변경
+        member.updateRefreshToken(null);
+        memberMapper.updateRefreshToken(member);
+    }
 }

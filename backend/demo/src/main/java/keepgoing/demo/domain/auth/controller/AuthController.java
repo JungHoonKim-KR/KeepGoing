@@ -44,4 +44,11 @@ public class AuthController {
         // 일단 TokenResponseDto 형식을 맞추기 위해 null 채워서 보냅니다.
         return ResponseEntity.ok(new TokenResponseDto(newAccessToken, refreshToken, null, null));
     }
+
+    // [추가] 로그아웃
+    @PostMapping("/logout")
+    public ResponseEntity<String> logout(@RequestParam Long memberId) {
+        authService.logout(memberId);
+        return ResponseEntity.ok("로그아웃 되었습니다.");
+    }
 }

@@ -1,8 +1,8 @@
 import { createRouter, createWebHistory } from "vue-router";
 import HomeView from "../views/HomeView.vue";
-import LoginView from "@/views/LoginView.vue";
+import LoginView from "../views/LoginView.vue";
 import SignupView from "../views/SignupView.vue";
-import { useAuthStore } from "@/stores/authStore";
+import { useAuthStore } from "../stores/authStore";
 import AiDietPlan from "../views/AIDietPlan.vue";
 import CalendarView from "../views/CalendarView.vue";
 import AIAnalysisView from "../views/AIAnalysisView.vue";
@@ -15,14 +15,14 @@ const router = createRouter({
       path: "/login",
       name: "login",
       component: LoginView,
-      meta: { noAuth: true }, // 🔒 로그인한 사람은 접근 금지
+      meta: { noAuth: true, hideHeader: true }, // 🔒 로그인한 사람은 접근 금지
     },
     // router/index.js 파일에서 routes 배열 안에 추가
     {
       path: "/signup",
       name: "signup",
       component: SignupView,
-      meta: { noAuth: true }, // 🔒 로그인한 사람은 접근 금지
+      meta: { noAuth: true, hideHeader: true }, // 🔒 로그인한 사람은 접근 금지
     },
     // 2. 홈 화면 (🔒 로그인 필요)
     {
