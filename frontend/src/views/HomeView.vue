@@ -428,7 +428,7 @@ const closeModal = () => (showModal.value = false);
 // =========================
 
 async function fetchDailyDiet() {
-  const url = `${API_ENDPOINT}/diets/daily?memberId=${MEMBER_ID}&date=${displayDate}`;
+  const url = `${API_ENDPOINT}/diets/meal-daily?memberId=${MEMBER_ID}&date=${displayDate.value}`;
 
   try {
     const response = await fetch(url);

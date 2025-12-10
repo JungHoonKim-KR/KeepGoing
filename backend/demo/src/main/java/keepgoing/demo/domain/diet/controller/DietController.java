@@ -33,7 +33,7 @@ public class DietController {
     }
 
 
-    @GetMapping("/meal")
+    @GetMapping("/meal-daily")
     public ResponseEntity<Map<String, Diet>> getDailyMeal(@RequestParam("memberId") Long memberId,
                                                           @RequestParam("date") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
         Map<String, Diet> dailyMeals = dietService.selectDailyDiet(memberId, date);
@@ -52,4 +52,6 @@ public class DietController {
         dietService.addHydration(dto);
         return new ResponseEntity<>(HttpStatus.CREATED);
     }
+
+
 }

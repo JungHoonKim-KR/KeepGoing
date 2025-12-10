@@ -2,6 +2,7 @@ package keepgoing.demo.domain.member.controller;
 
 import keepgoing.demo.domain.member.dto.MemberResponseDto;
 import keepgoing.demo.domain.member.dto.MemberUpdateDto;
+import keepgoing.demo.domain.member.dto.MemberWeightRequestDto;
 import keepgoing.demo.domain.member.service.MemberService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -29,8 +30,9 @@ public class MemberController {
         return ResponseEntity.ok().build();
     }
 
-//    @PutMapping("/weight")
-//    public ResponseEntity<Void> updateMyWeight(@RequestBody ){
-//        memberService.
-//    }
+    @PutMapping("/weight")
+    public ResponseEntity<Void> updateMyWeight(@RequestBody MemberWeightRequestDto dto){
+        memberService.updateWeight(dto);
+        return ResponseEntity.ok().build();
+    }
 }

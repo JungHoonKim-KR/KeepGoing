@@ -9,8 +9,6 @@ import java.time.LocalDate;
 
 @Getter
 @Builder
-@NoArgsConstructor
-@AllArgsConstructor
 public class WeightLog{
     private Long id;            // PK
     private Long memberId;      // FK
