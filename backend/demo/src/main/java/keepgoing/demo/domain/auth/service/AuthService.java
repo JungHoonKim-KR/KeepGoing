@@ -18,7 +18,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
 
-    // 1. 회원가입 (이게 없어서 에러가 났던 것!)
+    // 1. 회원가입
     @Transactional
     public void signup(AuthRequestDto dto) {
         // 이메일 중복 체크
@@ -29,12 +29,24 @@ public class AuthService {
         // 비밀번호 암호화
         String encodedPassword = passwordEncoder.encode(dto.password());
 
-        // Member 엔티티 생성
+        // Member 엔티티 생성 (Null Safety 적용)
         Member member = Member.builder()
                 .email(dto.email())
                 .password(encodedPassword)
                 .name(dto.name())
                 .role("ROLE_USER")
+                // ▼▼▼ [여기 수정] 값이 없으면(null) 기본값(0 또는 "M")을 넣도록 설정 ▼▼▼
+                .gender(dto.gender() != null ? dto.gender() : "M")
+                .age(dto.age() != null ? dto.age() : 0)          // null이면 0세
+                .height(dto.height() != null ? dto.height() : 0.0) // null이면 0.0cm
+                .weight(dto.weight() != null ? dto.weight() : 0.0) // null이면 0.0kg
+                .targetWeight(dto.targetWeight() != null ? dto.targetWeight() : 0.0)
+                .activity(dto.activity() != null ? dto.activity() : "moderate")
+                .goal(dto.goal() != null ? dto.goal() : "diet")
+                // 문자열은 DTO에서 이미 처리했지만 안전하게 한 번 더
+                .healthCondition(dto.healthCondition() != null ? dto.healthCondition() : "없음")
+                .allergies(dto.allergies() != null ? dto.allergies() : "없음")
+                .dislikedFood(dto.dislikedFood() != null ? dto.dislikedFood() : "없음")
                 .build();
 
         // DB 저장
