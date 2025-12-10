@@ -3,6 +3,7 @@ package keepgoing.demo.domain.member.service;
 import keepgoing.demo.domain.member.dto.MemberResponseDto;
 import keepgoing.demo.domain.member.dto.MemberUpdateDto;
 import keepgoing.demo.domain.member.dto.MemberWeightRequestDto;
+import keepgoing.demo.domain.member.dto.MemberWeightResponseDto;
 import keepgoing.demo.domain.member.entity.Member;
 import keepgoing.demo.domain.member.entity.WeightLog;
 import keepgoing.demo.domain.member.mapper.MemberMapper;
@@ -10,7 +11,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 
 @Service
@@ -44,14 +47,25 @@ public class MemberService {
                 rank
         );
     }
+    @Transactional(readOnly = true)
+    public MemberWeightResponseDto getWeight(Long memberId, LocalDate date) {
+        WeightLog weightLogByMemberId = memberMapper.findWeightLogByMemberId(memberId, date);
+        System.out.println(weightLogByMemberId);
+        return new MemberWeightResponseDto(weightLogByMemberId.getDate(),  weightLogByMemberId.getWeight(),
+                weightLogByMemberId.getDiff(), weightLogByMemberId.getDiff() >= 0);
+    }
 
+//    @Transactional(readOnly = true)
+//    public List<MemberResponseDto> getWeightLogs(Long memberId, LocalDate date) {
+//
+//    }
     public void updateWeight(MemberWeightRequestDto dto){
 //        memberMapper.
 //        memberMapper.updateWeight(dto.getMemberId(), dto.getWeight());
 //
         Optional<Member> findMember = memberMapper.findById(dto.getMemberId());
         if(findMember.isEmpty()){
-
+            new NoSuchElementException("멤버 ID " + dto.getMemberId() + "에 해당하는 사용자를 찾을 수 없습니다.");
         }
         Member member = findMember.get();
         double diff = member.getWeight() - dto.getWeight();

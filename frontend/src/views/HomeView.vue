@@ -446,7 +446,7 @@ async function fetchDailyDiet() {
       "일일 식단 데이터를 불러오는 데 실패했습니다. Mock 데이터를 사용합니다.",
       error
     );
-
+    // default
     todayMealMap.value = {
       아침: null,
       점심: null,
@@ -484,8 +484,55 @@ async function fetchDailyDiet() {
   }
 }
 
+async function fetchHydrationData() {
+  // 물 데이터 API 호출 로직 (임의 구현)
+  const baseURL = `${API_ENDPOINT}/diets/hydration`;
+  const params = new URLSearchParams({
+    memberId : MEMBER_ID,
+    date: displayDate.value,
+  });
+  const url = `${baseURL}?${params.toString()}`;
+  try{
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+    const data = await response.json();
+    waterData.value.current = data;
+  } catch (error) {
+    console.error("물 데이터를 불러오는 데 실패했습니다. Mock 데이터를 사용합니다.", error);
+    waterData.value = { current: 1.2, goal: 2.0 };  
+  }
+}
+async function fetchWeightData (){
+  const baseURL = `${API_ENDPOINT}/api/member/weight`;
+  const params = new URLSearchParams({
+    memberId : MEMBER_ID,
+    date: displayDate.value,
+  });
+  const url = `${baseURL}?${params.toString()}`;
+  try {
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+    const data = await response.json();
+    weightData.value.current = data.weight;
+    weightData.value.change = data.diff;
+
+  } catch (error) {
+    console.error(
+      "일일 식단 데이터를 불러오는 데 실패했습니다. Mock 데이터를 사용합니다.",
+      error
+    );
+  }
+}
+
 onMounted(async () => {
   await fetchDailyDiet();
+  await fetchHydrationData();
+  await fetchWeightData();
 });
 </script>
 
