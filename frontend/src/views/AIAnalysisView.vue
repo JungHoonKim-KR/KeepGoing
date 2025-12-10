@@ -1,33 +1,25 @@
 <script setup>
-import { ref, onMounted, computed } from "vue";
-import { useRouter, useRoute } from "vue-router";
-import Footer from "../components/utils/Footer.vue";
+import { ref, onMounted } from "vue";
+import { useRouter } from "vue-router";
+import { analyzeDiet } from "../api/diet/dietApi"; // 1. API 함수 임포트
 
 const router = useRouter();
-const route = useRoute();
 
 // ----------------------------------------------------
 // 1. 상태 관리
 // ----------------------------------------------------
-const isLoading = ref(true);
-const analysisData = ref(null);
-const bootLogs = ref([]); // 로딩 중 표시할 로그
+const isLoading = ref(false); // 초기엔 로딩 아님 (클릭 대기)
+const isAnalyzing = ref(false); // 분석 중 상태
+const analysisData = ref(null); // 결과 데이터
+const bootLogs = ref([]); // 터미널 로그
 
-const showAnalysisDashboard = () => {
-  return route.path === "/ai-analysis" && !isLoading.value;
-};
+// 임시 사용자 정보 (나중에 Pinia나 로그인 정보에서 가져오세요)
+const MEMBER_ID = 1;
+const TODAY_DATE = new Date().toISOString().split("T")[0]; // "2024-05-22"
 
 // ----------------------------------------------------
-// 2. 랭크 시스템 (게임 요소)
+// 2. 랭크 시스템 (백엔드에서 안 줄 경우 대비용)
 // ----------------------------------------------------
-const getRank = (score) => {
-  if (score >= 90) return "S";
-  if (score >= 80) return "A";
-  if (score >= 70) return "B";
-  if (score >= 50) return "C";
-  return "F";
-};
-
 const getRankColor = (score) => {
   if (score >= 90) return "#ffd700"; // Gold
   if (score >= 80) return "#00e5ff"; // Cyan
@@ -37,10 +29,58 @@ const getRankColor = (score) => {
 };
 
 // ----------------------------------------------------
-// 3. 데이터 로드 & 부팅 시뮬레이션
+// 3. 서버 통신 및 데이터 매핑
 // ----------------------------------------------------
-onMounted(() => {
-  // 부팅 로그 애니메이션
+const fetchAnalysis = async () => {
+  if (isAnalyzing.value) return; // 중복 클릭 방지
+
+  // 상태 변경
+  isAnalyzing.value = true;
+  isLoading.value = true;
+  bootLogs.value = []; // 로그 초기화
+
+  // 부팅 로그 애니메이션 실행
+  runBootSequence();
+
+  try {
+    // [핵심] 실제 서버 요청
+    const data = await analyzeDiet(MEMBER_ID, TODAY_DATE);
+
+    // 백엔드 데이터 -> 프론트엔드 포맷으로 매핑
+    analysisData.value = {
+      overallScore: data.score, // 점수
+      rank: data.rank, // 랭크 (S, A, B...)
+      title: data.dailyTitle, // 칭호 (근육 몬스터)
+
+      // 인사이트 (아이콘, 설명)
+      insights: data.insights.map((item, index) => ({
+        id: index,
+        type: item.type, // positive, warning...
+        iconType: item.iconType, // sword, skull...
+        title: item.title,
+        description: item.description,
+      })),
+
+      recommendation: data.oneLineSummary, // 한줄평
+
+      // 내일 식단 퀘스트 (recommendations -> questItems)
+      questItems: data.recommendations,
+    };
+
+    // 로딩 종료 (로그 애니메이션 끝날 때쯤)
+    setTimeout(() => {
+      isLoading.value = false;
+      isAnalyzing.value = false;
+    }, 2500); // 2.5초 정도 연출 시간 확보
+  } catch (error) {
+    alert("서버 연결에 실패했습니다. 백엔드가 켜져있는지 확인해주세요.");
+    isLoading.value = false;
+    isAnalyzing.value = false;
+  }
+};
+
+// 부팅 로그 애니메이션
+const runBootSequence = () => {
   const logs = [
     "INITIALIZING SYSTEM...",
     "CONNECTING TO NEURAL NET...",
@@ -49,7 +89,6 @@ onMounted(() => {
     "CALCULATING POWER LEVEL...",
     "ACCESS GRANTED.",
   ];
-
   let logIndex = 0;
   const logInterval = setInterval(() => {
     if (logIndex < logs.length) {
@@ -58,57 +97,20 @@ onMounted(() => {
     } else {
       clearInterval(logInterval);
     }
-  }, 300);
-
-  // 실제 데이터 로드 시뮬레이션
-  setTimeout(() => {
-    analysisData.value = {
-      overallScore: 78,
-      insights: [
-        {
-          id: 1,
-          type: "positive",
-          title: "STR 증가 (단백질)",
-          description:
-            "근육량 유지에 필요한 단백질이 충분합니다. 공격력이 상승했습니다!",
-          iconType: "sword",
-        },
-        {
-          id: 2,
-          type: "warning",
-          title: "TOXIC 경고 (나트륨)",
-          description:
-            "나트륨 수치가 위험 수준입니다. 해독 포션(물)이 필요합니다.",
-          iconType: "skull",
-        },
-        {
-          id: 3,
-          type: "positive",
-          title: "BALANCE 양호",
-          description: "3대 영양소 비율이 황금 밸런스를 유지하고 있습니다.",
-          iconType: "scale",
-        },
-        {
-          id: 4,
-          type: "suggestion",
-          title: "NEXT QUEST",
-          description: "채소 50g 섭취 시 방어력이 추가 상승합니다.",
-          iconType: "scroll",
-        },
-      ],
-      recommendation:
-        "현재 상태는 매우 안정적입니다. 나트륨 수치만 조절한다면 S랭크 도달이 가능합니다.",
-      trend: "up",
-    };
-    isLoading.value = false;
-  }, 2500);
-});
+  }, 350);
+};
 
 const goToAIDietPlan = () => {
-  router.push("/ai-analysis/diet-plan");
+  // 퀘스트 플랜(내일 식단) 페이지로 이동하거나 모달 띄우기
+  // router.push("/ai-analysis/diet-plan");
+  alert(
+    "내일의 퀘스트: \n" +
+      analysisData.value.questItems
+        .map((q) => `- ${q.menu}: ${q.reason}`)
+        .join("\n")
+  );
 };
 </script>
-
 <template>
   <div class="ai-view retro-theme">
     <div class="scanlines"></div>
@@ -134,10 +136,10 @@ const goToAIDietPlan = () => {
         </div>
       </div>
 
-      <div v-else-if="showAnalysisDashboard()" class="dashboard-container">
-        <div class="ai-avatar-section">
+      <div v-else class="dashboard-container">
+        <div class="ai-avatar-section clickable" @click="fetchAnalysis">
           <div class="cyber-eye-container">
-            <div class="eye-ring"></div>
+            <div class="eye-ring" :class="{ 'fast-spin': isAnalyzing }"></div>
             <div class="eye-iris">
               <div class="eye-pupil"></div>
               <div class="eye-glint"></div>
@@ -145,151 +147,161 @@ const goToAIDietPlan = () => {
             <div class="scanning-beam"></div>
           </div>
           <div class="ai-message-box">
-            <p class="typing-effect">
-              "분석 완료. 당신의 데이터를 확인하십시오."
+            <p v-if="!analysisData" class="blink-text">
+              "시스템 대기 중... [터치하여 분석 시작]"
+            </p>
+            <p v-else class="typing-effect">
+              "분석 완료. 랭크 [{{ analysisData.rank }}] 달성."
             </p>
           </div>
         </div>
 
-        <div class="power-card">
-          <div class="card-deco tl"></div>
-          <div class="card-deco tr"></div>
-          <div class="card-deco bl"></div>
-          <div class="card-deco br"></div>
+        <div v-if="analysisData" class="result-section pop-in">
+          <div class="power-card">
+            <div class="card-deco tl"></div>
+            <div class="card-deco tr"></div>
+            <div class="card-deco bl"></div>
+            <div class="card-deco br"></div>
 
-          <div
-            class="rank-badge"
-            :style="{
-              color: getRankColor(analysisData.overallScore),
-              borderColor: getRankColor(analysisData.overallScore),
-            }"
-          >
-            RANK {{ getRank(analysisData.overallScore) }}
-          </div>
-
-          <div class="score-row">
-            <div class="score-label">POWER LEVEL</div>
             <div
-              class="score-val"
-              :style="{ color: getRankColor(analysisData.overallScore) }"
-            >
-              {{ analysisData.overallScore }} <span class="max">/ 100</span>
-            </div>
-          </div>
-
-          <div class="retro-progress">
-            <div
-              class="fill"
+              class="rank-badge"
               :style="{
-                width: `${analysisData.overallScore}%`,
-                background: getRankColor(analysisData.overallScore),
+                color: getRankColor(analysisData.overallScore),
+                borderColor: getRankColor(analysisData.overallScore),
+                boxShadow: `4px 4px 0 ${getRankColor(
+                  analysisData.overallScore
+                )}33`,
               }"
-            ></div>
-          </div>
-        </div>
-
-        <div class="insight-grid">
-          <div
-            v-for="(item, idx) in analysisData.insights"
-            :key="item.id"
-            class="insight-card pop-in"
-            :class="item.type"
-            :style="{ animationDelay: `${idx * 0.1}s` }"
-          >
-            <div class="icon-box">
-              <svg
-                v-if="item.iconType === 'sword'"
-                viewBox="0 0 24 24"
-                class="animated-icon sword"
-              >
-                <path d="M14.5 4l-8.5 8.5 2 2 8.5-8.5z" fill="currentColor" />
-                <path d="M4 14.5l2-2 2 2-2 2z" fill="currentColor" />
-              </svg>
-              <svg
-                v-if="item.iconType === 'skull'"
-                viewBox="0 0 24 24"
-                class="animated-icon skull"
-              >
-                <circle cx="9" cy="9" r="2" fill="currentColor" />
-                <circle cx="15" cy="9" r="2" fill="currentColor" />
-                <path d="M8 15h8" stroke="currentColor" stroke-width="2" />
-                <path
-                  d="M12 2a10 10 0 0 0-10 10c0 5.5 4.5 10 10 10s10-4.5 10-10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16z"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                />
-              </svg>
-              <svg
-                v-if="item.iconType === 'scale'"
-                viewBox="0 0 24 24"
-                class="animated-icon scale"
-              >
-                <path d="M12 2L2 12h20L12 2z" fill="currentColor" />
-                <rect x="11" y="12" width="2" height="10" fill="currentColor" />
-              </svg>
-              <svg
-                v-if="item.iconType === 'scroll'"
-                viewBox="0 0 24 24"
-                class="animated-icon scroll"
-              >
-                <rect
-                  x="4"
-                  y="4"
-                  width="16"
-                  height="16"
-                  rx="2"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  fill="none"
-                />
-                <line
-                  x1="8"
-                  y1="8"
-                  x2="16"
-                  y2="8"
-                  stroke="currentColor"
-                  stroke-width="2"
-                />
-                <line
-                  x1="8"
-                  y1="12"
-                  x2="16"
-                  y2="12"
-                  stroke="currentColor"
-                  stroke-width="2"
-                />
-              </svg>
+            >
+              RANK {{ analysisData.rank || getRank(analysisData.overallScore) }}
             </div>
 
-            <div class="text-box">
-              <div class="card-title">{{ item.title }}</div>
-              <div class="card-desc">{{ item.description }}</div>
+            <div class="score-row">
+              <div class="score-label">POWER LEVEL</div>
+              <div
+                class="score-val"
+                :style="{ color: getRankColor(analysisData.overallScore) }"
+              >
+                {{ analysisData.overallScore }} <span class="max">/ 100</span>
+              </div>
+            </div>
+
+            <div class="retro-progress">
+              <div
+                class="fill"
+                :style="{
+                  width: `${analysisData.overallScore}%`,
+                  background: getRankColor(analysisData.overallScore),
+                  boxShadow: `0 0 10px ${getRankColor(
+                    analysisData.overallScore
+                  )}`,
+                }"
+              ></div>
             </div>
           </div>
-        </div>
 
-        <div class="advice-terminal">
-          <div class="terminal-header">/// ORACLE_ADVICE.TXT ///</div>
-          <div class="terminal-body">
-            {{ analysisData.recommendation }}
+          <div class="insight-grid">
+            <div
+              v-for="(item, idx) in analysisData.insights"
+              :key="item.id"
+              class="insight-card pop-in"
+              :class="item.type"
+              :style="{ animationDelay: `${idx * 0.1}s` }"
+            >
+              <div class="icon-box">
+                <svg
+                  v-if="item.iconType === 'sword'"
+                  viewBox="0 0 24 24"
+                  class="animated-icon sword"
+                >
+                  <path d="M14.5 4l-8.5 8.5 2 2 8.5-8.5z" fill="currentColor" />
+                  <path d="M4 14.5l2-2 2 2-2 2z" fill="currentColor" />
+                </svg>
+                <svg
+                  v-if="item.iconType === 'skull'"
+                  viewBox="0 0 24 24"
+                  class="animated-icon skull"
+                >
+                  <circle cx="9" cy="9" r="2" fill="currentColor" />
+                  <circle cx="15" cy="9" r="2" fill="currentColor" />
+                  <path d="M8 15h8" stroke="currentColor" stroke-width="2" />
+                  <path
+                    d="M12 2a10 10 0 0 0-10 10c0 5.5 4.5 10 10 10s10-4.5 10-10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16z"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  />
+                </svg>
+                <svg
+                  v-if="item.iconType === 'scale'"
+                  viewBox="0 0 24 24"
+                  class="animated-icon scale"
+                >
+                  <path d="M12 2L2 12h20L12 2z" fill="currentColor" />
+                  <rect
+                    x="11"
+                    y="12"
+                    width="2"
+                    height="10"
+                    fill="currentColor"
+                  />
+                </svg>
+                <svg
+                  v-if="item.iconType === 'scroll'"
+                  viewBox="0 0 24 24"
+                  class="animated-icon scroll"
+                >
+                  <rect
+                    x="4"
+                    y="4"
+                    width="16"
+                    height="16"
+                    rx="2"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    fill="none"
+                  />
+                  <line
+                    x1="8"
+                    y1="8"
+                    x2="16"
+                    y2="8"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  />
+                  <line
+                    x1="8"
+                    y1="12"
+                    x2="16"
+                    y2="12"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  />
+                </svg>
+              </div>
+              <div class="text-box">
+                <div class="card-title">{{ item.title }}</div>
+                <div class="card-desc">{{ item.description }}</div>
+              </div>
+            </div>
           </div>
-        </div>
 
-        <div class="action-buttons">
-          <button class="retro-btn primary" @click="goToAIDietPlan">
-            <span class="btn-icon">📜</span> VIEW QUEST PLAN
-          </button>
-          <button class="retro-btn secondary">
-            <span class="btn-icon">💬</span> CONSULT ORACLE
-          </button>
+          <div class="advice-terminal">
+            <div class="terminal-header">/// ORACLE_ADVICE.TXT ///</div>
+            <div class="terminal-body">
+              {{ analysisData.recommendation }}
+            </div>
+          </div>
+
+          <div class="action-buttons">
+            <button class="retro-btn primary" @click="goToAIDietPlan">
+              <span class="btn-icon">📜</span> VIEW QUEST PLAN
+            </button>
+          </div>
         </div>
       </div>
-
       <router-view></router-view>
     </div>
-
-    <Footer />
   </div>
 </template>
 
