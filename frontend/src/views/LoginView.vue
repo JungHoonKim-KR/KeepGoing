@@ -164,7 +164,6 @@ const goToSignup = () => {
     </div>
   </div>
 </template>
-
 <style scoped>
 @import url("https://cdn.jsdelivr.net/gh/neodgm/neodgm-webfont@latest/neodgm/style.css");
 
@@ -173,9 +172,7 @@ const goToSignup = () => {
   --neon-pink: #ff0055;
   --neon-yellow: #ffd700;
   --bg-color: #101018;
-  --input-bg: #1a1a24;
   --text-white: #ffffff;
-  --text-gray: #aaaaaa;
 }
 
 .login-view {
@@ -192,7 +189,7 @@ const goToSignup = () => {
   box-sizing: border-box;
 }
 
-/* 배경 효과 */
+/* 배경 효과 (스캔라인) */
 .scanlines {
   position: absolute;
   top: 0;
@@ -261,7 +258,6 @@ const goToSignup = () => {
   animation: pulse-glow 2s infinite alternate;
 }
 
-/* 입력 폼 디자인 */
 .form-box {
   width: 100%;
   display: flex;
@@ -285,10 +281,15 @@ const goToSignup = () => {
   margin-left: 2px;
 }
 
+/* ========================================= */
+/* 👇 [핵심 수정] 입력창 디자인 로직 👇 */
+/* ========================================= */
+
+/* 1. 기본 상태 (입력 안 했을 때) */
 .retro-input {
-  background-color: var(--input-bg);
+  background-color: #ffffff; /* 배경 흰색 */
+  color: #000000; /* 글씨 검정 */
   border: 2px solid #444;
-  color: #fff; /* 입력 글씨 흰색 */
   padding: 14px;
   font-family: inherit;
   font-size: 1rem;
@@ -299,40 +300,45 @@ const goToSignup = () => {
   transition: all 0.2s;
 }
 
-.retro-input:focus {
-  border-color: var(--neon-blue);
+/* 2. 포커스(입력 중) 상태 OR 값이 있을 때 */
+/* :not(:placeholder-shown)은 '값이 비어있지 않음'을 감지합니다 */
+.retro-input:focus,
+.retro-input:not(:placeholder-shown) {
+  background-color: #000000; /* 배경 검정 */
+  color: #ffffff; /* 글씨 흰색 */
+  border-color: var(--neon-blue); /* 테두리 네온 */
   box-shadow: 0 0 8px rgba(0, 229, 255, 0.3);
-  background-color: #20202a;
 }
 
 .retro-input::placeholder {
-  color: #666;
+  color: #888; /* 플레이스홀더 색상 (흰 배경일 때) */
 }
 
-/* 자동완성 스타일 조정 */
+/* 3. 자동완성(Autofill) 상태 강제 디자인 */
+/* 브라우저가 아이디/비번을 자동 입력했을 때도 검정 배경/흰 글씨 유지 */
 .retro-input:-webkit-autofill,
 .retro-input:-webkit-autofill:hover,
 .retro-input:-webkit-autofill:focus,
 .retro-input:-webkit-autofill:active {
-  -webkit-text-fill-color: #ffffff;
-  -webkit-box-shadow: 0 0 0px 1000px #1a1a24 inset;
+  -webkit-text-fill-color: #ffffff !important; /* 글씨 흰색 */
+  -webkit-box-shadow: 0 0 0px 1000px #000000 inset !important; /* 배경 검정 */
   transition: background-color 5000s ease-in-out 0s;
 }
 
-/* 에러 메시지 스타일 */
+/* ========================================= */
+
 .error-msg {
   color: var(--neon-pink);
   font-size: 0.8rem;
   text-align: center;
   margin: 0;
-  animation: blink 0.5s 2; /* 두 번 깜빡임 */
+  animation: blink 0.5s 2;
 }
 
-/* 버튼 스타일 */
 .start-btn {
   margin-top: 1rem;
   background: var(--neon-pink);
-  color: #fff;
+  color: #ffffff; /* 버튼 글씨는 항상 흰색 */
   border: 2px solid #fff;
   padding: 1rem;
   font-size: 1.2rem;
@@ -353,7 +359,6 @@ const goToSignup = () => {
   cursor: wait;
 }
 
-/* 하단 링크 */
 .footer-links {
   margin-top: 2rem;
   display: flex;
