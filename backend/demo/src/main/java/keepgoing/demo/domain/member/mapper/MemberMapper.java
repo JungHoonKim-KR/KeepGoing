@@ -7,4 +7,5 @@ import java.util.Optional;
 @Mapper
 public interface MemberMapper {
     Optional<Member> findById(Long id);
+    void update(Member member);
 }

@@ -3,7 +3,34 @@
 <mapper namespace="keepgoing.demo.domain.member.mapper.MemberMapper">
 
     <select id="findById" resultType="keepgoing.demo.domain.member.entity.Member">
-        SELECT * FROM member
-        WHERE id = #{memberId}  </select>
+        SELECT
+        id,
+        name,
+        height,
+        weight,
+        age,
+        gender,
+        activity,
+        goal,
+        health_condition,
+        allergies,
+        disliked_food,
+        target_weight,
+        -- ▼▼▼ [여기 추가] 콤마(,) 잊지 마세요! ▼▼▼
+        level,
+        exp,
+        current_points
+        FROM member
+        WHERE id = #{id}
+    </select>
 
+    <update id="update" parameterType="keepgoing.demo.domain.member.entity.Member">
+        UPDATE member
+        SET height = #{height},
+        weight = #{weight},
+        activity = #{activity},
+        goal = #{goal},
+        target_weight = #{targetWeight}
+        WHERE id = #{id}
+    </update>
 </mapper>
