@@ -8,4 +8,6 @@ import java.util.Optional;
 public interface MemberMapper {
     Optional<Member> findById(Long id);
     void update(Member member);
+    Optional<Member> findByEmail(String email);
+    void save(Member member);
 }

@@ -1,10 +1,14 @@
 package keepgoing.demo.domain.member.entity;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.Getter;
 
 import java.time.LocalDateTime;
 
+@Builder
+@AllArgsConstructor
 @Getter
 @Data
 public class Member {
@@ -12,25 +16,19 @@ public class Member {
     private String email;
     private String password;
     private String name;
-    private int age;
-    private String gender;
-
-    // int -> double 로 변경
+    private String role;
     private double height;
     private double weight;
-
+    private int age;
+    private String gender;
     // AI 필수 필드 추가
     private String activity;
     private String goal;
-
     // 선택 사항
-    private String role;
-    private LocalDateTime createdAt;
     private String healthCondition; // 기저질환
     private String allergies;       // 알레르기
     private String dislikedFood;    // 기피음식
     private Double targetWeight;    // 목표체중
-
     private int level;          // 현재 레벨
     private int exp;            // 현재 경험치
     private int currentPoints;  // 보유 포인트 (상점용)
