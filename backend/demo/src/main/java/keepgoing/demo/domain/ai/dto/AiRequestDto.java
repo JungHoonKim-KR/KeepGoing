@@ -2,18 +2,32 @@ package keepgoing.demo.domain.ai.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-// record를 쓰면 코드가 간결해집니다. (Java 17 이상 권장)
 public record AiRequestDto(
-        @JsonProperty("profile") UserProfile profile,
-        @JsonProperty("daily_log") DailyLog dailyLog
+        @JsonProperty("userProfile")
+        UserProfile profile,
+
+        @JsonProperty("dailyLog")
+        DailyLog dailyLog
 ) {
     public record UserProfile(
-            double height, double weight, int age, String gender, String activity, String goal
+            double height,
+            double weight,
+            int age,
+            String gender,
+            String activity,
+            String goal,
+            String healthCondition,
+            String allergies,
+            String dislikedFood,
+            Double targetWeight
     ) {}
 
     public record DailyLog(
             String date,
-            // 아침, 점심, 저녁 상세 내용을 하나의 문자열로 요약해서 보낼 예정
-            @JsonProperty("total_summary") String totalSummary
+
+            // [핵심 수정]
+            // Java 변수명이 무엇이든 상관없이, JSON으로 나갈 때는 무조건 "dietSummary"로 나가게 함
+            @JsonProperty("dietSummary")
+            String summary
     ) {}
 }

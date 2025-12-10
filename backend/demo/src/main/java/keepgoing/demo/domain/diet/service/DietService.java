@@ -32,47 +32,78 @@ public class DietService {
     private final MemberMapper memberMapper;
     private final AiClient aiClient;
     private final ObjectMapper objectMapper;
-
     @Transactional
     public AiResponseDto analyzeDailyDiet(Long memberId, LocalDate date) {
         // 1. 회원 조회
         Member member = memberMapper.findById(memberId)
                 .orElseThrow(() -> new IllegalArgumentException("회원 없음"));
 
-        // 2. 식단 조회 (DB에 저장된 거 가져오기)
+        // 2. 식단 조회
         List<Diet> dietList = dietMapper.findAllByDate(memberId, date);
         if(dietList.isEmpty()) throw new IllegalArgumentException("식단 기록 없음");
 
-        // 3. AI 전송용 요약 문자열 만들기
+        // 3. [변경] AI 전송용 요약 문자열 만들기 (PromptGenerator 사용)
+        // (만약 PromptGenerator를 아직 안 만들었다면, 기존 StringBuilder 로직을 유지해도 됩니다)
+        // String summary = promptGenerator.createDailyAnalysisPrompt(dietList);
+
+        // -> PromptGenerator가 없다면 기존 로직 유지:
         StringBuilder summary = new StringBuilder();
         for (Diet d : dietList) {
             String foodNames = d.getFoods().stream()
                     .map(Food::getName).collect(Collectors.joining(", "));
-
             summary.append(String.format("[%s] %s (탄:%.0f, 단:%.0f, 지:%.0f) / ",
                     d.getMealTime(), foodNames, d.getCarbohydrate(), d.getProtein(), d.getFat()));
         }
 
-        // 4. AI 요청
+        // 4. [핵심] AI 요청 객체 생성 (Null 방어 로직 추가 + 필드 10개 맞추기)
+        String healthCondition = (member.getHealthCondition() != null && !member.getHealthCondition().isBlank())
+                ? member.getHealthCondition() : "없음";
+        String allergies = (member.getAllergies() != null && !member.getAllergies().isBlank())
+                ? member.getAllergies() : "없음";
+        String dislikedFood = (member.getDislikedFood() != null && !member.getDislikedFood().isBlank())
+                ? member.getDislikedFood() : "없음";
+
         AiRequestDto request = new AiRequestDto(
                 new AiRequestDto.UserProfile(
-                        member.getHeight(), member.getWeight(), member.getAge(),
-                        member.getGender(), member.getActivity(), member.getGoal()),
-                new AiRequestDto.DailyLog(date.toString(), summary.toString())
+                        member.getHeight(),
+                        member.getWeight(),
+                        member.getAge(),
+                        member.getGender(),
+                        member.getActivity(),
+                        member.getGoal(),
+                        // ▼ 추가된 4개 필드 (순서 중요!)
+                        healthCondition,
+                        allergies,
+                        dislikedFood,
+                        member.getTargetWeight()
+                ),
+                new AiRequestDto.DailyLog(
+                        date.toString(),
+                        summary.toString()
+                )
         );
 
+        // 5. AI 호출
         AiResponseDto result = aiClient.requestAnalysis(request);
 
-        // 5. 결과 저장
+        // 6. 결과 저장 (구조 변경 반영)
         try {
+            // AiResponseDto 구조가 바뀌었으므로 .dailyFeedback() 제거
+            // .score(), .oneLineSummary() 바로 접근
+            // .recommendations() 리스트를 JSON으로 변환
+            String recommendJson = objectMapper.writeValueAsString(result.recommendations());
+
             dietMapper.saveAiReport(AiReport.builder()
                     .memberId(memberId)
                     .date(date)
-                    .score(result.dailyFeedback().score())
-                    .feedbackText(result.dailyFeedback().oneLineSummary())
-                    .recommendJson(objectMapper.writeValueAsString(result.tomorrowRecommendation()))
+                    .score(result.score())               // 수정됨
+                    .feedbackText(result.oneLineSummary()) // 수정됨
+                    .recommendJson(recommendJson)
                     .build());
-        } catch (Exception e) { e.printStackTrace(); }
+        } catch (Exception e) {
+            e.printStackTrace(); // (가급적 log.error 사용 권장)
+            throw new RuntimeException("결과 저장 실패", e); // 트랜잭션 롤백을 위해 예외 던지기
+        }
 
         return result;
     }
