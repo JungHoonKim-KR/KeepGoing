@@ -33,4 +33,30 @@
         target_weight = #{targetWeight}
         WHERE id = #{id}
     </update>
+
+    <select id="selectWightListByMemberId">
+        SELECT
+            date,
+            weight,
+            diff,
+            memo
+        FROM weight_log
+        WHERE member_id= #{memberId}
+    </select>
+
+    <insert id="insertWeightLog" useGeneratedKeys="true">
+        INSERT INTO weight_log (
+            member_id,
+            weight,
+            diff,
+            date,
+            memo
+        ) VALUES (
+                     #{memberId},
+                     #{weight},
+                     #{diff},
+                     #{date},
+                     #{memo}
+                 )
+    </insert>
 </mapper>

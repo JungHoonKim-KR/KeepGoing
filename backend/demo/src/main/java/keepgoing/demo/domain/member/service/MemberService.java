@@ -3,10 +3,13 @@ package keepgoing.demo.domain.member.service;
 import keepgoing.demo.domain.member.dto.MemberResponseDto;
 import keepgoing.demo.domain.member.dto.MemberUpdateDto;
 import keepgoing.demo.domain.member.entity.Member;
+import keepgoing.demo.domain.member.entity.WeightLog;
 import keepgoing.demo.domain.member.mapper.MemberMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -38,6 +41,11 @@ public class MemberService {
                 maxExp,
                 rank
         );
+    }
+
+    @Transactional(readOnly = true)
+    public List<WeightLog> getWeightLogs(Long memberId) {
+        return memberMapper.selectWightListByMemberId(memberId);
     }
 
     // 회원 정보 수정

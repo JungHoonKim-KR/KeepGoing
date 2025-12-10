@@ -19,7 +19,6 @@ public class MemberController {
     public ResponseEntity<MemberResponseDto> getMyProfile(@PathVariable Long memberId) {
         return ResponseEntity.ok(memberService.getMemberProfile(memberId));
     }
-
     // 2. 내 정보 수정 (설정 페이지에서 호출)
     @PutMapping("/{memberId}")
     public ResponseEntity<Void> updateMyProfile(
@@ -29,4 +28,9 @@ public class MemberController {
         memberService.updateMemberProfile(memberId, dto);
         return ResponseEntity.ok().build();
     }
+
+//    @PutMapping("/weight")
+//    public ResponseEntity<Void> updateMyWeight(@RequestBody ){
+//        memberService.
+//    }
 }
