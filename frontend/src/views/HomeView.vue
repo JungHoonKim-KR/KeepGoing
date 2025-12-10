@@ -6,7 +6,7 @@
       <div class="page-content">
         <div class="retro-header">
           <span class="blinking-cursor">▶</span> PLAYER_DATE: {{ displayDate }}
-          </div>
+        </div>
 
         <div class="pixel-box main-stat-box">
           <div class="stat-header">
@@ -220,22 +220,22 @@
     <MealRecordModal v-if="showMealModal" @close="closeMealModal" />
     <WaterRecordModal v-if="showWaterModal" @close="closeWaterModal" />
     <WeightRecordModal v-if="showWeightModal" @close="closeWeightModal" />
+    <Footer></Footer>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, provide } from "vue";
-import { useConfigStore } from '@/stores/configStore'; // Pinia Store 경로를 정확히 확인해주세요.
-
+import { useConfigStore } from "@/stores/configStore"; // Pinia Store 경로를 정확히 확인해주세요.
+import Footer from "@/components/utils/Footer.vue";
 import dayjs from "dayjs";
 import confetti from "canvas-confetti";
-import characterImage from "../assets/images/characters/test.gif"; 
+import characterImage from "../assets/images/characters/test.gif";
 
 // 컴포넌트 import (경로가 올바르다고 가정)
 import WaterRecordModal from "@/components/record/WaterRecordModal.vue";
 import WeightRecordModal from "@/components/record/WeightRecordModal.vue";
-import MealRecordModal from "@/components/record/MealRecordModal.vue"; 
-
+import MealRecordModal from "@/components/record/MealRecordModal.vue";
 
 // =========================
 // 🚀 Pinia 스토어 및 상수 설정
@@ -243,17 +243,17 @@ import MealRecordModal from "@/components/record/MealRecordModal.vue";
 const config = useConfigStore();
 const MEMBER_ID = config.MEMBER_ID;
 const API_ENDPOINT = config.API_ENDPOINT;
-const displayDate = computed(() => config.currentDate); 
+const displayDate = computed(() => config.currentDate);
 const getCurrentDateForAPI = config.getCurrentDateForAPI; // 함수이므로 그대로 사용합니다.
 
 // =========================
 // 🍽 식단 데이터
 // =========================
 const todayMealMap = ref({
-    "아침": null,
-    "점심": null,
-    "저녁": null,
-    "간식": null
+  아침: null,
+  점심: null,
+  저녁: null,
+  간식: null,
 });
 
 // 화면에 표시할 식단 리스트 (computed)
@@ -273,8 +273,10 @@ const todayMeals = computed(() => {
       cal: Math.round(meal.energy || 0),
       // foods 배열이 유효한지 확인하고 name을 join합니다.
       name:
-        meal.foods?.map((f) => f.name).filter((n) => n).join(", ") ||
-        "기록된 음식 없음",
+        meal.foods
+          ?.map((f) => f.name)
+          .filter((n) => n)
+          .join(", ") || "기록된 음식 없음",
     }));
 });
 
@@ -294,7 +296,7 @@ const weightData = ref({
 // =========================
 // 📦 모달 상태
 // =========================
-const showModal = ref(false); 
+const showModal = ref(false);
 const showWaterModal = ref(false);
 const showWeightModal = ref(false);
 const showMealModal = ref(false);
@@ -312,10 +314,9 @@ const dialogText = ref('"오늘도 힘내보자구!"');
 // =========================
 const maxEnergy = 3000; // 일일 권장 칼로리 (임의 설정)
 const currentEnergy = computed(() => {
-  return Object.values(todayMealMap.value).reduce(
-    (acc, meal) => acc + (meal ? meal.energy : 0),
-    0 
-  ).toFixed(0);
+  return Object.values(todayMealMap.value)
+    .reduce((acc, meal) => acc + (meal ? meal.energy : 0), 0)
+    .toFixed(0);
 });
 const hpPercent = computed(() =>
   Math.min((currentEnergy.value / maxEnergy) * 100, 100).toFixed(0)
@@ -440,24 +441,45 @@ async function fetchDailyDiet() {
 
     todayMealMap.value = data;
     console.log("API 데이터 로드 성공:", data);
-
   } catch (error) {
-    console.error("일일 식단 데이터를 불러오는 데 실패했습니다. Mock 데이터를 사용합니다.", error);
-    
+    console.error(
+      "일일 식단 데이터를 불러오는 데 실패했습니다. Mock 데이터를 사용합니다.",
+      error
+    );
+
     todayMealMap.value = {
-        "아침": null,
-        "점심": null,
-        "저녁": {
-            "id": 3,
-            "memberId": 1,
-            "date": "2025-12-09",
-            "foods": [
-                {"code": "D103-150010000-0001", "name": "만두_고기만두", "energy": 159.0, "protein": 12.38, "fat": 4.45, "carbohydrate": 17.4},
-                {"code": "D105-205000000-0001", "name": "김치국", "energy": 23.0, "protein": 1.34, "fat": 0.76, "carbohydrate": 2.63}
-            ],
-            "energy": 441.8, "water": 520.16, "protein": 32.6, "fat": 0.0, "carbohydrate": 48.8, "mealTime": "저녁"
-        },
-        "간식": null
+      아침: null,
+      점심: null,
+      저녁: {
+        id: 3,
+        memberId: 1,
+        date: "2025-12-09",
+        foods: [
+          {
+            code: "D103-150010000-0001",
+            name: "만두_고기만두",
+            energy: 159.0,
+            protein: 12.38,
+            fat: 4.45,
+            carbohydrate: 17.4,
+          },
+          {
+            code: "D105-205000000-0001",
+            name: "김치국",
+            energy: 23.0,
+            protein: 1.34,
+            fat: 0.76,
+            carbohydrate: 2.63,
+          },
+        ],
+        energy: 441.8,
+        water: 520.16,
+        protein: 32.6,
+        fat: 0.0,
+        carbohydrate: 48.8,
+        mealTime: "저녁",
+      },
+      간식: null,
     };
   }
 }

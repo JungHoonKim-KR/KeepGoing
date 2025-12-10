@@ -1,13 +1,17 @@
 <script setup>
 import { ref } from "vue";
 import { useRouter } from "vue-router";
+import axios from "axios"; // 1. Axios 추가
+import { useAuthStore } from "@/stores/authStore"; // 2. Pinia Store 추가
 
 const router = useRouter();
+const authStore = useAuthStore(); // 스토어 초기화
 
 // 상태 관리
 const email = ref("");
 const password = ref("");
 const isLoading = ref(false);
+const errorMessage = ref(""); // 에러 메시지 표시용
 
 // 🔊 효과음 (기존 유지)
 const playSound = (type) => {
@@ -36,27 +40,68 @@ const playSound = (type) => {
     gain.gain.linearRampToValueAtTime(0, now + 0.6);
     osc.start(now);
     osc.stop(now + 0.6);
+  } else if (type === "error") {
+    // 에러 효과음 추가
+    osc.type = "sawtooth";
+    osc.frequency.setValueAtTime(150, now);
+    osc.frequency.linearRampToValueAtTime(100, now + 0.3);
+    gain.gain.setValueAtTime(0.1, now);
+    gain.gain.linearRampToValueAtTime(0, now + 0.3);
+    osc.start(now);
+    osc.stop(now + 0.3);
   }
 };
 
-const handleInput = () => playSound("type");
+const handleInput = () => {
+  errorMessage.value = ""; // 입력 시 에러 메시지 초기화
+  playSound("type");
+};
 
+// [핵심 변경] 실제 로그인 로직
 const handleLogin = async () => {
-  if (!email.value || !password.value) return;
+  if (!email.value || !password.value) {
+    errorMessage.value = "아이디와 비밀번호를 입력하세요.";
+    playSound("error");
+    return;
+  }
 
   isLoading.value = true;
   playSound("start");
 
-  // 로그인 시뮬레이션 후 홈으로 이동
-  setTimeout(() => {
-    localStorage.setItem("userToken", "access-granted-token-123");
+  try {
+    // 1. 백엔드 통신
+    const response = await axios.post("http://localhost:8080/api/auth/login", {
+      email: email.value,
+      password: password.value,
+    });
+
+    // 2. Pinia에 저장
+    authStore.setLoginState(response.data);
+
+    // 3. 약간의 딜레이 후 이동 (효과음/애니메이션 감상용 1초)
+    setTimeout(() => {
+      isLoading.value = false;
+      router.push("/"); // 식단 분석 페이지로 이동
+    }, 1000);
+  } catch (error) {
+    console.error(error);
     isLoading.value = false;
-    router.push("/");
-  }, 1500);
+    playSound("error");
+
+    // 에러 처리
+    if (error.response && error.response.status === 401) {
+      errorMessage.value = ">> ACCESS DENIED: 비밀번호 불일치";
+    } else if (error.response && error.response.status === 404) {
+      // 혹은 500 등
+      errorMessage.value = ">> USER NOT FOUND: 존재하지 않는 계정";
+    } else {
+      errorMessage.value = ">> SYSTEM ERROR: 서버 연결 실패";
+    }
+  }
 };
 
 const goToSignup = () => {
-  console.log("Go to New Game (Signup)");
+  router.push("/signup"); // 실제 회원가입 페이지로 이동
 };
 </script>
 
@@ -94,6 +139,8 @@ const goToSignup = () => {
             @keyup.enter="handleLogin"
           />
         </div>
+
+        <p v-if="errorMessage" class="error-msg">{{ errorMessage }}</p>
 
         <button
           class="start-btn"
@@ -187,7 +234,6 @@ const goToSignup = () => {
   align-items: center;
 }
 
-/* --- [수정됨] 타이틀 섹션: 부드러운 애니메이션 --- */
 .title-section {
   margin-bottom: 2.5rem;
   text-align: center;
@@ -197,14 +243,13 @@ const goToSignup = () => {
 .game-title {
   font-size: 3rem;
   color: var(--neon-blue);
-  /* 흔들림 대신 빛나는 효과와 둥둥 뜨는 효과 적용 */
   text-shadow: 0 0 10px var(--neon-pink), 0 0 20px var(--neon-pink);
   margin: 0;
   position: relative;
   letter-spacing: 2px;
   line-height: 1.2;
   word-break: keep-all;
-  animation: float 4s ease-in-out infinite; /* 천천히 위아래로 움직임 */
+  animation: float 4s ease-in-out infinite;
 }
 
 .subtitle {
@@ -212,10 +257,10 @@ const goToSignup = () => {
   font-size: 0.9rem;
   margin-top: 0.8rem;
   letter-spacing: 1px;
-  animation: pulse-glow 2s infinite alternate; /* 부드럽게 깜빡임 */
+  animation: pulse-glow 2s infinite alternate;
 }
 
-/* --- [수정됨] 입력 폼 디자인 개선 --- */
+/* 입력 폼 디자인 */
 .form-box {
   width: 100%;
   display: flex;
@@ -242,7 +287,7 @@ const goToSignup = () => {
 .retro-input {
   background-color: var(--input-bg);
   border: 2px solid #444;
-  color: #444; /* [중요] 입력 글씨 흰색 */
+  color: #fff; /* 입력 글씨 흰색 */
   padding: 14px;
   font-family: inherit;
   font-size: 1rem;
@@ -263,7 +308,7 @@ const goToSignup = () => {
   color: #666;
 }
 
-/* [중요] 브라우저 자동완성 시 배경/글씨색 강제 조정 */
+/* 자동완성 스타일 조정 */
 .retro-input:-webkit-autofill,
 .retro-input:-webkit-autofill:hover,
 .retro-input:-webkit-autofill:focus,
@@ -271,6 +316,15 @@ const goToSignup = () => {
   -webkit-text-fill-color: #ffffff;
   -webkit-box-shadow: 0 0 0px 1000px #1a1a24 inset;
   transition: background-color 5000s ease-in-out 0s;
+}
+
+/* 에러 메시지 스타일 */
+.error-msg {
+  color: var(--neon-pink);
+  font-size: 0.8rem;
+  text-align: center;
+  margin: 0;
+  animation: blink 0.5s 2; /* 두 번 깜빡임 */
 }
 
 /* 버튼 스타일 */
@@ -328,7 +382,6 @@ const goToSignup = () => {
   color: #444;
 }
 
-/* --- [수정됨] 편안한 애니메이션 --- */
 @keyframes float {
   0%,
   100% {
@@ -360,7 +413,6 @@ const goToSignup = () => {
   }
 }
 
-/* 모바일 화면 조정 */
 @media (max-width: 400px) {
   .game-title {
     font-size: 2.2rem;

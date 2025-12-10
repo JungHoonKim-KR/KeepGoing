@@ -1,7 +1,12 @@
 import { createRouter, createWebHistory } from "vue-router";
 import HomeView from "../views/HomeView.vue";
-import LoginView from "@/views/LoginView.vue"; // LoginView import 확인
-
+import LoginView from "@/views/LoginView.vue";
+import SignupView from "../views/SignupView.vue";
+import { useAuthStore } from "@/stores/authStore";
+import AiDietPlan from "../views/AIDietPlan.vue";
+import CalendarView from "../views/CalendarView.vue";
+import AIAnalysisView from "../views/AIAnalysisView.vue";
+import ProfileView from "../views/ProfileView.vue";
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -10,12 +15,14 @@ const router = createRouter({
       path: "/login",
       name: "login",
       component: LoginView,
+      meta: { noAuth: true }, // 🔒 로그인한 사람은 접근 금지
     },
     // router/index.js 파일에서 routes 배열 안에 추가
     {
       path: "/signup",
       name: "signup",
-      component: () => import("../views/SignupView.vue"),
+      component: SignupView,
+      meta: { noAuth: true }, // 🔒 로그인한 사람은 접근 금지
     },
     // 2. 홈 화면 (🔒 로그인 필요)
     {
@@ -28,20 +35,20 @@ const router = createRouter({
     {
       path: "/calendar",
       name: "calendar",
-      component: () => import("../views/CalendarView.vue"),
+      component: CalendarView,
       meta: { requiresAuth: true },
     },
     // 4. AI 분석 (🔒 로그인 필요)
     {
       path: "/ai-analysis",
       name: "ai-analysis",
-      component: () => import("../views/AIAnalysisView.vue"),
+      component: AIAnalysisView,
       meta: { requiresAuth: true },
       children: [
         {
           path: "diet-plan",
           name: "dietPlan",
-          component: () => import("../views/AiDietPlan.vue"),
+          component: AiDietPlan,
         },
       ],
     },
@@ -49,29 +56,31 @@ const router = createRouter({
     {
       path: "/profile",
       name: "profile",
-      component: () => import("../views/ProfileView.vue"),
+      component: ProfileView,
       meta: { requiresAuth: true },
     },
   ],
 });
 
-// 🛡️ 네비게이션 가드 (문지기 설정)
+// 🚧 전역 가드 (검문소) 설정
 router.beforeEach((to, from, next) => {
-  // 로그인 성공 시 LoginView에서 저장했던 토큰 확인
-  const isAuthenticated = localStorage.getItem("userToken");
+  const authStore = useAuthStore();
 
-  // 1. 로그인이 필요한 페이지(requiresAuth)에 접근하는데, 토큰이 없다면?
-  if (to.meta.requiresAuth && !isAuthenticated) {
-    next("/login"); // 로그인 페이지로 강제 이동
+  // 1. [로그인 필수] 페이지인데 로그인을 안 했다? -> 로그인 페이지로 강제 이동
+  if (to.meta.requiresAuth && !authStore.isAuthenticated) {
+    alert("로그인이 필요한 서비스입니다.");
+    next("/login");
+    return;
   }
-  // 2. 이미 로그인 상태인데 로그인 페이지로 가려고 하면?
-  else if (to.path === "/login" && isAuthenticated) {
-    next("/"); // 홈으로 돌려보냄
+
+  // 2. [로그인 금지] 페이지(로그인/회원가입)인데 이미 로그인을 했다? -> 메인으로 튕겨내기
+  if (to.meta.noAuth && authStore.isAuthenticated) {
+    next("/ai-analysis"); // "이미 로그인했잖아요, 분석하러 가세요"
+    return;
   }
-  // 3. 그 외에는 통과
-  else {
-    next();
-  }
+
+  // 3. 통과
+  next();
 });
 
 export default router;

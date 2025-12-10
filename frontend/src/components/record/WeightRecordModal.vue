@@ -101,7 +101,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import dayjs from "dayjs";
-import { useConfigStore } from '@/stores/configStore'; // Pinia Store 경로를 정확히 확인해주세요.
+import { useConfigStore } from "@/stores/configStore"; // Pinia Store 경로를 정확히 확인해주세요.
 const emit = defineEmits(["close"]);
 
 // Data
@@ -110,14 +110,14 @@ const weightSlider = ref(70);
 const memo = ref("");
 const MEMBER_ID = config.MEMBER_ID;
 const API_ENDPOINT = config.API_ENDPOINT;
-const formattedDate = computed(() => config.currentDate); 
+const formattedDate = computed(() => config.currentDate);
 const getCurrentDateForAPI = config.getCurrentDateForAPI; // 함수이므로 그대로 사용합니다.
 // 더미 데이터 (실제 데이터로 교체 가능)
-const recentRecords = [
+const recentRecords = ref([
   { date: "YESTERDAY", weight: 70.3, change: -0.2 },
   { date: "2 DAYS AGO", weight: 70.5, change: 0.3 },
   { date: "3 DAYS AGO", weight: 70.2, change: -0.1 },
-];
+]);
 
 // Computed
 
@@ -178,16 +178,16 @@ const handleOverlayClick = (e) => {
   if (e.target === e.currentTarget) closeModal();
 };
 
-const saveWeight = async() => {
+const saveWeight = async () => {
   playSound("save");
   // API 호출 로직은 여기에 추가
-    const weightData = {
-        memberId : MEMBER_ID,
-        weight : weightInput,
-        memo: memo.value
-    }
+  const weightData = {
+    memberId: MEMBER_ID,
+    weight: weightInput,
+    memo: memo.value,
+  };
 
-    try {
+  try {
     const response = await fetch(`${API_ENDPOINT}/api/members/weight`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -200,33 +200,29 @@ const saveWeight = async() => {
     closeModal();
   }
 
-
   console.log("Saving Score:", weightInput.value);
 
   // 소리 들을 시간 주고 닫기
   setTimeout(() => closeModal(), 400);
 };
 
-
-
-
-onMounted(async() => {
-
-    document.body.style.overflow = "hidden"
-    const url = `${API_ENDPOINT}/members/weight/${MEMBER_ID}`;
-    try{
+onMounted(async () => {
+  document.body.style.overflow = "hidden";
+  const url = `${API_ENDPOINT}/members/weight/${MEMBER_ID}`;
+  try {
     const response = await fetch(url);
 
-     if (!response.ok) {
+    if (!response.ok) {
       throw new Error(`HTTP error! Status: ${response.status}`);
     }
 
-    recentRecords = await response.json();
-    }
-    catch (error) {
-        console.error("일일 식단 데이터를 불러오는 데 실패했습니다. Mock 데이터를 사용합니다.", error);
-    }
-
+    recentRecords.value = await response.json();
+  } catch (error) {
+    console.error(
+      "일일 식단 데이터를 불러오는 데 실패했습니다. Mock 데이터를 사용합니다.",
+      error
+    );
+  }
 });
 onUnmounted(() => (document.body.style.overflow = ""));
 </script>
@@ -244,7 +240,7 @@ onUnmounted(() => (document.body.style.overflow = ""));
   background: rgba(0, 0, 0, 0.9);
   display: flex;
   /* 모바일에서 콘텐츠가 잘릴 경우 스크롤 가능하도록 flex-start와 overflow 설정 */
-  align-items: flex-start; 
+  align-items: flex-start;
   justify-content: center;
   z-index: 9999;
   font-family: "NeoDunggeunmo", monospace;
@@ -279,7 +275,7 @@ onUnmounted(() => (document.body.style.overflow = ""));
   animation: slideUp 0.3s ease-out;
   color: #fff;
   /* 모바일에서 스크롤을 위해 높이 유동적으로 설정 */
-  margin-top: 20px; 
+  margin-top: 20px;
 }
 
 @keyframes slideUp {
@@ -327,7 +323,7 @@ onUnmounted(() => (document.body.style.overflow = ""));
 
 .modal-body {
   /* 세로 여백 감소 */
-  padding: 1rem 1rem; 
+  padding: 1rem 1rem;
 }
 
 .date-display {
@@ -342,7 +338,7 @@ onUnmounted(() => (document.body.style.overflow = ""));
   background: #000;
   border: 2px solid #555;
   /* 패딩 감소 */
-  padding: 0.8rem; 
+  padding: 0.8rem;
   margin-bottom: 1rem; /* 마진 감소 */
   text-align: center;
 }
@@ -364,7 +360,7 @@ onUnmounted(() => (document.body.style.overflow = ""));
   color: #fff;
   font-family: "NeoDunggeunmo", monospace;
   /* 모바일에서 폰트 크기 약간 감소 */
-  font-size: 2.5rem; 
+  font-size: 2.5rem;
   width: 120px; /* 너비 조절 */
   text-align: right;
   outline: none;
@@ -399,9 +395,9 @@ onUnmounted(() => (document.body.style.overflow = ""));
   border: 2px solid #fff;
   color: #fff;
   /* 패딩 조절로 버튼 크기 유연하게 */
-  padding: 8px 5px; 
+  padding: 8px 5px;
   /* flex-grow 추가로 남은 공간 나눠 가지게 함 (반응형 개선) */
-  flex-grow: 1; 
+  flex-grow: 1;
   font-family: inherit;
   font-size: 0.8rem;
   cursor: pointer;
@@ -457,7 +453,7 @@ onUnmounted(() => (document.body.style.overflow = ""));
   padding: 5px;
   border: 1px solid #333;
   /* 작은 화면에서 스크롤바가 생기지 않도록 높이 제한 */
-  max-height: 120px; 
+  max-height: 120px;
   overflow-y: auto;
 }
 .rank-row {
@@ -473,8 +469,8 @@ onUnmounted(() => (document.body.style.overflow = ""));
 }
 /* 랭킹 리스트 열 너비 확보 */
 .rank-row span {
-    flex-basis: 33%;
-    text-align: center;
+  flex-basis: 33%;
+  text-align: center;
 }
 .rank-date {
   color: #ccc;
@@ -491,14 +487,14 @@ onUnmounted(() => (document.body.style.overflow = ""));
 }
 .rank-diff.bonus {
   color: #00e5ff;
-} 
+}
 .rank-diff.penalty {
   color: #ff0055;
-} 
+}
 
 /* 치트키 (메모) */
 .cheat-code-section {
-    margin-bottom: 1rem;
+  margin-bottom: 1rem;
 }
 .retro-textarea {
   width: 100%;
@@ -525,8 +521,8 @@ onUnmounted(() => (document.body.style.overflow = ""));
   color: #fff;
   border: 2px solid #fff;
   /* 패딩 조절 */
-  padding: 10px 25px; 
-  font-size: 1rem; 
+  padding: 10px 25px;
+  font-size: 1rem;
   font-family: inherit;
   cursor: pointer;
   box-shadow: 4px 4px 0 #000;
