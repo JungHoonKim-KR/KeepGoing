@@ -32,6 +32,7 @@ public class DietController {
         return ResponseEntity.ok(dietService.analyzeDailyDiet(memberId, date));
     }
 
+
     @GetMapping("/meal")
     public ResponseEntity<Map<String, Diet>> getDailyMeal(@RequestParam("memberId") Long memberId,
                                                           @RequestParam("date") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {

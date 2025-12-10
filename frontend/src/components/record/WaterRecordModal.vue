@@ -112,14 +112,18 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import dayjs from "dayjs";
-
-const API_ENDPOINT = "http://localhost:8080";
+import { useConfigStore } from '@/stores/configStore'; // Pinia Store 경로를 정확히 확인해주세요.
 const emit = defineEmits(["close"]);
 
 // Data
 const currentAmount = ref(1.5);
 const goalAmount = ref(2.0);
-const sliderValue = ref(15);
+const sliderValue = ref(15);const config = useConfigStore();
+
+const MEMBER_ID = config.MEMBER_ID;
+const API_ENDPOINT = config.API_ENDPOINT;
+const displayDate = computed(() => config.currentDate); 
+const getCurrentDateForAPI = config.getCurrentDateForAPI; // 함수이므로 그대로 사용합니다.
 const todayRecords = ref([
   { time: "14:30", amount: "0.5" },
   { time: "12:00", amount: "0.3" },
@@ -234,6 +238,9 @@ const saveWater = async () => {
 // Lifecycle
 onMounted(() => {
   document.body.style.overflow = "hidden";
+
+
+
 });
 onUnmounted(() => {
   document.body.style.overflow = "";

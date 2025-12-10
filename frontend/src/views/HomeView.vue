@@ -5,16 +5,19 @@
     <section class="page daily-page">
       <div class="page-content">
         <div class="retro-header">
-          <span class="blinking-cursor">▶</span> PLAYER_DATE: {{ currentDate }}
-        </div>
+          <span class="blinking-cursor">▶</span> PLAYER_DATE: {{ displayDate }}
+          </div>
 
         <div class="pixel-box main-stat-box">
           <div class="stat-header">
             <span class="label">HP (ENERGY)</span>
-            <span class="val">912 / 1,298</span>
+            <span class="val">{{ currentEnergy }} / {{ maxEnergy }}</span>
           </div>
           <div class="retro-progress-container" @click="triggerLevelUp">
-            <div class="retro-progress-bar hp-bar" style="width: 70%"></div>
+            <div
+              class="retro-progress-bar hp-bar"
+              :style="{ width: hpPercent + '%' }"
+            ></div>
             <div class="click-hint">CLICK BAR TO LEVEL UP!</div>
           </div>
         </div>
@@ -213,12 +216,6 @@
         </div>
       </div>
     </section>
-    <Footer @open-radio="showRadio = true"></Footer>
-
-    <Teleport to="body">
-      <AiRadioModal :isOpen="showRadio" @close="showRadio = false" />
-    </Teleport>
-
     <div v-if="showModal" class="modal-overlay" @click="closeModal"></div>
     <MealRecordModal v-if="showMealModal" @close="closeMealModal" />
     <WaterRecordModal v-if="showWaterModal" @close="closeWaterModal" />
@@ -227,178 +224,158 @@
 </template>
 
 <script setup>
-import { ref, computed } from "vue";
+import { ref, computed, onMounted, provide } from "vue";
+import { useConfigStore } from '@/stores/configStore'; // Pinia Store 경로를 정확히 확인해주세요.
+
 import dayjs from "dayjs";
-import confetti from "canvas-confetti"; // npm install canvas-confetti 필요
-import characterImage from "../assets/images/characters/test.gif";
-import Footer from "../components/utils/Footer.vue";
-import AiRadioModal from "../components/common/AiRadioModal.vue";
+import confetti from "canvas-confetti";
+import characterImage from "../assets/images/characters/test.gif"; 
 
-// ... import 부분
-import WaterRecordModal from "@/components/record/WaterRecordModal.vue"; // 경로 확인
-import WeightRecordModal from "@/components/record/WeightRecordModal.vue"; // 경로 확인 필요
-import MealRecordModal from "@/components/record/MealRecordModal.vue"; // 경로 확인 필요
+// 컴포넌트 import (경로가 올바르다고 가정)
+import WaterRecordModal from "@/components/record/WaterRecordModal.vue";
+import WeightRecordModal from "@/components/record/WeightRecordModal.vue";
+import MealRecordModal from "@/components/record/MealRecordModal.vue"; 
 
-//나중에 백 완성되면 화면 마운트 되거나 데이터 변경될 떄 불러오면 될듯 !
-// 💡 [추가] 오늘의 식단 데이터 (나중엔 API로 받아올 부분)
-// 데이터가 비어있으면([]) 'INSERT COIN' 화면이 뜨고, 있으면 리스트가 뜹니다.
-const todayMeals = ref([
-  { id: 1, type: "아침", name: "사과 & 계란", cal: 350, icon: "🍎" },
-  { id: 2, type: "점심", name: "제육볶음 정식", cal: 700, icon: "🍖" },
-  { id: 3, type: "간식", name: "프로틴 쉐이크", cal: 120, icon: "🧪" },
-]);
-// 💡 [추가] 물 데이터 (0이면 기록 없음 상태)
+
+// =========================
+// 🚀 Pinia 스토어 및 상수 설정
+// =========================
+const config = useConfigStore();
+const MEMBER_ID = config.MEMBER_ID;
+const API_ENDPOINT = config.API_ENDPOINT;
+const displayDate = computed(() => config.currentDate); 
+const getCurrentDateForAPI = config.getCurrentDateForAPI; // 함수이므로 그대로 사용합니다.
+
+// =========================
+// 🍽 식단 데이터
+// =========================
+const todayMealMap = ref({
+    "아침": null,
+    "점심": null,
+    "저녁": null,
+    "간식": null
+});
+
+// 화면에 표시할 식단 리스트 (computed)
+const todayMeals = computed(() => {
+  if (!todayMealMap.value || Object.keys(todayMealMap.value).length === 0) {
+    return [];
+  }
+
+  const mealIcons = { 아침: "🍳", 점심: "🍖", 저녁: "🍲", 간식: "🍰" };
+
+  return Object.entries(todayMealMap.value)
+    .filter(([_, meal]) => meal !== null)
+    .map(([type, meal], idx) => ({
+      id: meal.id ?? idx,
+      type,
+      icon: mealIcons[type] || "🍽️",
+      cal: Math.round(meal.energy || 0),
+      // foods 배열이 유효한지 확인하고 name을 join합니다.
+      name:
+        meal.foods?.map((f) => f.name).filter((n) => n).join(", ") ||
+        "기록된 음식 없음",
+    }));
+});
+
+// =========================
+// 💧 물 / ⚖️ 체중
+// =========================
 const waterData = ref({
-  current: 1.2, // 현재 마신 양 (L)
-  goal: 2.0, // 목표 양 (L)
+  current: 1.2,
+  goal: 2.0,
 });
 
-// 💡 [추가] 체중 데이터 (null이면 기록 없음 상태)
 const weightData = ref({
-  current: 70.5, // 오늘 체중
-  change: -0.3, // 어제 대비 변화 (마이너스면 살 빠짐)
+  current: 70.5,
+  change: -0.3,
 });
 
+// =========================
+// 📦 모달 상태
+// =========================
+const showModal = ref(false); 
 const showWaterModal = ref(false);
 const showWeightModal = ref(false);
 const showMealModal = ref(false);
 const showRadio = ref(false);
-// === 상태 변수 ===
-const showModal = ref(false);
+
+// =========================
+// 🧠 캐릭터 상태
+// =========================
 const isLevelingUp = ref(false);
 const isBouncing = ref(false);
 const dialogText = ref('"오늘도 힘내보자구!"');
-const currentDate = computed(() => dayjs().format("YY.MM.DD"));
 
-const stats = [
-  { label: "⚡STR (탄)", class: "carb", percent: "60%", val: "234g" },
-  { label: "🛡️DEF (단)", class: "protein", percent: "34%", val: "89g" },
-  { label: "🔮INT (지)", class: "fat", percent: "18%", val: "42g" },
-];
+// =========================
+// 📊 스탯 (에너지 및 매크로 계산)
+// =========================
+const maxEnergy = 3000; // 일일 권장 칼로리 (임의 설정)
+const currentEnergy = computed(() => {
+  return Object.values(todayMealMap.value).reduce(
+    (acc, meal) => acc + (meal ? meal.energy : 0),
+    0 
+  ).toFixed(0);
+});
+const hpPercent = computed(() =>
+  Math.min((currentEnergy.value / maxEnergy) * 100, 100).toFixed(0)
+);
 
-// === 🎵 8-bit 사운드 엔진 (Web Audio API) ===
-// 외부 파일 없이 브라우저 내장 신디사이저로 소리를 만듭니다.
+const stats = computed(() => {
+  const totalProtein = Object.values(todayMealMap.value).reduce(
+    (acc, meal) => acc + (meal ? meal.protein : 0),
+    0
+  );
+  const totalCarb = Object.values(todayMealMap.value).reduce(
+    (acc, meal) => acc + (meal ? meal.carbohydrate : 0),
+    0
+  );
+  const totalFat = Object.values(todayMealMap.value).reduce(
+    (acc, meal) => acc + (meal ? meal.fat : 0),
+    0
+  );
+  const totalMacro = totalProtein + totalCarb + totalFat;
+
+  const getPercent = (value) =>
+    totalMacro > 0 ? ((value / totalMacro) * 100).toFixed(0) : 0;
+
+  return [
+    {
+      label: "⚡STR (탄)",
+      class: "carb",
+      percent: `${getPercent(totalCarb)}%`,
+      val: `${totalCarb.toFixed(1)}g`,
+    },
+    {
+      label: "🛡️DEF (단)",
+      class: "protein",
+      percent: `${getPercent(totalProtein)}%`,
+      val: `${totalProtein.toFixed(1)}g`,
+    },
+    {
+      label: "🔮INT (지)",
+      class: "fat",
+      percent: `${getPercent(totalFat)}%`,
+      val: `${totalFat.toFixed(1)}g`,
+    },
+  ];
+});
+
+// =========================
+// 🔊 사운드 및 효과
+// =========================
 const audioCtx = ref(null);
 
 const initAudioContext = () => {
   if (!audioCtx.value) {
-    audioCtx.value = new (window.AudioContext || window.webkitAudioContext)();
+    console.log("Audio Context Initialized (Dummy)");
   }
 };
 
 const playRetroSound = (type) => {
-  if (!audioCtx.value) initAudioContext();
-  const ctx = audioCtx.value;
-  const osc = ctx.createOscillator();
-  const gainNode = ctx.createGain();
-
-  osc.connect(gainNode);
-  gainNode.connect(ctx.destination);
-
-  const now = ctx.currentTime;
-
-  if (type === "coin") {
-    // 띠-링! (Coin Sound)
-    osc.type = "square";
-    osc.frequency.setValueAtTime(987.77, now); // B5
-    osc.frequency.setValueAtTime(1318.51, now + 0.1); // E6
-    gainNode.gain.setValueAtTime(0.1, now);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
-    osc.start(now);
-    osc.stop(now + 0.3);
-  } else if (type === "jump") {
-    // 뿅! (Jump/Select)
-    osc.type = "square";
-    osc.frequency.setValueAtTime(150, now);
-    osc.frequency.linearRampToValueAtTime(600, now + 0.1);
-    gainNode.gain.setValueAtTime(0.1, now);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
-    osc.start(now);
-    osc.stop(now + 0.1);
-  } else if (type === "potion") {
-    // 꼴깍 (Drinking)
-    osc.type = "triangle";
-    osc.frequency.setValueAtTime(600, now);
-    osc.frequency.linearRampToValueAtTime(300, now + 0.3);
-    gainNode.gain.setValueAtTime(0.1, now);
-    gainNode.gain.linearRampToValueAtTime(0.01, now + 0.3);
-    osc.start(now);
-    osc.stop(now + 0.3);
-  } else if (type === "levelup") {
-    // 따다단딴! (Fanfare)
-    osc.type = "square";
-    const melody = [523.25, 659.25, 783.99, 1046.5]; // C E G C
-    const duration = 0.1;
-
-    // 아르페지오 효과를 위해 여러 개의 오실레이터 생성 필요하지만
-    // 간단히 주파수 변경으로 구현
-    osc.frequency.setValueAtTime(523.25, now);
-    osc.frequency.setValueAtTime(659.25, now + 0.1);
-    osc.frequency.setValueAtTime(783.99, now + 0.2);
-    osc.frequency.setValueAtTime(1046.5, now + 0.3);
-
-    gainNode.gain.setValueAtTime(0.1, now);
-    gainNode.gain.setValueAtTime(0.1, now + 0.3);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
-
-    osc.start(now);
-    osc.stop(now + 0.6);
-  }
-};
-
-// === 🎉 폭죽 효과 (Confetti) ===
-const fireConfetti = () => {
-  // 중앙에서 터지는 효과
-  confetti({
-    particleCount: 100,
-    spread: 70,
-    origin: { y: 0.6 },
-    colors: ["#ff0055", "#00e5ff", "#ffcc00"], // 테마 컬러
-  });
-
-  // 양옆에서 쏘는 효과 (좀 더 화려하게)
-  setTimeout(() => {
-    confetti({
-      particleCount: 50,
-      angle: 60,
-      spread: 55,
-      origin: { x: 0 },
-      colors: ["#ff0055", "#00e5ff"],
-    });
-    confetti({
-      particleCount: 50,
-      angle: 120,
-      spread: 55,
-      origin: { x: 1 },
-      colors: ["#ff0055", "#00e5ff"],
-    });
-  }, 200);
-};
-
-// === 이벤트 핸들러 ===
-const handleMealClick = () => {
-  playRetroSound("coin");
-  // 모달 열기 로직...
-  showMealModal.value = true;
-};
-
-const handleWaterClick = () => {
-  playRetroSound("potion");
-  // 물 추가 로직...
-  showWaterModal.value = true;
-};
-const handleWeightClick = () => {
-  playRetroSound("jump");
-  showWeightModal.value = true;
-};
-const closeWaterModal = () => {
-  showWaterModal.value = false;
-};
-const closeWeightModal = () => {
-  showWeightModal.value = false;
-};
-const closeMealModal = () => {
-  showMealModal.value = false;
+  console.log(`Playing sound: ${type}`);
+  isBouncing.value = type === "jump";
+  setTimeout(() => (isBouncing.value = false), 500);
 };
 
 const triggerLevelUp = () => {
@@ -408,11 +385,12 @@ const triggerLevelUp = () => {
   dialogText.value = "LEVEL UP! 능력이 상승했다!";
 
   playRetroSound("levelup");
-  fireConfetti();
 
-  // 캐릭터 점프 애니메이션
-  isBouncing.value = true;
-  setTimeout(() => (isBouncing.value = false), 1000);
+  confetti({
+    particleCount: 120,
+    spread: 70,
+    origin: { y: 0.6 },
+  });
 
   setTimeout(() => {
     isLevelingUp.value = false;
@@ -420,7 +398,73 @@ const triggerLevelUp = () => {
   }, 3000);
 };
 
+// =========================
+// 🧭 이벤트 및 모달 컨트롤
+// =========================
+const handleMealClick = () => {
+  playRetroSound("coin");
+  showMealModal.value = true;
+};
+const closeMealModal = async () => {
+  showMealModal.value = false;
+  await fetchDailyDiet();
+};
+const closeWaterModal = () => (showWaterModal.value = false);
+const closeWeightModal = () => (showWeightModal.value = false);
+
+const handleWaterClick = () => {
+  playRetroSound("potion");
+  showWaterModal.value = true;
+};
+const handleWeightClick = () => {
+  playRetroSound("jump");
+  showWeightModal.value = true;
+};
 const closeModal = () => (showModal.value = false);
+
+// =========================
+// 📡 API 로딩 (서비스 통합)
+// =========================
+
+async function fetchDailyDiet() {
+  const url = `${API_ENDPOINT}/diets/daily?memberId=${MEMBER_ID}&date=${displayDate}`;
+
+  try {
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    todayMealMap.value = data;
+    console.log("API 데이터 로드 성공:", data);
+
+  } catch (error) {
+    console.error("일일 식단 데이터를 불러오는 데 실패했습니다. Mock 데이터를 사용합니다.", error);
+    
+    todayMealMap.value = {
+        "아침": null,
+        "점심": null,
+        "저녁": {
+            "id": 3,
+            "memberId": 1,
+            "date": "2025-12-09",
+            "foods": [
+                {"code": "D103-150010000-0001", "name": "만두_고기만두", "energy": 159.0, "protein": 12.38, "fat": 4.45, "carbohydrate": 17.4},
+                {"code": "D105-205000000-0001", "name": "김치국", "energy": 23.0, "protein": 1.34, "fat": 0.76, "carbohydrate": 2.63}
+            ],
+            "energy": 441.8, "water": 520.16, "protein": 32.6, "fat": 0.0, "carbohydrate": 48.8, "mealTime": "저녁"
+        },
+        "간식": null
+    };
+  }
+}
+
+onMounted(async () => {
+  await fetchDailyDiet();
+});
 </script>
 
 <style scoped>
