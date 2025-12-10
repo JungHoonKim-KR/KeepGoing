@@ -1,1 +1,28 @@
+<<<<<<< HEAD
 backend/demo/src/main/resources/application-dev.yml
+=======
+# === Python ===
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.log
+
+# === Virtual Environment ===
+venv/
+.env/
+.env.*
+
+# === Environment variables ===
+*.env
+
+# === IDE / Editor ===
+.idea/
+.vscode/
+
+# === macOS ===
+.DS_Store
+
+# === Windows ===
+Thumbs.db
+>>>>>>> b4e92fec8195c7d90572cfce90c9f42763a53555
