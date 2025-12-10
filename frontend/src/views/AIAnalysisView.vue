@@ -2,7 +2,7 @@
 import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { analyzeDiet } from "../api/diet/dietApi"; // 1. API 함수 임포트
-
+import Footer from "../components/utils/Footer.vue";
 const router = useRouter();
 
 // ----------------------------------------------------
@@ -302,6 +302,7 @@ const goToAIDietPlan = () => {
       </div>
       <router-view></router-view>
     </div>
+    <Footer />
   </div>
 </template>
 
