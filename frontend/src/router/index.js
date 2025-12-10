@@ -29,7 +29,7 @@ const router = createRouter({
       path: "/",
       name: "home",
       component: HomeView,
-      meta: { requiresAuth: true }, // 인증 필요 표시
+      meta: { noAuth: true  }, // 인증 필요 표시
     },
     // 3. 캘린더 (🔒 로그인 필요)
     {
