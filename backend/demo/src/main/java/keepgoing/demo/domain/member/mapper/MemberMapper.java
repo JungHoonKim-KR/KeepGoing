@@ -11,7 +11,12 @@ import java.util.Optional;
 public interface MemberMapper {
     Optional<Member> findById(Long id);
     void update(Member member);
+<<<<<<< HEAD
     void updateWeight(Long memberId, double weight);
     void insertWeightLog(WeightLog weightLog);
     List<WeightLog> selectWightListByMemberId(Long memberId);
+=======
+    Optional<Member> findByEmail(String email);
+    void save(Member member);
+>>>>>>> 607786ff5263ab14fb377010d07d4c0fcbdfe0fa
 }

@@ -34,6 +34,7 @@
         WHERE id = #{id}
     </update>
 
+<<<<<<< HEAD
     <select id="selectWightListByMemberId">
         SELECT
             date,
@@ -58,5 +59,43 @@
                      #{date},
                      #{memo}
                  )
+=======
+    <select id="findByEmail" resultType="keepgoing.demo.domain.member.entity.Member">
+        SELECT
+        id,
+        email,
+        password,
+        name,
+        role,
+        height,
+        weight,
+        age,
+        gender,
+        activity,
+        goal,
+        health_condition,
+        allergies,
+        disliked_food,
+        target_weight,
+        level,
+        exp,
+        current_points
+        FROM member
+        WHERE email = #{email}
+    </select>
+
+    <insert id="save" parameterType="keepgoing.demo.domain.member.entity.Member" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO member (
+        email, password, name, role,
+        height, weight, age, gender, activity, goal,
+        health_condition, allergies, disliked_food, target_weight,
+        level, exp, current_points
+        ) VALUES (
+        #{email}, #{password}, #{name}, #{role},
+        #{height}, #{weight}, #{age}, #{gender}, #{activity}, #{goal},
+        '없음', '없음', '없음', 0.0, -- 초기값 설정 (null 방지)
+        1, 0, 0
+        )
+>>>>>>> 607786ff5263ab14fb377010d07d4c0fcbdfe0fa
     </insert>
 </mapper>
