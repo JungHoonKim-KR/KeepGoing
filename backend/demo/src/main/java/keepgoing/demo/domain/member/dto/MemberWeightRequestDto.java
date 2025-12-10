@@ -5,9 +5,9 @@ import lombok.Data;
 import java.time.LocalDate;
 
 @Data
-public class MemberWeightResponseDto {
+public class MemberWeightRequestDto {
+    private Long memberId;
+    private Double weight;
     private LocalDate date;
-    private double weight;
-    private double change;
-    private boolean isPlus;
+    private String memo;
 }

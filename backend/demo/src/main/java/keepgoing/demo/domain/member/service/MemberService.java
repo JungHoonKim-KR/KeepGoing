@@ -2,6 +2,7 @@ package keepgoing.demo.domain.member.service;
 
 import keepgoing.demo.domain.member.dto.MemberResponseDto;
 import keepgoing.demo.domain.member.dto.MemberUpdateDto;
+import keepgoing.demo.domain.member.dto.MemberWeightRequestDto;
 import keepgoing.demo.domain.member.entity.Member;
 import keepgoing.demo.domain.member.entity.WeightLog;
 import keepgoing.demo.domain.member.mapper.MemberMapper;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -43,6 +45,25 @@ public class MemberService {
         );
     }
 
+    public void updateWeight(MemberWeightRequestDto dto){
+//        memberMapper.
+//        memberMapper.updateWeight(dto.getMemberId(), dto.getWeight());
+//
+        Optional<Member> findMember = memberMapper.findById(dto.getMemberId());
+        if(findMember.isEmpty()){
+
+        }
+        Member member = findMember.get();
+        double diff = member.getWeight() - dto.getWeight();
+        WeightLog.builder()
+                .memberId(dto.getMemberId())
+                .weight(dto.getWeight())
+                .date(dto.getDate())
+                .memo(dto.getMemo())
+                .build();
+//        memberMapper.insertWeightLog();
+
+    }
     @Transactional(readOnly = true)
     public List<WeightLog> getWeightLogs(Long memberId) {
         return memberMapper.selectWightListByMemberId(memberId);

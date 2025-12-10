@@ -16,7 +16,7 @@ export const useConfigStore = defineStore('config', () => {
     
     // 현재 날짜는 필요 시 Store 외부에서 computed를 사용할 수 있지만, 
     // Store 내부에서는 Getter로 정의하거나 함수로 제공합니다.
-    const currentDate = dayjs().format('YYYY.MM.DD');
+    const currentDate = dayjs().format('YYYY-MM-DD');
 
     return {
         API_ENDPOINT,
