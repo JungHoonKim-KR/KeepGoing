@@ -136,6 +136,12 @@ public class DietService {
         return allDietsWithNulls;
     }
 
+    public Double getHydration(Long memberId, LocalDate date) {
+        return dietMapper.selectHydration(memberId, date)
+                .map(aDouble -> aDouble / 1000.0)
+                .orElse(0.0);
+    }
+
     @Transactional
     public void addHydration(WaterInsertRequestDTO dto){
         LocalDate recordDate = LocalDate.now();

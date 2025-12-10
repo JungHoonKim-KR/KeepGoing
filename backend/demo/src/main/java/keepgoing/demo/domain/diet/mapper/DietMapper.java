@@ -26,7 +26,7 @@ public interface DietMapper {
 
     // [추가] 1. 특정 날짜의 식단 기록 조회 (Join 쿼리 사용 예정)
     List<Diet> findAllByDate(@Param("memberId") Long memberId, @Param("date") LocalDate date);
-
+    Optional<Double> selectHydration(@Param("memberId")Long memberId, @Param("date")LocalDate date);
     // [유지] 2. AI 결과 저장 (이건 내 담당)
     void saveAiReport(AiReport aiReport);
 }

@@ -47,8 +47,15 @@ public class DietController {
         return new ResponseEntity<>(HttpStatus.CREATED);
     }
 
+    @GetMapping("/hydration")
+    public ResponseEntity<Double> getHydration(@RequestParam("memberId") Long memberId,
+                                               @RequestParam("date") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date){
+        Double hydration = dietService.getHydration(memberId, date);
+        return ResponseEntity.ok(hydration);
+    }
+
     @PostMapping("/hydration")
-    public ResponseEntity<?> hydration(@RequestBody WaterInsertRequestDTO dto) {
+    public ResponseEntity<?> addHydration(@RequestBody WaterInsertRequestDTO dto) {
         dietService.addHydration(dto);
         return new ResponseEntity<>(HttpStatus.CREATED);
     }
