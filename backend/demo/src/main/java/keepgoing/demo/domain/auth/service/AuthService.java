@@ -15,10 +15,10 @@ import org.springframework.transaction.annotation.Transactional;
 public class AuthService {
 
     private final MemberMapper memberMapper;
-    private final PasswordEncoder passwordEncoder; // SecurityConfig에서 등록한 BCrypt
+    private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
 
-    // 1. 회원가입
+    // 1. 회원가입 (이게 없어서 에러가 났던 것!)
     @Transactional
     public void signup(AuthRequestDto dto) {
         // 이메일 중복 체크
@@ -29,7 +29,7 @@ public class AuthService {
         // 비밀번호 암호화
         String encodedPassword = passwordEncoder.encode(dto.password());
 
-        // 저장
+        // Member 엔티티 생성
         Member member = Member.builder()
                 .email(dto.email())
                 .password(encodedPassword)
@@ -37,23 +37,50 @@ public class AuthService {
                 .role("ROLE_USER")
                 .build();
 
+        // DB 저장
         memberMapper.save(member);
     }
 
-    // 2. 로그인
+    // 2. 로그인 (Access + Refresh 발급)
+    @Transactional
     public TokenResponseDto login(AuthRequestDto dto) {
-        // 회원 조회
         Member member = memberMapper.findByEmail(dto.email())
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
 
-        // 비밀번호 검증 (입력비번 vs DB암호화비번)
         if (!passwordEncoder.matches(dto.password(), member.getPassword())) {
             throw new IllegalArgumentException("비밀번호가 일치하지 않습니다.");
         }
 
-        // 토큰 발급
+        // 토큰 2개 생성
         String accessToken = jwtTokenProvider.createToken(member.getId(), member.getEmail());
+        String refreshToken = jwtTokenProvider.createRefreshToken(member.getId());
 
-        return new TokenResponseDto(accessToken, member.getId(), member.getName());
+        // 리프레쉬 토큰 DB 저장
+        member.updateRefreshToken(refreshToken);
+        memberMapper.updateRefreshToken(member);
+
+        return new TokenResponseDto(accessToken, refreshToken, member.getId(), member.getName());
+    }
+
+    // 3. 토큰 재발급
+    @Transactional(readOnly = true)
+    public String reissue(String refreshToken) {
+        // 토큰 유효성 체크
+        if (!jwtTokenProvider.validateToken(refreshToken)) {
+            throw new IllegalArgumentException("유효하지 않은 리프레쉬 토큰입니다.");
+        }
+
+        // 유저 조회
+        Long memberId = jwtTokenProvider.getMemberIdFromToken(refreshToken);
+        Member member = memberMapper.findById(memberId)
+                .orElseThrow(() -> new IllegalArgumentException("회원 없음"));
+
+        // DB 토큰과 일치하는지 확인
+        if (member.getRefreshToken() == null || !member.getRefreshToken().equals(refreshToken)) {
+            throw new IllegalArgumentException("토큰 정보가 일치하지 않습니다.");
+        }
+
+        // 새 Access Token 발급
+        return jwtTokenProvider.createToken(member.getId(), member.getEmail());
     }
 }

@@ -33,6 +33,13 @@ public class Member {
     private int exp;            // 현재 경험치
     private int currentPoints;  // 보유 포인트 (상점용)
 
+    private String refreshToken;
+
+    // [추가] 리프레쉬 토큰 업데이트 메서드
+    public void updateRefreshToken(String refreshToken) {
+        this.refreshToken = refreshToken;
+    }
+
     // 회원 정보 수정을 위한 비즈니스 메서드
     public void updateProfile(Double height, Double weight, String activity, String goal, Double targetWeight) {
         this.height = height;

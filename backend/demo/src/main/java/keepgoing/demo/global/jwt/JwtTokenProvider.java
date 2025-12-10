@@ -14,7 +14,8 @@ public class JwtTokenProvider {
     // 32글자 이상이어야 안전합니다.
     private final String SECRET_KEY = "keepgoing_secret_key_must_be_very_long_and_secure";
     private final long EXPIRATION_TIME = 1000 * 60 * 60 * 24; // 24시간 유효
-
+    // 7일 유효
+    private final long REFRESH_TOKEN_EXPIRATION_TIME = 1000 * 60 * 60 * 24 * 7;
     private final Key key = Keys.hmacShaKeyFor(SECRET_KEY.getBytes());
 
     // 1. 토큰 생성 (로그인 성공 시 호출)
@@ -50,5 +51,16 @@ public class JwtTokenProvider {
         } catch (JwtException | IllegalArgumentException e) {
             return false; // 유효하지 않은 토큰
         }
+    }
+    public String createRefreshToken(Long memberId) {
+        Date now = new Date();
+        Date expiryDate = new Date(now.getTime() + REFRESH_TOKEN_EXPIRATION_TIME);
+
+        return Jwts.builder()
+                .setSubject(String.valueOf(memberId))
+                .setIssuedAt(now)
+                .setExpiration(expiryDate)
+                .signWith(key, SignatureAlgorithm.HS256)
+                .compact();
     }
 }

@@ -5,8 +5,8 @@
     <select id="findById" resultType="keepgoing.demo.domain.member.entity.Member">
         SELECT
         id,
-        name,
-        height,
+        email,          password,       name,
+        role,           height,
         weight,
         age,
         gender,
@@ -16,11 +16,10 @@
         allergies,
         disliked_food,
         target_weight,
-        -- ▼▼▼ [여기 추가] 콤마(,) 잊지 마세요! ▼▼▼
         level,
         exp,
-        current_points
-        FROM member
+        current_points,
+        refresh_token   FROM member
         WHERE id = #{id}
     </select>
 
@@ -34,32 +33,31 @@
         WHERE id = #{id}
     </update>
 
-<<<<<<< HEAD
     <select id="selectWightListByMemberId">
         SELECT
-            date,
-            weight,
-            diff,
-            memo
+        date,
+        weight,
+        diff,
+        memo
         FROM weight_log
         WHERE member_id= #{memberId}
     </select>
 
     <insert id="insertWeightLog" useGeneratedKeys="true">
         INSERT INTO weight_log (
-            member_id,
-            weight,
-            diff,
-            date,
-            memo
+        member_id,
+        weight,
+        diff,
+        date,
+        memo
         ) VALUES (
-                     #{memberId},
-                     #{weight},
-                     #{diff},
-                     #{date},
-                     #{memo}
-                 )
-=======
+        #{memberId},
+        #{weight},
+        #{diff},
+        #{date},
+        #{memo}
+        )
+    </insert>
     <select id="findByEmail" resultType="keepgoing.demo.domain.member.entity.Member">
         SELECT
         id,
@@ -79,10 +77,17 @@
         target_weight,
         level,
         exp,
-        current_points
+        current_points,
+        refresh_token
         FROM member
         WHERE email = #{email}
     </select>
+
+    <update id="updateRefreshToken">
+        UPDATE member
+        SET refresh_token = #{refreshToken}
+        WHERE id = #{id}
+    </update>
 
     <insert id="save" parameterType="keepgoing.demo.domain.member.entity.Member" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO member (
@@ -96,6 +101,5 @@
         '없음', '없음', '없음', 0.0, -- 초기값 설정 (null 방지)
         1, 0, 0
         )
->>>>>>> 607786ff5263ab14fb377010d07d4c0fcbdfe0fa
     </insert>
 </mapper>
