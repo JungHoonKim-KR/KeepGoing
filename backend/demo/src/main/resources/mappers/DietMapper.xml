@@ -2,38 +2,105 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="keepgoing.demo.domain.diet.mapper.DietMapper">
 
-    <resultMap id="DietResultMap" type="keepgoing.demo.domain.diet.entity.Diet">
-        <id property="id" column="diet_id"/>
+    <resultMap id="SimpleFoodResultMap"
+               type="keepgoing.demo.domain.diet.entity.Food"
+               autoMapping="false">
+
+        <id property="code" column="code"
+            javaType="java.lang.String"
+            jdbcType="VARCHAR"/>
+
+        <result property="name" column="name"/>
+        <result property="dataTypeName" column="data_type_name"/>
+        <result property="middleCategoryName" column="middle_category_name"/>
+        <result property="foodWeight" column="food_weight"/>
+        <result property="servingSize" column="serving_size"/>
+        <result property="energy" column="energy"/>
+        <result property="water" column="water"/>
+        <result property="protein" column="protein"/>
+        <result property="fat" column="fat"/>
+        <result property="carbohydrate" column="carbohydrate"/>
+        <result property="sugars" column="sugars"/>
+        <result property="sodium" column="sodium"/>
+
+    </resultMap>
+
+
+
+    <resultMap id="DietWithFoodsResultMap"
+               type="keepgoing.demo.domain.diet.entity.Diet"
+               autoMapping="false">
+
+        <id property="id" column="id"/>
         <result property="memberId" column="member_id"/>
         <result property="date" column="date"/>
         <result property="mealTime" column="meal_time"/>
-        <result property="carbohydrate" column="carbs"/>
+        <result property="energy" column="energy"/>
+        <result property="water" column="water"/>
+        <result property="carbohydrate" column="carbohydrate"/>
         <result property="protein" column="protein"/>
         <result property="fat" column="fat"/>
         <result property="sugars" column="sugars"/>
+        <result property="sodium" column="sodium"/>
 
-        <collection property="foods" ofType="keepgoing.demo.domain.diet.entity.Food">
-            <result property="code" column="food_code"/>
-            <result property="name" column="food_name"/>
-        </collection>
+        <collection property="foods"
+                    resultMap="SimpleFoodResultMap"
+                    columnPrefix="food_"
+                    notNullColumn="code"/>
     </resultMap>
 
-    <select id="findAllByDate" resultMap="DietResultMap">
-        SELECT
-        d.id,            d.member_id,
-        d.date,
-        d.meal_time,
-        d.energy, d.protein, d.fat, d.carbohydrate, d.sugars, d.sodium,
 
-        f.code AS food_code,
-        f.name AS food_name,
-        f.dataTypeName,
-        f.energy AS f_energy,
-        f.protein AS f_protein
-        FROM diet d
-        LEFT JOIN diet_food_mapping m ON d.id = m.diet_id  LEFT JOIN food f ON m.food_code = f.code
-        WHERE d.member_id = #{memberId}
-        AND d.date = #{date}
+    <select id="findAllByDate" resultMap="DietWithFoodsResultMap">
+        SELECT
+            -- 1. Diet 테이블 필드
+            d.id,
+            d.member_id,
+            d.date,
+            d.meal_time,
+            d.energy,
+            d.water,
+            d.carbohydrate,
+            d.protein,
+            d.fat,
+            d.sugars,
+            d.sodium,
+
+            -- 2. Food 테이블 필드 (code와 name만 선택, 'food_' 접두사 별칭 사용)
+            f.code               AS food_code,
+            f.name               AS food_name,
+            f.dataTypeName       AS food_data_type_name,
+            f.middleCategoryName AS food_middle_category_name,
+            f.foodWeight         AS food_food_weight,
+            f.servingSize        AS food_serving_size,
+            f.energy             AS food_energy,
+            f.water              AS food_water,
+            f.protein            AS food_protein,
+            f.fat                AS food_fat,
+            f.carbohydrate       AS food_carbohydrate,
+            f.sugars             AS food_sugars,
+            f.sodium             AS food_sodium
+
+        -- 참고: diet_food_mapping의 servings 필드는 Food 엔티티에 매핑되지 않습니다.
+        FROM
+            diet d
+                LEFT JOIN
+            diet_food_mapping dfm ON d.id = dfm.diet_id
+                LEFT JOIN
+            food f ON dfm.food_code = f.code
+        WHERE
+            d.member_id = #{memberId}
+          AND
+            d.date = #{date}
+        ORDER BY
+            -- 식사 시간 순서로 정렬
+            CASE d.meal_time
+                WHEN '아침' THEN 1
+                WHEN '점심' THEN 2
+                WHEN '저녁' THEN 3
+                WHEN '간식' THEN 4
+                ELSE 5
+                END,
+            f.code
     </select>
 
     <insert id="saveAiReport">

@@ -25,5 +25,4 @@ public class Diet {
     private double sodium;
 
     private String mealTime;
-//    private List<DietFoodMapping> foodMappings;
 }

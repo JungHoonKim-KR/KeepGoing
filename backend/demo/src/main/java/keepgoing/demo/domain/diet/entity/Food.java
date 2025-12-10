@@ -5,6 +5,8 @@ import lombok.*;
 
 @Getter
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 @ToString
 public class Food {
     private String code;         // 식품코드
