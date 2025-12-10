@@ -1,6 +1,7 @@
 <script setup>
 import { ref } from "vue";
 import { useRouter } from "vue-router";
+import axios from "axios";
 
 const router = useRouter();
 
@@ -10,6 +11,9 @@ const router = useRouter();
 const currentStep = ref(1);
 const totalSteps = 4;
 const isLoading = ref(false);
+
+// 에러 상태 관리 (어떤 필드가 에러인지 체크)
+const errors = ref({});
 
 const signupData = ref({
   email: "",
@@ -32,15 +36,15 @@ const signupData = ref({
 // 2. 옵션 데이터
 // ----------------------------------------------------
 const activityOptions = [
-  { value: "low", label: "LOW (앉아있는 시간 많음)", icon: "💤" },
-  { value: "moderate", label: "NORMAL (규칙적인 활동)", icon: "🚶" },
-  { value: "high", label: "HIGH (육체 노동/운동 선수)", icon: "🔥" },
+  { value: "LOW", label: "LOW (앉아있는 시간 많음)", icon: "💤" },
+  { value: "MODERATE", label: "NORMAL (규칙적인 활동)", icon: "🚶" },
+  { value: "HIGH", label: "HIGH (육체 노동/운동 선수)", icon: "🔥" },
 ];
 
 const goalOptions = [
-  { value: "diet", label: "WEIGHT LOSS (다이어트)", icon: "📉" },
-  { value: "muscle", label: "MUSCLE UP (근력 증가)", icon: "💪" },
-  { value: "maintain", label: "MAINTENANCE (유지)", icon: "⚖️" },
+  { value: "DIET", label: "WEIGHT LOSS (다이어트)", icon: "📉" },
+  { value: "MUSCLE", label: "MUSCLE UP (근력 증가)", icon: "💪" },
+  { value: "MAINTAIN", label: "MAINTENANCE (유지)", icon: "⚖️" },
 ];
 
 // ----------------------------------------------------
@@ -77,20 +81,80 @@ const playSound = (type) => {
     gain.gain.linearRampToValueAtTime(0, now + 0.5);
     osc.start(now);
     osc.stop(now + 0.5);
+  } else if (type === "error") {
+    osc.type = "sawtooth";
+    osc.frequency.setValueAtTime(150, now);
+    gain.gain.setValueAtTime(0.1, now);
+    gain.gain.linearRampToValueAtTime(0, now + 0.3);
+    osc.start(now);
+    osc.stop(now + 0.3);
+  }
+};
+
+// [신규] 유효성 검사 함수
+const validateStep = () => {
+  errors.value = {}; // 에러 초기화
+  let isValid = true;
+
+  if (currentStep.value === 1) {
+    if (!signupData.value.email) {
+      errors.value.email = "이메일을 입력하세요.";
+      isValid = false;
+    }
+    if (!signupData.value.password) {
+      errors.value.password = "비밀번호를 입력하세요.";
+      isValid = false;
+    }
+    if (signupData.value.password && !signupData.value.confirmPassword) {
+      errors.value.confirmPassword = "비밀번호 확인을 입력하세요.";
+      isValid = false;
+    }
+    if (signupData.value.password !== signupData.value.confirmPassword) {
+      errors.value.confirmPassword = "비밀번호가 일치하지 않습니다.";
+      isValid = false;
+    }
+    if (!signupData.value.name) {
+      errors.value.name = "닉네임을 입력하세요.";
+      isValid = false;
+    }
+  }
+
+  if (currentStep.value === 2) {
+    if (!signupData.value.age) {
+      errors.value.age = "나이를 입력하세요.";
+      isValid = false;
+    }
+    if (!signupData.value.height) {
+      errors.value.height = "키를 입력하세요.";
+      isValid = false;
+    }
+    if (!signupData.value.weight) {
+      errors.value.weight = "몸무게를 입력하세요.";
+      isValid = false;
+    }
+    if (!signupData.value.target_weight) {
+      errors.value.target_weight = "목표 체중을 입력하세요.";
+      isValid = false;
+    }
+  }
+
+  return isValid;
+};
+
+// [신규] 입력 시 에러 해제
+const clearError = (field) => {
+  if (errors.value[field]) {
+    delete errors.value[field];
   }
 };
 
 const nextStep = () => {
-  if (
-    currentStep.value === 1 &&
-    (!signupData.value.email || !signupData.value.password)
-  )
-    return alert("필수 정보를 입력하세요.");
-  if (
-    currentStep.value === 1 &&
-    signupData.value.password !== signupData.value.confirmPassword
-  )
-    return alert("비밀번호가 일치하지 않습니다.");
+  // 유효성 검사 실행
+  if (!validateStep()) {
+    playSound("error");
+    // alert 창 제거 (화면 UI로 대체)
+    return;
+  }
 
   playSound("next");
   if (currentStep.value < totalSteps) currentStep.value++;
@@ -102,24 +166,40 @@ const prevStep = () => {
 };
 
 const handleSignup = async () => {
+  // 마지막 단계 유효성 검사 (필요 시)
+
   playSound("finish");
   isLoading.value = true;
 
-  // 실제 API 연동 시 사용할 데이터
   const payload = {
-    ...signupData.value,
-    health_condition: signupData.value.health_condition || "없음",
+    email: signupData.value.email,
+    password: signupData.value.password,
+    name: signupData.value.name,
+    gender: signupData.value.gender,
+    age: signupData.value.age,
+    height: signupData.value.height,
+    weight: signupData.value.weight,
+    targetWeight: signupData.value.target_weight,
+    activity: signupData.value.activity,
+    goal: signupData.value.goal,
+    healthCondition: signupData.value.health_condition || "없음",
     allergies: signupData.value.allergies || "없음",
-    disliked_food: signupData.value.disliked_food || "없음",
+    dislikedFood: signupData.value.disliked_food || "없음",
   };
 
-  console.log("Creating Character...", payload);
-
-  setTimeout(() => {
-    isLoading.value = false;
+  try {
+    await axios.post("http://localhost:8080/api/auth/signup", payload);
     alert("캐릭터 생성 완료! 로그인해주세요.");
     router.push("/login");
-  }, 1500);
+  } catch (error) {
+    console.error("회원가입 실패:", error);
+    playSound("error");
+    const msg =
+      error.response?.data?.message || "회원가입 중 오류가 발생했습니다.";
+    alert("SYSTEM ERROR: " + msg);
+  } finally {
+    isLoading.value = false;
+  }
 };
 </script>
 
@@ -146,46 +226,78 @@ const handleSignup = async () => {
       <div class="form-card">
         <div v-if="currentStep === 1" class="step-content fade-in">
           <h2 class="step-title">ID REGISTRATION</h2>
+
           <div class="input-group">
-            <label>EMAIL (LOGIN ID)</label>
+            <label :class="{ 'error-label': errors.email }">
+              EMAIL (LOGIN ID)
+              <span v-if="errors.email" class="error-badge">!</span>
+            </label>
             <input
               type="email"
               v-model="signupData.email"
               class="retro-input"
+              :class="{ 'input-error': errors.email }"
               placeholder="example@game.com"
+              @input="clearError('email')"
             />
+            <span v-if="errors.email" class="error-text"
+              >>> ERROR: {{ errors.email }}</span
+            >
           </div>
+
           <div class="input-group">
-            <label>PASSWORD</label>
+            <label :class="{ 'error-label': errors.password }">PASSWORD</label>
             <input
               type="password"
               v-model="signupData.password"
               class="retro-input"
+              :class="{ 'input-error': errors.password }"
               placeholder="******"
+              @input="clearError('password')"
             />
+            <span v-if="errors.password" class="error-text"
+              >>> ERROR: {{ errors.password }}</span
+            >
           </div>
+
           <div class="input-group">
-            <label>CONFIRM PASSWORD</label>
+            <label :class="{ 'error-label': errors.confirmPassword }"
+              >CONFIRM PASSWORD</label
+            >
             <input
               type="password"
               v-model="signupData.confirmPassword"
               class="retro-input"
+              :class="{ 'input-error': errors.confirmPassword }"
               placeholder="******"
+              @input="clearError('confirmPassword')"
             />
+            <span v-if="errors.confirmPassword" class="error-text"
+              >>> ERROR: {{ errors.confirmPassword }}</span
+            >
           </div>
+
           <div class="input-group">
-            <label>CHARACTER NAME</label>
+            <label :class="{ 'error-label': errors.name }"
+              >CHARACTER NAME</label
+            >
             <input
               type="text"
               v-model="signupData.name"
               class="retro-input"
+              :class="{ 'input-error': errors.name }"
               placeholder="Nickname"
+              @input="clearError('name')"
             />
+            <span v-if="errors.name" class="error-text"
+              >>> ERROR: {{ errors.name }}</span
+            >
           </div>
         </div>
 
         <div v-if="currentStep === 2" class="step-content fade-in">
           <h2 class="step-title">BODY STATS</h2>
+
           <div class="input-group">
             <label>GENDER</label>
             <div class="radio-box">
@@ -215,45 +327,74 @@ const handleSignup = async () => {
               </label>
             </div>
           </div>
+
           <div class="row">
             <div class="input-group half">
-              <label>AGE (Lv)</label>
+              <label :class="{ 'error-label': errors.age }">AGE (Lv)</label>
               <input
                 type="number"
                 v-model="signupData.age"
                 class="retro-input"
+                :class="{ 'input-error': errors.age }"
                 placeholder="25"
+                @input="clearError('age')"
               />
             </div>
             <div class="input-group half">
-              <label>HEIGHT (cm)</label>
+              <label :class="{ 'error-label': errors.height }"
+                >HEIGHT (cm)</label
+              >
               <input
                 type="number"
                 v-model="signupData.height"
                 class="retro-input"
+                :class="{ 'input-error': errors.height }"
                 placeholder="175"
+                @input="clearError('height')"
               />
             </div>
           </div>
+          <div v-if="errors.age || errors.height" class="error-text-row">
+            >> ERROR: 필수 정보를 입력하세요.
+          </div>
+
           <div class="row">
             <div class="input-group half">
-              <label>CURRENT WEIGHT</label>
+              <label :class="{ 'error-label': errors.weight }"
+                >CURRENT WEIGHT</label
+              >
               <input
                 type="number"
                 v-model="signupData.weight"
                 class="retro-input"
+                :class="{ 'input-error': errors.weight }"
                 placeholder="70 kg"
+                @input="clearError('weight')"
               />
             </div>
             <div class="input-group half">
-              <label class="highlight">TARGET WEIGHT</label>
+              <label
+                :class="{
+                  'error-label': errors.target_weight,
+                  highlight: !errors.target_weight,
+                }"
+                >TARGET WEIGHT</label
+              >
               <input
                 type="number"
                 v-model="signupData.target_weight"
                 class="retro-input highlight-input"
+                :class="{ 'input-error': errors.target_weight }"
                 placeholder="65 kg"
+                @input="clearError('target_weight')"
               />
             </div>
+          </div>
+          <div
+            v-if="errors.weight || errors.target_weight"
+            class="error-text-row"
+          >
+            >> ERROR: 체중 정보를 입력하세요.
           </div>
         </div>
 
@@ -300,7 +441,6 @@ const handleSignup = async () => {
         <div v-if="currentStep === 4" class="step-content fade-in">
           <h2 class="step-title">TRAITS & DEBUFFS</h2>
           <p class="desc">입력하지 않으면 '없음'으로 처리됩니다.</p>
-
           <div class="input-group">
             <label>HEALTH CONDITION (기저질환)</label>
             <textarea
@@ -361,17 +501,91 @@ const handleSignup = async () => {
   --neon-green: #00ff00;
   --neon-pink: #ff0055;
   --neon-yellow: #ffd700;
-  --bg-color: #101018; /* 매우 어두운 배경 */
-  --card-bg: #1a1a24; /* 카드 배경 */
-  --input-bg: #000000; /* 입력창 배경 (완전 검정) */
-  --text-main: #ffffff; /* 메인 텍스트 (흰색) */
-  --text-sub: #aaaaaa; /* 보조 텍스트 (회색) */
+  --bg-color: #101018;
+  --card-bg: #1a1a24;
+  --input-bg: #000000;
+  --text-main: #ffffff;
+  --text-sub: #aaaaaa;
 }
 
-/* 전체 뷰 */
+/* 기존 스타일 유지하면서... */
+
+/* ▼▼▼ [신규] 에러 스타일 추가 ▼▼▼ */
+.input-error {
+  border-color: var(--neon-pink) !important;
+  box-shadow: 0 0 10px var(--neon-pink);
+  animation: shake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+.error-text {
+  color: var(--neon-pink);
+  font-size: 0.8rem;
+  margin-top: 4px;
+  display: block;
+  animation: blink 1s infinite;
+}
+
+.error-text-row {
+  color: var(--neon-pink);
+  font-size: 0.8rem;
+  margin-bottom: 1rem;
+  text-align: right;
+}
+
+.error-label {
+  color: var(--neon-pink) !important;
+}
+
+.error-badge {
+  display: inline-block;
+  background: var(--neon-pink);
+  color: white;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  text-align: center;
+  line-height: 16px;
+  font-size: 12px;
+  margin-left: 5px;
+}
+
+/* 흔들림 효과 */
+@keyframes shake {
+  10%,
+  90% {
+    transform: translate3d(-2px, 0, 0);
+  }
+  20%,
+  80% {
+    transform: translate3d(4px, 0, 0);
+  }
+  30%,
+  50%,
+  70% {
+    transform: translate3d(-6px, 0, 0);
+  }
+  40%,
+  60% {
+    transform: translate3d(6px, 0, 0);
+  }
+}
+
+@keyframes blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* ▲▲▲ [여기까지] ▲▲▲ */
+
+/* --- 기존 스타일 --- */
 .signup-view {
   min-height: 100vh;
-  background-color: var(--bg-color) !important; /* 강제 적용 */
+  background-color: var(--bg-color) !important;
   font-family: "NeoDunggeunmo", monospace;
   color: var(--text-main);
   padding: 20px;
@@ -380,10 +594,8 @@ const handleSignup = async () => {
   justify-content: center;
   align-items: center;
   position: relative;
-  overflow-y: auto; /* 내용이 길어지면 스크롤 */
+  overflow-y: auto;
 }
-
-/* 스캔라인 (가독성을 위해 매우 옅게) */
 .scanlines {
   position: fixed;
   top: 0;
@@ -401,7 +613,6 @@ const handleSignup = async () => {
   background-size: 100% 4px, 6px 100%;
   z-index: 1;
 }
-
 .signup-container {
   position: relative;
   z-index: 10;
@@ -412,8 +623,6 @@ const handleSignup = async () => {
   gap: 1.5rem;
   padding-bottom: 2rem;
 }
-
-/* Header */
 .header-section {
   text-align: center;
   margin-bottom: 10px;
@@ -425,7 +634,6 @@ const handleSignup = async () => {
   margin-bottom: 1rem;
   letter-spacing: 1px;
 }
-
 .progress-bar-container {
   width: 100%;
 }
@@ -449,8 +657,6 @@ const handleSignup = async () => {
   transition: width 0.3s ease;
   box-shadow: 0 0 10px var(--neon-green);
 }
-
-/* Form Card (배경을 어둡게 하고 테두리 강조) */
 .form-card {
   background-color: var(--card-bg);
   border: 2px solid #555;
@@ -461,7 +667,6 @@ const handleSignup = async () => {
   flex-direction: column;
   border-radius: 4px;
 }
-
 .step-title {
   color: var(--neon-blue);
   border-bottom: 2px dashed #555;
@@ -476,8 +681,6 @@ const handleSignup = async () => {
   margin-bottom: 1rem;
   margin-top: -10px;
 }
-
-/* Input Styles (가독성 핵심) */
 .input-group {
   margin-bottom: 1.2rem;
   display: flex;
@@ -492,12 +695,11 @@ const handleSignup = async () => {
 .input-group label.highlight {
   color: var(--neon-pink);
 }
-
 .retro-input,
 .retro-textarea {
-  background-color: var(--input-bg) !important; /* 배경 검정 강제 */
+  background-color: var(--input-bg) !important;
   border: 2px solid #555;
-  color: #ffffff !important; /* 글씨 흰색 강제 */
+  color: black !important;
   padding: 12px;
   font-family: inherit;
   font-size: 1rem;
@@ -514,11 +716,10 @@ const handleSignup = async () => {
 }
 .retro-input::placeholder {
   color: #555;
-} /* 플레이스홀더 잘 보이게 */
+}
 .highlight-input:focus {
   border-color: var(--neon-pink);
 }
-
 .row {
   display: flex;
   gap: 10px;
@@ -526,13 +727,10 @@ const handleSignup = async () => {
 .half {
   flex: 1;
 }
-
 .retro-textarea {
   height: 80px;
   resize: none;
 }
-
-/* Radio Box (Gender) */
 .radio-box {
   display: flex;
   gap: 10px;
@@ -554,8 +752,6 @@ const handleSignup = async () => {
   color: #fff;
   box-shadow: 0 0 10px rgba(0, 229, 255, 0.2);
 }
-
-/* Select Grid (Activity, Goal) */
 .select-grid {
   display: flex;
   flex-direction: column;
@@ -588,8 +784,6 @@ const handleSignup = async () => {
   font-size: 0.95rem;
   font-weight: bold;
 }
-
-/* Footer Actions */
 .footer-actions {
   display: flex;
   margin-top: auto;
@@ -610,7 +804,6 @@ const handleSignup = async () => {
   transform: translate(2px, 2px);
   box-shadow: none;
 }
-
 .prev {
   background: #333;
   color: #fff;
@@ -631,9 +824,7 @@ const handleSignup = async () => {
 }
 .spacer {
   display: none;
-} /* flex 1로 버튼 크기 조절 */
-
-/* Animations */
+}
 .fade-in {
   animation: fadeIn 0.3s ease-out;
 }
@@ -647,8 +838,6 @@ const handleSignup = async () => {
     transform: translateY(0);
   }
 }
-
-/* Mobile */
 @media (max-width: 400px) {
   .page-title {
     font-size: 1.5rem;
