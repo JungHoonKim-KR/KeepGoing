@@ -103,9 +103,24 @@
             f.code
     </select>
 
-    <insert id="saveAiReport">
-        INSERT INTO ai_report (member_id, date, score, feedback_text, recommend_json)
-        VALUES (#{memberId}, #{date}, #{score}, #{feedbackText}, #{recommendJson})
+    <insert id="saveAiReport" parameterType="keepgoing.demo.domain.diet.entity.AiReport">
+        INSERT INTO ai_report (
+        member_id,
+        date,
+        score,
+        feedback_text,
+        recommend_json
+        ) VALUES (
+        #{memberId},
+        #{date},
+        #{score},
+        #{feedbackText},
+        #{recommendJson}
+        )
+        ON DUPLICATE KEY UPDATE
+        score = #{score},
+        feedback_text = #{feedbackText},
+        recommend_json = #{recommendJson}
     </insert>
 
     <select id="selectDiet" resultType="keepgoing.demo.domain.diet.entity.Diet">
