@@ -1,3 +1,6 @@
+<<<<<<< HEAD
+backend/demo/src/main/resources/application-dev.yml
+=======
 # === Python ===
 __pycache__/
 *.pyc
@@ -22,3 +25,4 @@ venv/
 
 # === Windows ===
 Thumbs.db
+>>>>>>> b4e92fec8195c7d90572cfce90c9f42763a53555
