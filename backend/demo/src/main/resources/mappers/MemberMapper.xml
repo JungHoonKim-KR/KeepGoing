@@ -1,15 +1,64 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="keepgoing.demo.domain.member.mapper.MemberMapper">
-
-    <select id="findWeightLogByMemberId">
+<!--Start Weight -->
+    <select id="findWeightByMemberId">
         SELECT id,
                member_id,
                weight,
                diff, date, memo
         FROM weight_log
-        WHERE member_id = #{memberId}
+        WHERE member_id = #{memberId} AND
+              date = #{date}
     </select>
+
+    <select id="findWeightLogsByMemberId"
+            resultType="keepgoing.demo.domain.member.entity.WeightLog">
+        <![CDATA[
+        SELECT
+            id,
+            member_id,
+            weight,
+            diff,
+            date,
+            memo
+        FROM weight_log
+        WHERE member_id = #{memberId}
+          AND date <= #{date}
+        ORDER BY date DESC
+            LIMIT 5
+        ]]>
+    </select>
+
+    <select id="findLatestWeightLogBeforeDate" resultType="keepgoing.demo.domain.member.entity.WeightLog">
+    <![CDATA[
+        SELECT
+            id, member_id, weight, diff, date, memo
+        FROM weight_log
+        WHERE member_id = #{memberId}
+          AND date < #{date}       ORDER BY date DESC
+            LIMIT 1
+        ]]>
+</select>
+
+    <insert id="insertWeightLog">
+        INSERT INTO weight_log (member_id, weight, diff, date, memo)
+        VALUES (#{memberId}, #{weight}, #{diff}, #{date}, #{memo})
+    </insert>
+
+    <update id="updateWeightLog">
+        UPDATE weight_log
+        SET
+            weight = #{weight},
+            diff = #{diff},
+            memo = #{memo},
+            recorded_at = NOW()  -- 기록 일시 업데이트
+        WHERE member_id = #{memberId} AND date = #{date}
+    </update>
+
+<!--End Weight -->
+
+
     <select id="findById" resultType="keepgoing.demo.domain.member.entity.Member">
         SELECT
         id,
@@ -51,21 +100,6 @@
         WHERE member_id= #{memberId}
     </select>
 
-    <insert id="insertWeightLog" useGeneratedKeys="true">
-        INSERT INTO weight_log (
-        member_id,
-        weight,
-        diff,
-        date,
-        memo
-        ) VALUES (
-        #{memberId},
-        #{weight},
-        #{diff},
-        #{date},
-        #{memo}
-        )
-    </insert>
     <select id="findByEmail" resultType="keepgoing.demo.domain.member.entity.Member">
         SELECT
         id,

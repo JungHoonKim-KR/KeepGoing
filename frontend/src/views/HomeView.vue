@@ -170,7 +170,7 @@
     <section class="page weight-page">
       <div class="page-content">
         <div
-          v-if="!weightData.current"
+          v-if="weightData.current == 0.0"
           class="pixel-card interactive purple-theme"
           @click="handleWeightClick"
         >

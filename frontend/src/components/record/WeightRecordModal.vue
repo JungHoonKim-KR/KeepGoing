@@ -70,9 +70,9 @@
               <span class="rank-score">{{ record.weight }}kg</span>
               <span
                 class="rank-diff"
-                :class="record.change < 0 ? 'bonus' : 'penalty'"
+                :class="record.diff < 0 ? 'bonus' : 'penalty'"
               >
-                {{ record.change > 0 ? "+" : "" }}{{ record.change }}
+                {{ record.diff > 0 ? "+" : "" }}{{ record.diff }}
               </span>
             </div>
           </div>
@@ -101,12 +101,12 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import dayjs from "dayjs";
-import { useConfigStore } from "@/stores/configStore"; // Pinia Store 경로를 정확히 확인해주세요.
+import { useConfigStore } from '@/stores/configStore'; // Pinia Store 경로를 정확히 확인해주세요.
 const emit = defineEmits(["close"]);
-
+const config = useConfigStore();
 // Data
-const weightInput = ref("70.0");
-const weightSlider = ref(70);
+const weightInput = ref("60.0");
+const weightSlider = ref(60);
 const memo = ref("");
 const MEMBER_ID = config.MEMBER_ID;
 const API_ENDPOINT = config.API_ENDPOINT;
@@ -114,9 +114,7 @@ const formattedDate = computed(() => config.currentDate);
 const getCurrentDateForAPI = config.getCurrentDateForAPI; // 함수이므로 그대로 사용합니다.
 // 더미 데이터 (실제 데이터로 교체 가능)
 const recentRecords = ref([
-  { date: "YESTERDAY", weight: 70.3, change: -0.2 },
-  { date: "2 DAYS AGO", weight: 70.5, change: 0.3 },
-  { date: "3 DAYS AGO", weight: 70.2, change: -0.1 },
+
 ]);
 
 // Computed
@@ -183,12 +181,14 @@ const saveWeight = async () => {
   // API 호출 로직은 여기에 추가
   const weightData = {
     memberId: MEMBER_ID,
-    weight: weightInput,
+    weight: weightInput.value,
+    date : formattedDate.value,
     memo: memo.value,
+
   };
 
   try {
-    const response = await fetch(`${API_ENDPOINT}/api/members/weight`, {
+    const response = await fetch(`${API_ENDPOINT}/api/member/weight`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(weightData),
@@ -206,23 +206,58 @@ const saveWeight = async () => {
   setTimeout(() => closeModal(), 400);
 };
 
+async function fetchWeightLogs() {
+    const baseURL = `${API_ENDPOINT}/api/member/weight/logs`;
+    const params = new URLSearchParams({
+        memberId : MEMBER_ID,
+        date: getCurrentDateForAPI(), // ✅ formattedDate는 YYYY.MM.DD 형식일 수 있으므로 API 함수 사용 권장
+    });
+    const url = `${baseURL}?${params.toString()}`;
+    
+    try{
+        const response = await fetch(url);
+        if (!response.ok) throw new Error("Network response was not ok");
+        
+        const data = await response.json();
+        
+        // 🌟 1. 조건문 수정: 배열이 객체 안에 있고, 그 배열의 길이가 0보다 클 때만 실행
+        if(data && Array.isArray(data.memberWeightResponseDtos) && data.memberWeightResponseDtos.length > 0) {
+            
+            // 2. 데이터 매핑 및 할당
+            recentRecords.value = data.memberWeightResponseDtos.map(item =>({
+                date: item.date,
+                weight: item.weight,
+                diff: item.diff // 템플릿에서도 diff를 사용하므로 change 대신 diff 사용 유지
+            }));
+
+            // 3. 최신 기록(index 0)으로 weightInput 및 memo 초기화
+            const latestRecord = recentRecords.value[0];
+            
+            weightInput.value = latestRecord.weight.toFixed(1);
+            weightSlider.value = latestRecord.weight;
+            
+            // memo는 응답 객체의 memo 필드를 사용
+            memo.value = data.memo || ""; 
+            
+        } else {
+            // 데이터가 없거나 배열이 비어있을 경우 (안전한 초기화)
+            recentRecords.value = [];
+            weightInput.value = "0.0"; 
+            weightSlider.value = 0;
+            memo.value = "";
+        }
+
+    } catch (error) {
+        console.error("Error fetching weight logs:", error);
+        // 실패 시 Mock 데이터로 대체하거나 빈 상태로 유지
+        recentRecords.value = []; 
+        weightInput.value = "0.0";
+    }
+}
 onMounted(async () => {
   document.body.style.overflow = "hidden";
-  const url = `${API_ENDPOINT}/members/weight/${MEMBER_ID}`;
-  try {
-    const response = await fetch(url);
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! Status: ${response.status}`);
-    }
-
-    recentRecords.value = await response.json();
-  } catch (error) {
-    console.error(
-      "일일 식단 데이터를 불러오는 데 실패했습니다. Mock 데이터를 사용합니다.",
-      error
-    );
-  }
+  fetchWeightLogs();
+ 
 });
 onUnmounted(() => (document.body.style.overflow = ""));
 </script>

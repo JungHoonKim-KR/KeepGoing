@@ -1,9 +1,6 @@
 package keepgoing.demo.domain.member.service;
 
-import keepgoing.demo.domain.member.dto.MemberResponseDto;
-import keepgoing.demo.domain.member.dto.MemberUpdateDto;
-import keepgoing.demo.domain.member.dto.MemberWeightRequestDto;
-import keepgoing.demo.domain.member.dto.MemberWeightResponseDto;
+import keepgoing.demo.domain.member.dto.*;
 import keepgoing.demo.domain.member.entity.Member;
 import keepgoing.demo.domain.member.entity.WeightLog;
 import keepgoing.demo.domain.member.mapper.MemberMapper;
@@ -12,9 +9,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -49,40 +48,84 @@ public class MemberService {
     }
     @Transactional(readOnly = true)
     public MemberWeightResponseDto getWeight(Long memberId, LocalDate date) {
-        WeightLog weightLogByMemberId = memberMapper.findWeightLogByMemberId(memberId, date);
-        System.out.println(weightLogByMemberId);
-        return new MemberWeightResponseDto(weightLogByMemberId.getDate(),  weightLogByMemberId.getWeight(),
-                weightLogByMemberId.getDiff(), weightLogByMemberId.getDiff() >= 0);
-    }
 
-//    @Transactional(readOnly = true)
-//    public List<MemberResponseDto> getWeightLogs(Long memberId, LocalDate date) {
-//
-//    }
-    public void updateWeight(MemberWeightRequestDto dto){
-//        memberMapper.
-//        memberMapper.updateWeight(dto.getMemberId(), dto.getWeight());
-//
-        Optional<Member> findMember = memberMapper.findById(dto.getMemberId());
-        if(findMember.isEmpty()){
-            new NoSuchElementException("멤버 ID " + dto.getMemberId() + "에 해당하는 사용자를 찾을 수 없습니다.");
+        WeightLog weightLogByMemberId = memberMapper.findWeightByMemberId(memberId, date);
+
+        if (weightLogByMemberId == null) {
+
+            return new MemberWeightResponseDto(date, 0.0, 0.0);
         }
-        Member member = findMember.get();
-        double diff = member.getWeight() - dto.getWeight();
-        WeightLog.builder()
-                .memberId(dto.getMemberId())
-                .weight(dto.getWeight())
-                .date(dto.getDate())
-                .memo(dto.getMemo())
-                .build();
-//        memberMapper.insertWeightLog();
-
+        return new MemberWeightResponseDto(
+                weightLogByMemberId.getDate(),
+                weightLogByMemberId.getWeight(),
+                weightLogByMemberId.getDiff()
+        );
     }
+
     @Transactional(readOnly = true)
-    public List<WeightLog> getWeightLogs(Long memberId) {
-        return memberMapper.selectWightListByMemberId(memberId);
+    public MemberWeightLogsResponseDto getWeightLogs(Long memberId, LocalDate date) {
+        List<WeightLog> weightLogsByMemberId = memberMapper.findWeightLogsByMemberId(memberId, date);
+
+        if (weightLogsByMemberId.isEmpty()) {
+            return new MemberWeightLogsResponseDto(new ArrayList<>(), "");
+        }
+
+        // 2. 입력 date와 일치하는 로그를 찾습니다.
+        Optional<WeightLog> targetLogOptional = weightLogsByMemberId.stream()
+                .filter(log -> log.getDate().isEqual(date))
+                .findFirst();
+
+        // 3. targetLog의 memo를 추출하고, 목록에서 targetLog를 제외합니다.
+        String targetMemo = "";
+        List<MemberWeightResponseDto> historyList = new ArrayList<>();
+
+        if (targetLogOptional.isPresent()) {
+            WeightLog targetLog = targetLogOptional.get();
+            targetMemo = targetLog.getMemo();
+
+            // targetLog를 제외한 나머지 로그들을 historyList에 추가 (스트림 사용)
+            historyList = weightLogsByMemberId.stream()
+//                    .filter(log -> !log.getDate().iszEqual(date)) // 현재 날짜 기록 제외
+                    .map(log -> new MemberWeightResponseDto(log.getDate(), log.getWeight(), log.getDiff()))
+                    .collect(Collectors.toList());
+        } else {
+            // 가져온 5개 로그 전체를 이전 기록 목록으로 사용하고, 메모는 비워둡니다.
+            historyList = weightLogsByMemberId.stream()
+                    .map(log -> new MemberWeightResponseDto(log.getDate(), log.getWeight(), log.getDiff()))
+                    .collect(Collectors.toList());
+        }
+
+        return new MemberWeightLogsResponseDto(historyList, targetMemo);
     }
 
+    public void saveWeight(MemberWeightRequestDto dto){
+        WeightLog targetLog = memberMapper.findWeightByMemberId(dto.getMemberId(), dto.getDate());
+
+        WeightLog previousLog = memberMapper.findLatestWeightLogBeforeDate(dto.getMemberId(), dto.getDate());
+
+        double diff = 0.0;
+        if (previousLog != null) {
+            // 이전 기록이 있다면, 새로운 체중과 이전 체중의 차이를 계산
+            // DECIMAL 타입이므로 Double로 변환하여 계산
+            diff = dto.getWeight() - previousLog.getWeight().doubleValue();
+        }
+
+        if(targetLog != null){
+            targetLog.updateWeightLog(dto.getWeight(), diff, dto.getMemo());
+            memberMapper.updateWeightLog(targetLog);
+        }
+        else{
+            WeightLog newLog = WeightLog.builder()
+                    .memberId(dto.getMemberId())
+                    .weight(dto.getWeight())
+                    .diff(diff)
+                    .date(dto.getDate())
+                    .memo(dto.getMemo())
+                    .build();
+            memberMapper.insertWeightLog(newLog);
+        }
+
+    }
     // 회원 정보 수정
     public void updateMemberProfile(Long memberId, MemberUpdateDto dto) {
         Member member = memberMapper.findById(memberId)
