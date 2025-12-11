@@ -29,6 +29,7 @@ public class Member {
     private String allergies;       // 알레르기
     private String dislikedFood;    // 기피음식
     private Double targetWeight;    // 목표체중
+    private Double targetWater;
     private int level;          // 현재 레벨
     private int exp;            // 현재 경험치
     private int currentPoints;  // 보유 포인트 (상점용)

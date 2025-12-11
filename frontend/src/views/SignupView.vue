@@ -25,6 +25,8 @@ const signupData = ref({
   height: null,
   weight: null,
   target_weight: null,
+  target_water: 2.0,
+
   activity: "moderate",
   goal: "diet",
   health_condition: "",
@@ -180,6 +182,7 @@ const handleSignup = async () => {
     height: signupData.value.height,
     weight: signupData.value.weight,
     targetWeight: signupData.value.target_weight,
+    targetWater: signupData.value.target_water,
     activity: signupData.value.activity,
     goal: signupData.value.goal,
     healthCondition: signupData.value.health_condition || "없음",
@@ -372,6 +375,7 @@ const handleSignup = async () => {
                 @input="clearError('weight')"
               />
             </div>
+
             <div class="input-group half">
               <label
                 :class="{
@@ -387,6 +391,16 @@ const handleSignup = async () => {
                 :class="{ 'input-error': errors.target_weight }"
                 placeholder="65 kg"
                 @input="clearError('target_weight')"
+              />
+            </div>
+            <div class="input-group half">
+              <label class="highlight">WATER GOAL (L)</label>
+              <input
+                type="number"
+                step="0.1"
+                v-model="signupData.target_water"
+                class="retro-input highlight-input"
+                placeholder="2.0"
               />
             </div>
           </div>

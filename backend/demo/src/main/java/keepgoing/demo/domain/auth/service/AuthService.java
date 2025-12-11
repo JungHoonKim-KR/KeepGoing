@@ -21,35 +21,39 @@ public class AuthService {
     // 1. 회원가입
     @Transactional
     public void signup(AuthRequestDto dto) {
-        // 이메일 중복 체크
         if (memberMapper.findByEmail(dto.email()).isPresent()) {
             throw new IllegalArgumentException("이미 가입된 이메일입니다.");
         }
 
-        // 비밀번호 암호화
         String encodedPassword = passwordEncoder.encode(dto.password());
 
-        // Member 엔티티 생성 (Null Safety 적용)
         Member member = Member.builder()
                 .email(dto.email())
                 .password(encodedPassword)
                 .name(dto.name())
-                .role("ROLE_USER")
-                // ▼▼▼ [여기 수정] 값이 없으면(null) 기본값(0 또는 "M")을 넣도록 설정 ▼▼▼
+                .role("USER") // 기본 권한 설정
                 .gender(dto.gender() != null ? dto.gender() : "M")
-                .age(dto.age() != null ? dto.age() : 0)          // null이면 0세
-                .height(dto.height() != null ? dto.height() : 0.0) // null이면 0.0cm
-                .weight(dto.weight() != null ? dto.weight() : 0.0) // null이면 0.0kg
+                .age(dto.age() != null ? dto.age() : 0)
+                .height(dto.height() != null ? dto.height() : 0.0)
+                .weight(dto.weight() != null ? dto.weight() : 0.0)
+
+                // ▼▼▼ [수정] 목표 체중 & 목표 물 섭취량 (Null 방지) ▼▼▼
                 .targetWeight(dto.targetWeight() != null ? dto.targetWeight() : 0.0)
+                .targetWater(dto.targetWater() != null ? dto.targetWater() : 2.0) // 기본 2.0리터
+                // ▲▲▲ [여기까지] ▲▲▲
+
                 .activity(dto.activity() != null ? dto.activity() : "moderate")
                 .goal(dto.goal() != null ? dto.goal() : "diet")
-                // 문자열은 DTO에서 이미 처리했지만 안전하게 한 번 더
                 .healthCondition(dto.healthCondition() != null ? dto.healthCondition() : "없음")
                 .allergies(dto.allergies() != null ? dto.allergies() : "없음")
                 .dislikedFood(dto.dislikedFood() != null ? dto.dislikedFood() : "없음")
+
+                // 게이미피케이션 초기값 (빌더에 없으면 0으로 들어가겠지만 명시적으로)
+                .level(1)
+                .exp(0)
+                .currentPoints(0)
                 .build();
 
-        // DB 저장
         memberMapper.save(member);
     }
 

@@ -20,8 +20,8 @@ export const analyzeDiet = async (memberId, date) => {
     // RequestParam으로 보내므로 data는 null, params에 객체 전달
     const response = await api.post("/diets/analyze", null, {
       params: {
-        memberId: "1",
-        date: "2024-05-20",
+        memberId: memberId,
+        date: date,
       },
     });
     return response.data; // 백엔드에서 준 JSON 리턴
