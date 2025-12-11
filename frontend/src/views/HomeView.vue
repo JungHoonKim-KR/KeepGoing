@@ -118,7 +118,7 @@
     <section class="page water-page">
       <div class="page-content">
         <div
-          v-if="waterData.current === 0"
+          v-if="waterData.water === 0"
           class="pixel-card interactive blue-theme"
           @click="handleWaterClick"
         >
@@ -139,14 +139,14 @@
             <span class="hud-label">MANA (H2O)</span>
             <span class="hud-val"
               >{{
-                Math.round((waterData.current / waterData.goal) * 100)
+                Math.round((waterData.water / waterData.goal) * 100)
               }}%</span
             >
           </div>
 
           <div class="water-dashboard">
             <div class="current-water">
-              {{ waterData.current }}<span class="unit">L</span>
+              {{ waterData.water }}<span class="unit">L</span>
             </div>
             <div class="goal-water">MAX: {{ waterData.goal }}L</div>
           </div>
@@ -155,7 +155,7 @@
             <div
               class="mana-bar-fill"
               :style="{
-                width: (waterData.current / waterData.goal) * 100 + '%',
+                width: Math.min((waterData.water / waterData.goal) * 100, 100) + '%'
               }"
             >
               <div class="glare"></div>
@@ -170,7 +170,7 @@
     <section class="page weight-page">
       <div class="page-content">
         <div
-          v-if="weightData.current == 0.0"
+          v-if="weightData.weight == 0.0"
           class="pixel-card interactive purple-theme"
           @click="handleWeightClick"
         >
@@ -194,20 +194,20 @@
 
           <div class="weight-dashboard">
             <div class="score-display">
-              <span class="score-val">{{ weightData.current }}</span>
+              <span class="score-val">{{ weightData.weight }}</span>
               <span class="score-unit">KG</span>
             </div>
 
             <div
               class="score-change"
-              :class="weightData.change > 0 ? 'bad' : 'good'"
+              :class="weightData.diff > 0 ? 'bad' : 'good'"
             >
               <span class="change-icon">{{
-                weightData.change > 0 ? "▲" : "▼"
+                weightData.diff > 0 ? "▲" : "▼"
               }}</span>
-              {{ Math.abs(weightData.change) }}kg
+              {{ Math.abs(weightData.diff) }}kg
               <span class="change-text">{{
-                weightData.change > 0 ? "(WARNING)" : "(NICE!)"
+                weightData.diff > 0 ? "(WARNING)" : "(NICE!)"
               }}</span>
             </div>
           </div>
@@ -218,14 +218,17 @@
     </section>
     <div v-if="showModal" class="modal-overlay" @click="closeModal"></div>
     <MealRecordModal v-if="showMealModal" @close="closeMealModal" />
-    <WaterRecordModal v-if="showWaterModal" @close="closeWaterModal" />
-    <WeightRecordModal v-if="showWeightModal" @close="closeWeightModal" />
+    <WaterRecordModal v-if="showWaterModal" @close="closeWaterModal" 
+      @update-water="handleWaterUpdate"
+      :initial-amount="waterData.water"   :initial-goal="waterData.goal"/>
+    <WeightRecordModal v-if="showWeightModal" @close="closeWeightModal" 
+      @update-weight="handleWeightUpdate"/>
     <Footer></Footer>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, provide } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useConfigStore } from "@/stores/configStore"; // Pinia Store 경로를 정확히 확인해주세요.
 import Footer from "@/components/utils/Footer.vue";
 import dayjs from "dayjs";
@@ -284,13 +287,13 @@ const todayMeals = computed(() => {
 // 💧 물 / ⚖️ 체중
 // =========================
 const waterData = ref({
-  current: 1.2,
+  water: 1.2,
   goal: 2.0,
 });
 
 const weightData = ref({
-  current: 70.5,
-  change: -0.3,
+  weight: 70.5,
+  diff: -0.3,
 });
 
 // =========================
@@ -421,6 +424,13 @@ const handleWeightClick = () => {
   playRetroSound("jump");
   showWeightModal.value = true;
 };
+const handleWaterUpdate = async(newAmount) => {
+    waterData.value.water = newAmount;
+    
+};  
+const handleWeightUpdate = async() => {
+    await fetchWeightData();
+};
 const closeModal = () => (showModal.value = false);
 
 // =========================
@@ -498,10 +508,10 @@ async function fetchHydrationData() {
       throw new Error(`HTTP error! Status: ${response.status}`);
     }
     const data = await response.json();
-    waterData.value.current = data;
+    waterData.value.water = data;
   } catch (error) {
     console.error("물 데이터를 불러오는 데 실패했습니다. Mock 데이터를 사용합니다.", error);
-    waterData.value = { current: 1.2, goal: 2.0 };  
+    waterData.value = { water: 1.2, goal: 2.0 };  
   }
 }
 async function fetchWeightData (){
@@ -518,8 +528,8 @@ async function fetchWeightData (){
       throw new Error(`HTTP error! Status: ${response.status}`);
     }
     const data = await response.json();
-    weightData.value.current = data.weight;
-    weightData.value.change = data.diff;
+    weightData.value.weight = data.weight;
+    weightData.value.diff = data.diff;
 
   } catch (error) {
     console.error(
