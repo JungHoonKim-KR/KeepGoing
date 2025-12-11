@@ -102,7 +102,7 @@
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import dayjs from "dayjs";
 import { useConfigStore } from '@/stores/configStore'; // Pinia Store 경로를 정확히 확인해주세요.
-const emit = defineEmits(["close"]);
+const emit = defineEmits(["close", "update-weight"]);
 const config = useConfigStore();
 // Data
 const weightInput = ref("60.0");
@@ -194,14 +194,11 @@ const saveWeight = async () => {
       body: JSON.stringify(weightData),
     });
     if (!response.ok) throw new Error("Save Failed");
-    setTimeout(() => closeModal(), 500);
+    emit("update-weight"); // 새로운 이벤트 발생
   } catch (error) {
     console.error("Critical Failure:", error);
     closeModal();
   }
-
-  console.log("Saving Score:", weightInput.value);
-
   // 소리 들을 시간 주고 닫기
   setTimeout(() => closeModal(), 400);
 };

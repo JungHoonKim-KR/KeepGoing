@@ -113,12 +113,10 @@
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import dayjs from "dayjs";
 import { useConfigStore } from '@/stores/configStore'; // Pinia Store 경로를 정확히 확인해주세요.
-const emit = defineEmits(["close"]);
+const emit = defineEmits(["close", "update-water"]);
 
 // Data
-const currentAmount = ref(0.0);
-const goalAmount = ref(2.0);
-const sliderValue = ref(15);const config = useConfigStore();
+const config = useConfigStore();
 
 const MEMBER_ID = config.MEMBER_ID;
 const API_ENDPOINT = config.API_ENDPOINT;
@@ -127,7 +125,22 @@ const getCurrentDateForAPI = config.getCurrentDateForAPI; // 함수이므로 그
 const todayRecords = ref([
 
 ]);
+const props = defineProps({
+    initialAmount: {
+        type: Number,
+        default: 0.0
+    },
+    initialGoal: {
+        type: Number,
+        default: 2.0
+    }
+});
 
+// Data
+// 🌟 props 값으로 초기화 (API 데이터 반영)
+const currentAmount = ref(props.initialAmount);
+const goalAmount = ref(props.initialGoal); 
+const sliderValue = ref(Math.round(props.initialAmount * 10));
 // Computed
 const waterPercentage = computed(() => {
   const percentage = (currentAmount.value / goalAmount.value) * 100;
@@ -224,6 +237,7 @@ const saveWater = async () => {
       console.error(`Error Status: ${response.status}`);
       throw new Error("Save Failed");
     }
+    emit("update-water", currentAmount.value);
     // 성공 시 딜레이를 주어 소리 듣게 함
     setTimeout(() => closeModal(), 300);
   } catch (error) {
