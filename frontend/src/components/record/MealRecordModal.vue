@@ -169,7 +169,13 @@ import dayjs from "dayjs";
 
 const emit = defineEmits(["close"]);
 const API_ENDPOINT = "http://localhost:8080";
-
+const propt = defineProps({
+  dateToUse: {
+        type: String,
+        required: true
+    }
+})
+const formattedDate = computed(() => propt.dateToUse);
 // === 🔊 8-bit Sound FX ===
 const playSound = (type) => {
   const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -257,8 +263,6 @@ const mealTimes = [
   { id: "dinner", name: "저녁" },
   { id: "snack", name: "간식" },
 ];
-
-const formattedDate = computed(() => dayjs().format("YYYY-MM-DD HH:mm:ss"));
 
 // === API Logic ===
 async function fetchSuggestions(query) {
@@ -377,6 +381,7 @@ const saveMeal = async () => {
     memberId: 1,
     mealTime: selectedMealTime.value,
     foods: selectedFoodList.value,
+    date : formattedDate.value,
   };
   try {
     const response = await fetch(`${API_ENDPOINT}/diets/meal`, {

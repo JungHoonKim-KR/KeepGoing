@@ -99,19 +99,24 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from "vue";
+import { ref, unref, computed, onMounted, onUnmounted } from "vue";
 import dayjs from "dayjs";
 import { useConfigStore } from '@/stores/configStore'; // Pinia Store 경로를 정확히 확인해주세요.
 const emit = defineEmits(["close", "update-weight"]);
 const config = useConfigStore();
+const props = defineProps({
+    dateToUse: {
+        type: String,
+        required: true
+    }
+}); 
 // Data
 const weightInput = ref("60.0");
 const weightSlider = ref(60);
 const memo = ref("");
 const MEMBER_ID = config.MEMBER_ID;
 const API_ENDPOINT = config.API_ENDPOINT;
-const formattedDate = computed(() => config.currentDate);
-const getCurrentDateForAPI = config.getCurrentDateForAPI; // 함수이므로 그대로 사용합니다.
+const formattedDate = computed(() => ref(props.dateToUse));
 // 더미 데이터 (실제 데이터로 교체 가능)
 const recentRecords = ref([
 
@@ -179,12 +184,11 @@ const handleOverlayClick = (e) => {
 const saveWeight = async () => {
   playSound("save");
   // API 호출 로직은 여기에 추가
-  const weightData = {
-    memberId: MEMBER_ID,
-    weight: weightInput.value,
-    date : formattedDate.value,
-    memo: memo.value,
-
+const weightData = {
+    memberId: unref(MEMBER_ID), 
+    weight: unref(weightInput.value), // weightInput도 혹시 모르니 unref 처리
+    date : unref(formattedDate.value),
+    memo: unref(memo.value),
   };
 
   try {
@@ -194,7 +198,8 @@ const saveWeight = async () => {
       body: JSON.stringify(weightData),
     });
     if (!response.ok) throw new Error("Save Failed");
-    emit("update-weight"); // 새로운 이벤트 발생
+    const savedWeight = parseFloat(unref(weightInput));
+    emit("update-weight", savedWeight); // 새로운 이벤트 발생
   } catch (error) {
     console.error("Critical Failure:", error);
     closeModal();
@@ -207,7 +212,7 @@ async function fetchWeightLogs() {
     const baseURL = `${API_ENDPOINT}/api/member/weight/logs`;
     const params = new URLSearchParams({
         memberId : MEMBER_ID,
-        date: getCurrentDateForAPI(), // ✅ formattedDate는 YYYY.MM.DD 형식일 수 있으므로 API 함수 사용 권장
+        date: unref(formattedDate.value), // ✅ formattedDate는 YYYY.MM.DD 형식일 수 있으므로 API 함수 사용 권장
     });
     const url = `${baseURL}?${params.toString()}`;
     

@@ -3,6 +3,7 @@ package keepgoing.demo.domain.diet.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import keepgoing.demo.domain.ai.dto.AiResponseDto;
+import keepgoing.demo.domain.diet.dto.DailyEvaluationDto;
 import keepgoing.demo.domain.diet.dto.DietInsertRequestDTO;
 import keepgoing.demo.domain.diet.dto.WaterInsertRequestDTO;
 import keepgoing.demo.domain.diet.entity.Diet;
@@ -14,6 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -58,6 +60,32 @@ public class DietController {
     public ResponseEntity<?> addHydration(@RequestBody WaterInsertRequestDTO dto) {
         dietService.addHydration(dto);
         return new ResponseEntity<>(HttpStatus.CREATED);
+    }
+
+    @GetMapping("/evaluations")
+    public ResponseEntity<List<DailyEvaluationDto>> getEvaluations(
+            @RequestParam Long memberId,
+            @RequestParam int year,
+            @RequestParam int month) {
+        return ResponseEntity.ok(dietService.getMonthlyEvaluations(memberId, year, month));
+    }
+
+    // 2. 평가 저장 (Upsert)
+    // POST /api/calendar/evaluation
+    @PostMapping("/evaluation")
+    public ResponseEntity<String> saveEvaluation(@RequestBody DailyEvaluationDto dto) {
+        dietService.saveEvaluation(dto);
+        return ResponseEntity.ok("Saved");
+    }
+
+    // 3. 평가 삭제 (토글 해제용)
+    // DELETE /api/calendar/evaluation?memberId=1&date=2025-12-01
+    @DeleteMapping("/evaluation")
+    public ResponseEntity<String> deleteEvaluation(
+            @RequestParam Long memberId,
+            @RequestParam("date") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        dietService.removeEvaluation(memberId, date);
+        return ResponseEntity.ok("Deleted");
     }
 
 

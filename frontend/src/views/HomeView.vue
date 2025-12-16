@@ -5,7 +5,7 @@
     <section class="page daily-page">
       <div class="page-content">
         <div class="retro-header">
-          <span class="blinking-cursor">▶</span> PLAYER_DATE: {{ displayDate }}
+          <span class="blinking-cursor">▶</span> PLAYER_DATE: {{ formattedDate }}
         </div>
 
         <div class="pixel-box main-stat-box">
@@ -217,12 +217,16 @@
       </div>
     </section>
     <div v-if="showModal" class="modal-overlay" @click="closeModal"></div>
-    <MealRecordModal v-if="showMealModal" @close="closeMealModal" />
+    <MealRecordModal v-if="showMealModal" @close="closeMealModal"
+    :date-to-use="formattedDate" />
     <WaterRecordModal v-if="showWaterModal" @close="closeWaterModal" 
       @update-water="handleWaterUpdate"
-      :initial-amount="waterData.water"   :initial-goal="waterData.goal"/>
+      :initial-amount="waterData.water"   
+      :initial-goal="waterData.goal"
+      :date-to-use="formattedDate"/>
     <WeightRecordModal v-if="showWeightModal" @close="closeWeightModal" 
-      @update-weight="handleWeightUpdate"/>
+      @update-weight="handleWeightUpdate"
+      :date-to-use="formattedDate"/>
     <Footer></Footer>
   </div>
 </template>
@@ -230,6 +234,7 @@
 <script setup>
 import { ref, computed, onMounted } from "vue";
 import { useConfigStore } from "@/stores/configStore"; // Pinia Store 경로를 정확히 확인해주세요.
+import { useRoute } from "vue-router";
 import Footer from "@/components/utils/Footer.vue";
 import dayjs from "dayjs";
 import confetti from "canvas-confetti";
@@ -244,10 +249,18 @@ import MealRecordModal from "@/components/record/MealRecordModal.vue";
 // 🚀 Pinia 스토어 및 상수 설정
 // =========================
 const config = useConfigStore();
+const route = useRoute();
 const MEMBER_ID = config.MEMBER_ID;
 const API_ENDPOINT = config.API_ENDPOINT;
-const displayDate = computed(() => config.currentDate);
-const getCurrentDateForAPI = config.getCurrentDateForAPI; // 함수이므로 그대로 사용합니다.
+const formattedDate = computed(() => {
+  const routeDate = route.query.date;
+  if(routeDate){
+    return dayjs(routeDate).format("YYYY-MM-DD");
+  }
+  else{
+    return dayjs().format("YYYY-MM-DD");
+  }
+});
 
 // =========================
 // 🍽 식단 데이터
@@ -428,7 +441,10 @@ const handleWaterUpdate = async(newAmount) => {
     waterData.value.water = newAmount;
     
 };  
-const handleWeightUpdate = async() => {
+const handleWeightUpdate = async(newWeight) => {
+    if (newWeight) {
+    weightData.value.weight = newWeight;
+  }
     await fetchWeightData();
 };
 const closeModal = () => (showModal.value = false);
@@ -438,7 +454,7 @@ const closeModal = () => (showModal.value = false);
 // =========================
 
 async function fetchDailyDiet() {
-  const url = `${API_ENDPOINT}/diets/meal-daily?memberId=${MEMBER_ID}&date=${displayDate.value}`;
+  const url = `${API_ENDPOINT}/diets/meal-daily?memberId=${MEMBER_ID}&date=${formattedDate.value}`;
 
   try {
     const response = await fetch(url);
@@ -499,7 +515,7 @@ async function fetchHydrationData() {
   const baseURL = `${API_ENDPOINT}/diets/hydration`;
   const params = new URLSearchParams({
     memberId : MEMBER_ID,
-    date: displayDate.value,
+    date: formattedDate.value,
   });
   const url = `${baseURL}?${params.toString()}`;
   try{
@@ -518,7 +534,7 @@ async function fetchWeightData (){
   const baseURL = `${API_ENDPOINT}/api/member/weight`;
   const params = new URLSearchParams({
     memberId : MEMBER_ID,
-    date: displayDate.value,
+    date: formattedDate.value,
   });
   const url = `${baseURL}?${params.toString()}`;
   try {
@@ -545,7 +561,6 @@ onMounted(async () => {
   await fetchWeightData();
 });
 </script>
-
 <style scoped>
 /* 폰트: 둥근모꼴 */
 @import url("https://cdn.jsdelivr.net/gh/neodgm/neodgm-webfont@latest/neodgm/style.css");
@@ -583,24 +598,28 @@ onMounted(async () => {
   z-index: 999;
 }
 
+/* === 레이아웃 수정: 상단 정렬 및 여백 축소 === */
 .page {
-  height: 100vh;
+  min-height: 100vh;
   scroll-snap-align: start;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1rem;
+  flex-direction: column; 
+  align-items: center;      /* 가로 중앙 정렬 */
+  justify-content: flex-start; /* 세로 상단 정렬 (기존 center에서 변경) */
+  padding: 4rem 1rem 6rem 1rem; /* 상단 여백 확보, 하단은 푸터 공간 확보 */
+  box-sizing: border-box;
+  padding-top: 10rem;
 }
 
 .page-content {
   width: 100%;
-  max-width: 400px;
+  max-width: 600px;
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 0.8rem; /* 기존 1.5rem에서 축소하여 더 촘촘하게 */
 }
 
-/* === 공통 박스 스타일 === */
+/* === 공통 박스 스타일 수정: 패딩 축소 === */
 .pixel-box,
 .pixel-card {
   border: 4px solid #fff;
@@ -612,10 +631,11 @@ onMounted(async () => {
 
 .pixel-box {
   background: #2d2d3a;
-  padding: 1rem;
+  padding: 0.8rem; /* 기존 1rem에서 축소 */
 }
+
 .pixel-card {
-  padding: 1.5rem;
+  padding: 1rem; /* 기존 1.5rem에서 축소 */
   text-align: center;
   background: #e6dac3;
   color: #3e2723;
@@ -627,41 +647,32 @@ onMounted(async () => {
   box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.5);
 }
 
-/* === 페이지별 디테일 === */
-.daily-page {
-  background: #222034;
-}
-.meal-page {
-  background: #4b692f;
-}
-.water-page {
-  background: #000022;
-}
-.weight-page {
-  background: #2a0a29;
-}
+/* === 페이지별 배경색 === */
+.page.daily-page { background: #222034; 
+              padding-top: 4rem;}
+.meal-page { background: #4b692f; }
+.water-page { background: #000022; }
+.weight-page { background: #2a0a29; }
 
 .retro-header {
   text-align: center;
   color: var(--secondary-color);
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.2rem; /* 마진 축소 */
+  font-size: 1.1rem;
 }
+
 .blinking-cursor {
   animation: blink 1s step-end infinite;
-}
-@keyframes blink {
-  50% {
-    opacity: 0;
-  }
 }
 
 /* 프로그레스 바 */
 .retro-progress-container {
-  height: 24px;
+  height: 20px; /* 높이 약간 축소 */
   background: #333;
   border: 2px solid #fff;
   padding: 2px;
   position: relative;
+  margin-top: 5px;
 }
 .retro-progress-bar {
   height: 100%;
@@ -670,55 +681,56 @@ onMounted(async () => {
 }
 .click-hint {
   position: absolute;
-  top: -20px;
+  top: -18px;
   right: 0;
-  font-size: 0.7rem;
+  font-size: 0.6rem;
   color: var(--accent-color);
   animation: blink 0.5s infinite alternate;
 }
 
-/* 캐릭터 애니메이션 */
+/* === 캐릭터 화면 수정: 높이 축소 === */
 .game-screen-container .pixel-border {
-  border: 8px solid #444;
+  border: 6px solid #444; /* 테두리 두께 약간 축소 */
   background: #8fb8ca;
-  padding: 4px;
-  border-radius: 8px;
+  padding: 0; /* 내부 패딩 제거하여 공간 확보 */
+  border-radius: 6px;
+  overflow: hidden;
 }
+
 .screen-bg {
   background: url("https://i.pinimg.com/originals/10/78/3f/10783f947938361b02390a382c44843b.png")
     repeat-x bottom;
-  background-size: contain;
-  width: 280px;
-  height: 200px;
+  background-size: cover; /* contain -> cover로 변경하여 꽉 차게 */
+  width: 100%;
+  height: 150px; /* 기존 200px -> 150px로 축소 (핵심) */
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: flex-end;
+  position: relative;
 }
+
 .character-gif {
-  width: 100px;
+  width: 80px; /* 캐릭터 크기 약간 축소 */
   image-rendering: pixelated;
-  margin-bottom: 10px;
+  margin-bottom: 5px;
 }
 .bounce {
   animation: bounce 0.5s infinite alternate;
 }
 @keyframes bounce {
-  from {
-    transform: translateY(0);
-  }
-  to {
-    transform: translateY(-20px);
-  }
+  from { transform: translateY(0); }
+  to { transform: translateY(-10px); }
 }
 
 .level-badge {
   position: absolute;
-  top: 10px;
-  left: 10px;
+  top: 8px;
+  left: 8px;
   background: rgba(0, 0, 0, 0.7);
   color: #fff;
-  padding: 4px 8px;
+  padding: 2px 6px;
+  font-size: 0.7rem;
   border: 2px solid #fff;
 }
 .level-up-anim {
@@ -728,61 +740,67 @@ onMounted(async () => {
 }
 
 .dialog-box {
-  width: 90%;
+  width: 95%;
   background: rgba(0, 40, 150, 0.9);
   border: 2px solid #fff;
-  padding: 8px;
-  margin-bottom: 10px;
+  padding: 4px;
+  margin-bottom: 5px;
   text-align: center;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
+  line-height: 1.2;
 }
 
 /* 스탯 */
+.box-title {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.9rem;
+  color: #aaa;
+}
 .stat-row {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 0.5rem;
+  gap: 8px;
+  margin-bottom: 0.3rem; /* 간격 축소 */
 }
 .stat-icon {
-  width: 80px;
-  font-size: 0.8rem;
+  width: 70px;
+  font-size: 0.75rem;
 }
 .stat-bar-group {
   flex: 1;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 .retro-bar-bg {
   flex: 1;
-  height: 12px;
+  height: 10px; /* 두께 축소 */
   background: #111;
   border: 1px solid #555;
 }
 .retro-bar-fill {
   height: 100%;
 }
-.retro-bar-fill.carb {
-  background: #ffd700;
-}
-.retro-bar-fill.protein {
-  background: #ff0055;
-}
-.retro-bar-fill.fat {
-  background: #00e5ff;
+.retro-bar-fill.carb { background: #ffd700; }
+.retro-bar-fill.protein { background: #ff0055; }
+.retro-bar-fill.fat { background: #00e5ff; }
+.stat-val {
+  font-size: 0.75rem;
+  min-width: 35px;
+  text-align: right;
 }
 
 /* 버튼 및 기타 */
 .retro-btn {
-  margin-top: 1rem;
+  margin-top: 0.8rem;
   background: #ff0055;
   color: #fff;
   border: 2px solid #fff;
-  padding: 10px 20px;
+  padding: 8px 16px;
   font-family: inherit;
   cursor: pointer;
-  box-shadow: 4px 4px 0 #000;
+  box-shadow: 3px 3px 0 #000;
+  font-size: 0.9rem;
 }
 .blue-theme {
   border-color: #00e5ff;
@@ -802,17 +820,14 @@ onMounted(async () => {
   background: #d500f9;
   color: #fff;
 }
-
-.pixelated {
-  image-rendering: pixelated;
-}
+.pixelated { image-rendering: pixelated; }
 
 /* === 식단 리스트 스타일 (Inventory Style) === */
 .meal-log-container {
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.5rem; /* 간격 축소 */
 }
 
 .retro-header-sm {
@@ -821,28 +836,22 @@ onMounted(async () => {
   align-items: center;
   border-bottom: 2px dashed #fff;
   padding-bottom: 5px;
-  font-size: 0.9rem;
-  color: #ffd700; /* Gold */
+  font-size: 0.85rem;
+  color: #ffd700;
   text-shadow: 1px 1px 0 #000;
+  margin-bottom: 0.5rem;
 }
 
 .meal-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  max-height: 60vh; /* 너무 길어지면 스크롤 */
+  gap: 8px;
+  max-height: 55vh; /* 스크롤 영역 확보 */
   overflow-y: auto;
-  padding-right: 5px; /* 스크롤바 공간 */
+  padding-right: 5px;
 }
-
-/* 스크롤바 커스텀 */
-.meal-list::-webkit-scrollbar {
-  width: 4px;
-}
-.meal-list::-webkit-scrollbar-thumb {
-  background: #ffd700;
-  border-radius: 2px;
-}
+.meal-list::-webkit-scrollbar { width: 4px; }
+.meal-list::-webkit-scrollbar-thumb { background: #ffd700; border-radius: 2px; }
 
 /* 개별 슬롯 (아이템 창) */
 .meal-slot {
@@ -850,240 +859,142 @@ onMounted(async () => {
   align-items: center;
   background: rgba(0, 0, 0, 0.6);
   border: 2px solid #fff;
-  padding: 10px;
-  gap: 12px;
+  padding: 8px; /* 패딩 축소 */
+  gap: 10px;
   cursor: pointer;
   transition: transform 0.1s, background 0.1s;
-  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.3);
+  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.3);
 }
-
 .meal-slot:active {
   transform: translate(2px, 2px);
-  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.3);
+  box-shadow: 1px 1px 0 rgba(0, 0, 0, 0.3);
   background: rgba(255, 255, 255, 0.1);
 }
 
-/* 아이콘 박스 */
 .slot-icon-box {
-  width: 40px;
-  height: 40px;
+  width: 32px;
+  height: 32px;
   background: #2d2d3a;
   border: 2px solid #555;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.5rem;
+  font-size: 1.2rem;
 }
 
-/* 텍스트 정보 */
 .slot-info {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
 }
-
 .slot-top {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
-
 .meal-type-badge {
-  font-size: 0.7rem;
+  font-size: 0.65rem;
   background: #ff0055;
   color: #fff;
-  padding: 2px 6px;
+  padding: 1px 5px;
   border: 1px solid #fff;
 }
-
 .meal-cal {
-  font-size: 0.8rem;
-  color: #00e5ff; /* Cyan */
+  font-size: 0.75rem;
+  color: #00e5ff;
 }
-
 .meal-name {
-  font-size: 1rem;
+  font-size: 0.9rem;
   color: #fff;
   font-weight: bold;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
 }
 
-/* 추가 버튼 (빈 슬롯 스타일) */
 .meal-slot.add-slot {
   border: 2px dashed #aaa;
   background: transparent;
   justify-content: center;
   color: #aaa;
   box-shadow: none;
+  padding: 6px;
 }
-
 .meal-slot.add-slot:hover {
   border-color: #ffd700;
   color: #ffd700;
   background: rgba(255, 215, 0, 0.1);
 }
+.plus-icon { font-size: 1rem; font-weight: bold; margin-right: 5px; }
+.add-text { font-size: 0.8rem; }
 
-.plus-icon {
-  font-size: 1.2rem;
-  font-weight: bold;
-}
-.add-text {
-  font-size: 0.9rem;
-}
-/* === 공통 유틸 === */
+/* === 공통 유틸 및 기타 페이지 === */
 .pixel-text-center {
   text-align: center;
   color: rgba(255, 255, 255, 0.7);
-  font-size: 0.9rem;
-  margin-bottom: 1rem;
+  font-size: 0.85rem;
+  margin-bottom: 0.8rem;
+  line-height: 1.4;
 }
 .empty-state-icon {
-  font-size: 3rem;
+  font-size: 2.5rem; /* 아이콘 크기 축소 */
   text-align: center;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
   opacity: 0.8;
   animation: float 3s infinite ease-in-out;
 }
+.page-title {
+  font-size: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+/* === 물 (Mana) === */
 .hud-top {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
   border-bottom: 2px dashed rgba(255, 255, 255, 0.3);
-  padding-bottom: 5px;
-}
-.hud-label {
-  font-size: 0.8rem;
-  font-weight: bold;
-}
-.sm-btn {
-  padding: 8px;
-  font-size: 0.9rem;
-  margin-top: 15px;
-  width: 100%;
-}
-
-/* === 물 (Mana) 스타일 === */
-.water-dashboard {
-  text-align: center;
-  margin-bottom: 10px;
+  padding-bottom: 4px;
 }
 .current-water {
-  font-size: 3.5rem;
+  font-size: 3rem; /* 폰트 축소 */
   font-weight: bold;
   color: #00e5ff;
   text-shadow: 0 0 10px #00e5ff;
   line-height: 1;
 }
-.current-water .unit {
-  font-size: 1.5rem;
-  color: #fff;
-  margin-left: 5px;
-}
-.goal-water {
-  color: #888;
-  font-size: 0.9rem;
-  margin-top: 5px;
-}
+.current-water .unit { font-size: 1.2rem; margin-left: 5px; }
+.goal-water { font-size: 0.8rem; margin-top: 4px; }
+.mana-bar-container { height: 16px; margin-top: 5px; }
 
-.mana-bar-container {
-  width: 100%;
-  height: 20px;
-  background: #111;
-  border: 2px solid #fff;
-  padding: 2px;
-  position: relative;
-}
-.mana-bar-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #00e5ff, #0077ff);
-  width: 0%;
-  transition: width 1s ease-out;
-  position: relative;
-  overflow: hidden;
-}
-.glare {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 2px;
-  background: rgba(255, 255, 255, 0.5);
-}
-.log-msg {
-  font-size: 0.7rem;
-  color: #00e5ff;
-  margin-top: 5px;
-  animation: blink 2s infinite;
-}
-
-/* === 체중 (Score) 스타일 === */
-.weight-dashboard {
-  text-align: center;
-  padding: 10px 0;
-}
-.score-display {
-  display: flex;
-  justify-content: center;
-  align-items: baseline;
-  gap: 5px;
-}
+/* === 체중 (Score) === */
 .score-val {
-  font-size: 3.5rem;
+  font-size: 3rem; /* 폰트 축소 */
   font-weight: bold;
   color: #d500f9;
   text-shadow: 0 0 10px #d500f9;
 }
-.score-unit {
-  font-size: 1.5rem;
-  color: #fff;
-}
-
+.score-unit { font-size: 1.2rem; }
 .score-change {
-  font-size: 1rem;
+  font-size: 0.9rem;
+  margin-top: 8px;
+  padding: 4px 8px;
+}
+.sm-btn {
+  padding: 6px;
+  font-size: 0.85rem;
   margin-top: 10px;
-  display: inline-block;
-  padding: 5px 10px;
-  border-radius: 4px;
-  background: rgba(0, 0, 0, 0.3);
-  border: 1px solid;
-}
-.score-change.good {
-  color: #00ff00;
-  border-color: #00ff00;
-} /* 살 빠짐 */
-.score-change.bad {
-  color: #ff0055;
-  border-color: #ff0055;
-} /* 살 찜 */
-.change-text {
-  font-size: 0.7rem;
-  margin-left: 5px;
-}
-
-.date-badge {
-  font-size: 0.7rem;
-  background: #d500f9;
-  color: #fff;
-  padding: 2px 5px;
 }
 
 @keyframes float {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-5px);
-  }
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
 }
 @keyframes blink {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
 </style>

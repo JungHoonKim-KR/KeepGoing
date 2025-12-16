@@ -117,14 +117,6 @@ const emit = defineEmits(["close", "update-water"]);
 
 // Data
 const config = useConfigStore();
-
-const MEMBER_ID = config.MEMBER_ID;
-const API_ENDPOINT = config.API_ENDPOINT;
-const formattedDate = computed(() => config.currentDate); 
-const getCurrentDateForAPI = config.getCurrentDateForAPI; // 함수이므로 그대로 사용합니다.
-const todayRecords = ref([
-
-]);
 const props = defineProps({
     initialAmount: {
         type: Number,
@@ -133,8 +125,20 @@ const props = defineProps({
     initialGoal: {
         type: Number,
         default: 2.0
+    },
+    dateToUse: {
+        type: String,
+        required: true
     }
 });
+const formattedDate = computed(() => ref(props.dateToUse)); 
+const MEMBER_ID = config.MEMBER_ID;
+const API_ENDPOINT = config.API_ENDPOINT;
+
+
+const todayRecords = ref([
+
+]);
 
 // Data
 // 🌟 props 값으로 초기화 (API 데이터 반영)
@@ -250,8 +254,6 @@ const saveWater = async () => {
 // Lifecycle
 onMounted(() => {
   document.body.style.overflow = "hidden";
-
-
 
 });
 onUnmounted(() => {
