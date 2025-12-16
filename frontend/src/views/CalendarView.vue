@@ -185,12 +185,18 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from "vue";
+import { ref, computed, watch, onMounted } from "vue";
 import { useRouter, useRoute } from "vue-router";
+import { useConfigStore } from "@/stores/configStore"; // Config Store 사용
 import Footer from "../components/utils/Footer.vue";
 
 const router = useRouter();
 const route = useRoute();
+const config = useConfigStore();
+
+// Pinia Store에서 ID와 Endpoint 가져오기
+const MEMBER_ID = config.MEMBER_ID;
+const API_ENDPOINT = config.API_ENDPOINT;
 
 // === 🔊 Sound FX (간단 버전) ===
 const playSound = (type) => {
@@ -228,7 +234,7 @@ const currentDate = ref(new Date());
 const selectedDate = ref(new Date().toDateString());
 const pressTimer = ref(null);
 const isLongPress = ref(false);
-const pressingDateKey = ref(null); // 롱프레스 중인 날짜 시각효과용
+const pressingDateKey = ref(null);
 
 const isColorModalOpen = ref(false);
 const modalTargetDay = ref(null);
@@ -236,40 +242,33 @@ const isYearMonthModalOpen = ref(false);
 const tempSelectedYear = ref(currentDate.value.getFullYear());
 const tempSelectedMonth = ref(currentDate.value.getMonth());
 
-// RPG 테마에 맞춘 트래킹 상태 (이모지 추가)
+// 🌟 API에서 받아온 데이터를 저장하는 곳 { "2025-12-01": ["ate"], ... }
+const dailyRecords = ref({});
+
+// RPG 테마에 맞춘 트래킹 상태
 const trackingStates = ref([
   {
     key: "ate",
     label: "HP 회복 (식사)",
     color: "#4CAF50",
-    emoji: "🍖", // RPG 고기
-    icon: new URL("/src/assets/images/stickers/jinji.png", import.meta.url)
-      .href,
+    emoji: "🍖",
+    icon: new URL("/src/assets/images/stickers/jinji.png", import.meta.url).href,
   },
   {
     key: "burned",
     label: "EXP 획득 (운동)",
     color: "#F5C857",
-    emoji: "⚔️", // 전투/운동
+    emoji: "⚔️",
     icon: new URL("/src/assets/images/stickers/sad.png", import.meta.url).href,
   },
   {
     key: "weight",
     label: "RANK 갱신 (체중)",
     color: "#FF3838",
-    emoji: "🏆", // 랭킹
-    icon: new URL("/src/assets/images/stickers/smile.png", import.meta.url)
-      .href,
+    emoji: "🏆",
+    icon: new URL("/src/assets/images/stickers/smile.png", import.meta.url).href,
   },
 ]);
-
-// 임시 데이터
-const dailyRecords = ref({
-  "2025-11-16": ["ate"],
-  "2025-11-22": ["burned"],
-  "2025-11-28": ["weight"],
-  "2025-12-05": ["ate"],
-});
 
 // ----------------------------------------------------
 // 2. Computed
@@ -299,7 +298,6 @@ const calendarDays = computed(() => {
 
   for (let i = 1; i <= lastDate; i++) {
     const fullDate = new Date(year, month, i);
-    // 로컬 시간 기준 날짜 문자열 생성 (YYYY-MM-DD)
     const yearStr = fullDate.getFullYear();
     const monthStr = String(fullDate.getMonth() + 1).padStart(2, "0");
     const dayStr = String(fullDate.getDate()).padStart(2, "0");
@@ -324,13 +322,67 @@ const calendarDays = computed(() => {
 });
 
 // ----------------------------------------------------
-// 3. Methods
+// 3. API Methods (백엔드 연동)
 // ----------------------------------------------------
+
+// (1) 월별 데이터 조회
+const fetchMonthlyEvaluations = async (year, month) => {
+  const apiMonth = month + 1; // 0-based -> 1-based
+  const url = `${API_ENDPOINT}/diets/evaluations?memberId=${MEMBER_ID}&year=${year}&month=${apiMonth}`;
+
+  try {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error("Fetch failed");
+    
+    const data = await response.json();
+    
+    // API 응답([{date: "2025-12-01", evaluation: "ate"}]) -> 프론트 포맷 변환
+    const map = {};
+    data.forEach(item => {
+        // 프론트는 배열을 기대하므로 배열로 감싸줌
+        map[item.date] = [item.evaluation]; 
+    });
+    
+    dailyRecords.value = map;
+    
+  } catch (error) {
+    console.error("평가 데이터 로딩 실패:", error);
+    dailyRecords.value = {};
+  }
+};
+
+// (2) 평가 저장 (Upsert)
+const saveEvaluationApi = async (dateStr, code) => {
+  const url = `${API_ENDPOINT}/diets/evaluation`;
+  await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      memberId: MEMBER_ID,
+      date: dateStr,
+      evaluation: code
+    }),
+  });
+};
+
+// (3) 평가 삭제 (Delete)
+const deleteEvaluationApi = async (dateStr) => {
+  const url = `${API_ENDPOINT}/diets/evaluation?memberId=${MEMBER_ID}&date=${dateStr}`;
+  await fetch(url, { method: "DELETE" });
+};
+
+// ----------------------------------------------------
+// 4. Methods
+// ----------------------------------------------------
+
 const changeMonth = (delta) => {
   playSound("select");
   const newDate = new Date(currentDate.value);
   newDate.setMonth(newDate.getMonth() + delta);
   currentDate.value = newDate;
+  
+  // 🌟 달 변경 시 데이터 로드
+  fetchMonthlyEvaluations(newDate.getFullYear(), newDate.getMonth());
 };
 
 const startPress = (day) => {
@@ -341,7 +393,7 @@ const startPress = (day) => {
 
   pressTimer.value = setTimeout(() => {
     isLongPress.value = true;
-    playSound("warp"); // 롱프레스 성공음
+    playSound("warp"); 
     openColorModal(day);
   }, 500);
 };
@@ -367,7 +419,7 @@ const cancelPress = () => {
 
 const selectDayAndNavigate = (day) => {
   if (day.dateKey) {
-    selectedDate.value = new Date(day.dateKey).toDateString();
+    selectedDate.value = day.dateKey;
     router.push({ path: "/", query: { date: day.dateKey } });
   }
 };
@@ -381,30 +433,53 @@ const closeColorModal = () => {
   modalTargetDay.value = null;
 };
 
-const selectColorForRecord = (recordKey) => {
+// 🌟 스티커 선택 로직 (토글 + API 호출)
+const selectColorForRecord = async (recordKey) => {
   playSound("select");
+  
   if (modalTargetDay.value && modalTargetDay.value.dateKey) {
     const dateKey = modalTargetDay.value.dateKey;
     const currentRecords = dailyRecords.value[dateKey] || [];
+    
+    // 이미 같은 스티커가 있는지 확인 (하루에 하나만!)
+    const isSameIcon = currentRecords.includes(recordKey);
 
-    // 토글 로직
-    if (currentRecords.includes(recordKey)) {
-      dailyRecords.value[dateKey] = [];
+    // 1. 화면 즉시 갱신 (Optimistic UI)
+    let newRecords = [];
+    if (isSameIcon) {
+       // 같은 거 클릭 -> 삭제 (빈 배열)
+       newRecords = [];
     } else {
-      dailyRecords.value[dateKey] = [recordKey];
+       // 다른 거 클릭 -> 교체 (새 아이콘만 배열에 담음)
+       newRecords = [recordKey];
     }
-
+    
+    // 반응형 업데이트
+    dailyRecords.value = {
+        ...dailyRecords.value,
+        [dateKey]: newRecords
+    };
+    
     closeColorModal();
-    // 강제 반응성 트리거 (Vue3 ref 객체 교체)
-    dailyRecords.value = { ...dailyRecords.value };
+
+    // 2. 서버 통신 (Background)
+    try {
+        if (isSameIcon) {
+            await deleteEvaluationApi(dateKey); // 삭제
+        } else {
+            await saveEvaluationApi(dateKey, recordKey); // 저장/수정
+        }
+    } catch (e) {
+        console.error("저장 실패, 롤백 필요", e);
+        // 에러 시 다시 로드해서 원복
+        fetchMonthlyEvaluations(currentYear.value, currentMonth.value);
+    }
   }
 };
 
 const getRecordIconUrl = (records) => {
   if (records && records.length > 0) {
     const state = trackingStates.value.find((s) => s.key === records[0]);
-    // 이미지 파일이 실제 존재하는지 확인하기 어려우므로,
-    // 예제에서는 일단 icon 속성을 반환. 없으면 이모지 사용.
     return state ? state.icon : "";
   }
   return "";
@@ -432,7 +507,6 @@ const closeYearMonthModal = () => {
 const applyYearMonth = () => {
   playSound("warp");
   const currentDayOfMonth = currentDate.value.getDate();
-  // 말일 처리
   let newDate = new Date(
     tempSelectedYear.value,
     tempSelectedMonth.value,
@@ -443,6 +517,9 @@ const applyYearMonth = () => {
   }
   currentDate.value = newDate;
   closeYearMonthModal();
+  
+  // 🌟 워프 후 데이터 로드
+  fetchMonthlyEvaluations(newDate.getFullYear(), newDate.getMonth());
 };
 
 watch(
@@ -451,6 +528,11 @@ watch(
     if (isColorModalOpen.value) closeColorModal();
   }
 );
+
+// 🌟 초기 로딩
+onMounted(() => {
+    fetchMonthlyEvaluations(currentYear.value, currentMonth.value);
+});
 </script>
 
 <style scoped>
@@ -679,39 +761,17 @@ watch(
   color: #fff;
 }
 @keyframes shake {
-  0% {
-    transform: translate(1px, 1px) rotate(0deg);
-  }
-  10% {
-    transform: translate(-1px, -2px) rotate(-1deg);
-  }
-  20% {
-    transform: translate(-3px, 0px) rotate(1deg);
-  }
-  30% {
-    transform: translate(3px, 2px) rotate(0deg);
-  }
-  40% {
-    transform: translate(1px, -1px) rotate(1deg);
-  }
-  50% {
-    transform: translate(-1px, 2px) rotate(-1deg);
-  }
-  60% {
-    transform: translate(-3px, 1px) rotate(0deg);
-  }
-  70% {
-    transform: translate(3px, 1px) rotate(-1deg);
-  }
-  80% {
-    transform: translate(-1px, -1px) rotate(1deg);
-  }
-  90% {
-    transform: translate(1px, 2px) rotate(0deg);
-  }
-  100% {
-    transform: translate(1px, -2px) rotate(-1deg);
-  }
+  0% { transform: translate(1px, 1px) rotate(0deg); }
+  10% { transform: translate(-1px, -2px) rotate(-1deg); }
+  20% { transform: translate(-3px, 0px) rotate(1deg); }
+  30% { transform: translate(3px, 2px) rotate(0deg); }
+  40% { transform: translate(1px, -1px) rotate(1deg); }
+  50% { transform: translate(-1px, 2px) rotate(-1deg); }
+  60% { transform: translate(-3px, 1px) rotate(0deg); }
+  70% { transform: translate(3px, 1px) rotate(-1deg); }
+  80% { transform: translate(-1px, -1px) rotate(1deg); }
+  90% { transform: translate(1px, 2px) rotate(0deg); }
+  100% { transform: translate(1px, -2px) rotate(-1deg); }
 }
 
 /* 아이템/플레이어 표시 */
@@ -912,8 +972,6 @@ watch(
   image-rendering: pixelated;
 }
 @keyframes blink {
-  50% {
-    opacity: 0;
-  }
+  50% { opacity: 0; }
 }
 </style>

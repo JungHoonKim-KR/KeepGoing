@@ -77,7 +77,6 @@
             f.sugars             AS food_sugars,
             f.sodium             AS food_sodium
 
-        -- 참고: diet_food_mapping의 servings 필드는 Food 엔티티에 매핑되지 않습니다.
         FROM
             diet d
                 LEFT JOIN
@@ -99,34 +98,6 @@
                 END,
             f.code
     </select>
-
-    <select id="selectHydration">
-        SELECT water_amount
-        FROM hydration_record
-        WHERE member_id = #{memberId} AND
-              date = #{date}
-    </select>
-
-    <insert id="saveAiReport" parameterType="keepgoing.demo.domain.diet.entity.AiReport">
-        INSERT INTO ai_report (
-        member_id,
-        date,
-        score,
-        feedback_text,
-        recommend_json
-        ) VALUES (
-        #{memberId},
-        #{date},
-        #{score},
-        #{feedbackText},
-        #{recommendJson}
-        )
-        ON DUPLICATE KEY UPDATE
-        score = #{score},
-        feedback_text = #{feedbackText},
-        recommend_json = #{recommendJson}
-    </insert>
-
     <select id="selectDiet" resultType="keepgoing.demo.domain.diet.entity.Diet">
         SELECT *
         FROM diet
@@ -135,7 +106,7 @@
             date = #{date} AND
             meal_time= #{mealTime}
     </select>
-    
+
     <update id="updateDietNutrients">
         UPDATE diet
         SET energy = energy + #{diet.energy},
@@ -172,6 +143,44 @@
                 #{diet.sodium})
     </insert>
 
+    <select id="selectHydration">
+        SELECT water_amount
+        FROM hydration_record
+        WHERE member_id = #{memberId} AND
+              date = #{date}
+    </select>
+
+    <insert id="insertHydration">
+        INSERT INTO hydration_record(member_id,
+                                     water_amount,
+                                     date)
+        VALUES (#{hydrationRecord.memberId}, #{hydrationRecord.waterAmount}, #{hydrationRecord.date})
+            ON DUPLICATE KEY
+        UPDATE
+            water_amount = #{hydrationRecord.waterAmount}
+
+    </insert>
+
+    <insert id="saveAiReport" parameterType="keepgoing.demo.domain.diet.entity.AiReport">
+        INSERT INTO ai_report (
+        member_id,
+        date,
+        score,
+        feedback_text,
+        recommend_json
+        ) VALUES (
+        #{memberId},
+        #{date},
+        #{score},
+        #{feedbackText},
+        #{recommendJson}
+        )
+        ON DUPLICATE KEY UPDATE
+        score = #{score},
+        feedback_text = #{feedbackText},
+        recommend_json = #{recommendJson}
+    </insert>
+
     <insert id="insertFoodMappings" parameterType="java.util.List">
         INSERT INTO diet_food_mapping (
         diet_id, food_code, servings
@@ -184,15 +193,29 @@
              #{food.servings})
         </foreach>
     </insert>
-    <insert id="insertHydration">
-        INSERT INTO hydration_record(member_id,
-                                     water_amount,
-                                     date)
-        VALUES (#{hydrationRecord.memberId}, #{hydrationRecord.waterAmount}, #{hydrationRecord.date})
-            ON DUPLICATE KEY
-        UPDATE
-            water_amount = #{hydrationRecord.waterAmount}
 
+    <select id="selectEvaluationsByMonth" resultType="keepgoing.demo.domain.diet.dto.DailyEvaluationDto">
+        SELECT
+            member_id,
+            date,
+            evaluation
+        FROM daily_evaluation
+        WHERE member_id = #{memberId}
+          AND DATE_FORMAT(date, '%Y') = #{year}
+          AND DATE_FORMAT(date, '%m') = #{month}
+    </select>
+
+    <insert id="upsertEvaluation" parameterType="keepgoing.demo.domain.diet.dto.DailyEvaluationDto">
+        INSERT INTO daily_evaluation (member_id, date, evaluation)
+        VALUES (#{memberId}, #{date}, #{evaluation})
+            ON DUPLICATE KEY UPDATE
+                                 evaluation = #{evaluation}
     </insert>
+
+    <delete id="deleteEvaluation">
+        DELETE FROM daily_evaluation
+        WHERE member_id = #{memberId}
+          AND date = #{date}
+    </delete>
 
 </mapper>

@@ -4,10 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import keepgoing.demo.domain.ai.dto.AiRequestDto;
 import keepgoing.demo.domain.ai.dto.AiResponseDto;
 import keepgoing.demo.domain.ai.service.AiClient;
-import keepgoing.demo.domain.diet.dto.DietInsertRequestDTO;
-import keepgoing.demo.domain.diet.dto.FoodRecordDTO;
-import keepgoing.demo.domain.diet.dto.NutritionTotalsDTO;
-import keepgoing.demo.domain.diet.dto.WaterInsertRequestDTO;
+import keepgoing.demo.domain.diet.dto.*;
 import keepgoing.demo.domain.diet.entity.AiReport;
 import keepgoing.demo.domain.diet.entity.Diet;
 import keepgoing.demo.domain.diet.entity.Food;
@@ -108,6 +105,26 @@ public class DietService {
         return result;
     }
 
+    // 월별 조회
+    public List<DailyEvaluationDto> getMonthlyEvaluations(Long memberId, int year, int month) {
+        String strYear = String.valueOf(year);
+        // 1 -> "01"로 변환
+        String strMonth = String.format("%02d", month);
+        return dietMapper.selectEvaluationsByMonth(memberId, strYear, strMonth);
+    }
+
+    // 평가 저장/수정
+    @Transactional
+    public void saveEvaluation(DailyEvaluationDto dto) {
+        dietMapper.upsertEvaluation(dto);
+    }
+
+    // 평가 삭제
+    @Transactional
+    public void removeEvaluation(Long memberId, LocalDate date) {
+        dietMapper.deleteEvaluation(memberId, date);
+    }
+
     public Map<String, Diet> selectDailyDiet(Long memberId, LocalDate date) {
 
         List<Diet> diets = dietMapper.findAllByDate(memberId, date);
@@ -172,10 +189,9 @@ public class DietService {
 
     private Diet buildDiet(DietInsertRequestDTO dto) {
         NutritionTotalsDTO nutritionTotalsDTO = calculateNutritionTotals(dto.getFoods());
-        LocalDate recordDate = LocalDate.now();
         return Diet.builder()
                 .memberId(dto.getMemberId())
-                .date(recordDate)
+                .date(dto.getDate())
                 .mealTime(dto.getMealTime())
                 .energy(nutritionTotalsDTO.getTotalEnergy())
                 .water(nutritionTotalsDTO.getTotalWater())
