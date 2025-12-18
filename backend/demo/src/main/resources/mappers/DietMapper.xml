@@ -196,8 +196,9 @@
 
     <select id="selectEvaluationsByMonth" resultType="keepgoing.demo.domain.diet.dto.DailyEvaluationDto">
         SELECT
-            member_id,
+            member_id AS memberId,
             date,
+            category,
             evaluation
         FROM daily_evaluation
         WHERE member_id = #{memberId}
@@ -206,8 +207,8 @@
     </select>
 
     <insert id="upsertEvaluation" parameterType="keepgoing.demo.domain.diet.dto.DailyEvaluationDto">
-        INSERT INTO daily_evaluation (member_id, date, evaluation)
-        VALUES (#{memberId}, #{date}, #{evaluation})
+        INSERT INTO daily_evaluation (member_id, date, category, evaluation)
+        VALUES (#{memberId}, #{date}, #{category}, #{evaluation})
             ON DUPLICATE KEY UPDATE
                                  evaluation = #{evaluation}
     </insert>
@@ -216,6 +217,7 @@
         DELETE FROM daily_evaluation
         WHERE member_id = #{memberId}
           AND date = #{date}
+          AND category = #{category}
     </delete>
 
 </mapper>

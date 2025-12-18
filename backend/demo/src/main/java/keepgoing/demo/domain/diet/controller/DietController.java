@@ -31,6 +31,7 @@ public class DietController {
             @RequestParam Long memberId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
     ) {
+
         return ResponseEntity.ok(dietService.analyzeDailyDiet(memberId, date));
     }
 
@@ -83,8 +84,9 @@ public class DietController {
     @DeleteMapping("/evaluation")
     public ResponseEntity<String> deleteEvaluation(
             @RequestParam Long memberId,
-            @RequestParam("date") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
-        dietService.removeEvaluation(memberId, date);
+            @RequestParam("date") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @RequestParam String category) {
+        dietService.removeEvaluation(memberId, date, category);
         return ResponseEntity.ok("Deleted");
     }
 

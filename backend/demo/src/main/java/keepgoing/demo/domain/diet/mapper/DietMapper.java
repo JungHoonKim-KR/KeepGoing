@@ -40,7 +40,8 @@ public interface DietMapper {
     // 평가 삭제 (토글 기능을 위해 필요)
     void deleteEvaluation(
             @Param("memberId") Long memberId,
-            @Param("date") LocalDate date
+            @Param("date") LocalDate date,
+            @Param("category") String category
     );
 
 

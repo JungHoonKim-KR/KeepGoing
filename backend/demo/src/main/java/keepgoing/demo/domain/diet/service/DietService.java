@@ -121,8 +121,8 @@ public class DietService {
 
     // 평가 삭제
     @Transactional
-    public void removeEvaluation(Long memberId, LocalDate date) {
-        dietMapper.deleteEvaluation(memberId, date);
+    public void removeEvaluation(Long memberId, LocalDate date, String category) {
+        dietMapper.deleteEvaluation(memberId, date, category);
     }
 
     public Map<String, Diet> selectDailyDiet(Long memberId, LocalDate date) {

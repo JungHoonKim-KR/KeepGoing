@@ -5,95 +5,77 @@
     <header class="header">
       <div class="retro-box month-control">
         <button @click="changeMonth(-1)" class="pixel-arrow">◀</button>
-
         <div class="month-display" @click.stop="openYearMonthModal">
-          <span class="label">DATE:</span>
-          <span class="value"
-            >{{ currentYear }}.{{
-              String(currentMonth + 1).padStart(2, "0")
-            }}</span
-          >
+          <span class="value">{{ currentYear }}.{{ String(currentMonth + 1).padStart(2, "0") }}</span>
           <span class="blink-cursor">_</span>
         </div>
-
         <button @click="changeMonth(1)" class="pixel-arrow">▶</button>
+      </div>
+
+      <div class="category-tabs">
+        <button 
+          v-for="cat in categories" 
+          :key="cat.id"
+          class="tab-btn"
+          :class="{ active: currentCategory === cat.id }"
+          @click="changeCategory(cat.id)"
+        >
+          {{ cat.label }}
+        </button>
       </div>
     </header>
 
     <div class="content">
       <div class="legend-box">
-        <div class="pixel-label-sm">STATUS LEGEND</div>
+        <div class="pixel-label-sm">EVALUATION GUIDE</div>
         <div class="tracking-states">
-          <div
-            v-for="state in trackingStates"
-            :key="state.key"
-            class="state-chip"
-            :class="state.key"
-          >
-            <span class="chip-icon">{{ state.emoji }}</span>
-            <span class="chip-text">{{ state.label }}</span>
+          <div v-for="grade in grades" :key="grade.key" class="state-chip" :class="grade.key">
+            <img :src="grade.src" class="chip-img pixelated" alt="icon" />
+            <span class="chip-text">{{ grade.label }}</span>
           </div>
         </div>
       </div>
 
       <div class="calendar-frame">
-        <div class="frame-decor tl"></div>
-        <div class="frame-decor tr"></div>
-        <div class="frame-decor bl"></div>
-        <div class="frame-decor br"></div>
+        <div class="frame-decor tl"></div><div class="frame-decor tr"></div>
+        <div class="frame-decor bl"></div><div class="frame-decor br"></div>
 
         <div class="days-of-week">
-          <span
-            v-for="day in daysOfWeek"
-            :key="day"
-            class="weekday-header"
-            :class="{ weekend: day === '일' || day === '토' }"
-          >
+          <span v-for="day in daysOfWeek" :key="day" class="weekday-header" :class="{ weekend: day === '일' || day === '토' }">
             {{ day }}
           </span>
         </div>
 
         <div class="date-grid">
-          <div
-            v-for="(day, index) in calendarDays"
-            :key="index"
-            class="date-cell-wrapper"
-          >
+          <div v-for="(day, index) in calendarDays" :key="index" class="date-cell-wrapper">
             <button
               v-if="day.isCurrentMonth"
-              :class="[
-                'date-tile',
-                {
-                  'is-today': day.isToday,
-                  'is-selected': day.isSelected,
-                  'has-record': day.records.length > 0,
-                  'long-pressing':
-                    isLongPress && pressingDateKey === day.dateKey,
-                },
-              ]"
+              class="date-tile"
+              :class="{ 
+                'is-today': day.isToday, 
+                'is-selected': day.isSelected,
+                'long-pressing': isLongPress && pressingDateKey === day.dateKey,
+                'has-record': !!getDayEvaluation(day.dateKey) 
+              }"
               @mousedown.prevent="startPress(day)"
-              @mouseup.prevent="endPress(day)"
-              @mouseleave.prevent="cancelPress"
               @touchstart.prevent="startPress(day)"
+              @mouseup.prevent="endPress(day)"
               @touchend.prevent="endPress(day)"
+              @mouseleave.prevent="cancelPress"
               @touchcancel.prevent="cancelPress"
             >
               <span class="tile-number">{{ day.day }}</span>
 
-              <div v-if="day.records.length > 0" class="tile-loot">
-                <img
-                  v-if="getRecordIconUrl(day.records)"
-                  :src="getRecordIconUrl(day.records)"
-                  class="loot-icon pixelated"
+              <div v-if="getDayEvaluation(day.dateKey)" class="tile-loot">
+                <img 
+                  :src="getGradeObj(getDayEvaluation(day.dateKey))?.src"
+                  class="loot-img pixelated"
+                  alt="stamp"
                 />
-                <span v-else class="loot-emoji">
-                  {{ getRecordEmoji(day.records) }}
-                </span>
               </div>
 
               <div v-if="day.isToday" class="player-cursor">P1</div>
             </button>
-
             <div v-else class="empty-tile"></div>
           </div>
         </div>
@@ -101,104 +83,84 @@
     </div>
 
     <Footer />
-  </div>
 
-  <Teleport to="body">
-    <div
-      v-if="isColorModalOpen"
-      class="modal-overlay"
-      @click.self="closeColorModal"
-    >
-      <div class="retro-modal color-select-modal">
-        <h2 class="modal-title">EVENT TRIGGERED!</h2>
-        <div class="modal-subtitle">
-          Day: {{ modalTargetDay?.day }} - Choose Action
-        </div>
+    <Teleport to="body">
+      <div v-if="isColorModalOpen" class="modal-overlay" @click.self="closeColorModal">
+        <div class="retro-modal color-select-modal">
+          <h2 class="modal-title">{{ getCategoryLabel(currentCategory) }} CHECK!</h2>
+          <div class="modal-subtitle">{{ modalTargetDay?.dateKey }}</div>
 
-        <div class="action-list">
-          <button
-            v-for="state in trackingStates"
-            :key="state.key"
-            class="action-btn"
-            :class="{ active: modalTargetDay?.records?.includes(state.key) }"
-            @click="selectColorForRecord(state.key)"
-          >
-            <span class="action-icon">{{ state.emoji }}</span>
-            <span class="action-label">{{ state.label }}</span>
-            <span
-              class="action-check"
-              v-if="modalTargetDay?.records?.includes(state.key)"
-              >[EQUIPPED]</span
-            >
-          </button>
-        </div>
-        <button @click="closeColorModal" class="retro-btn close-btn">
-          CLOSE
-        </button>
-      </div>
-    </div>
-  </Teleport>
-
-  <Teleport to="body">
-    <div
-      v-if="isYearMonthModalOpen"
-      class="modal-overlay"
-      @click.self="closeYearMonthModal"
-    >
-      <div class="retro-modal time-modal">
-        <h2 class="modal-title">TIME WARP</h2>
-
-        <div class="control-group">
-          <label>YEAR</label>
-          <div class="stepper">
-            <button @click="tempSelectedYear--" class="step-btn">-</button>
-            <span class="step-val">{{ tempSelectedYear }}</span>
-            <button @click="tempSelectedYear++" class="step-btn">+</button>
-          </div>
-        </div>
-
-        <div class="control-group">
-          <label>MONTH</label>
-          <div class="month-grid">
+          <div class="action-list">
             <button
-              v-for="month in availableMonths"
-              :key="month"
-              :class="['month-chip', { active: tempSelectedMonth === month }]"
-              @click="tempSelectedMonth = month"
+              v-for="grade in grades"
+              :key="grade.key"
+              class="action-btn"
+              :class="{ active: getDayEvaluation(modalTargetDay?.dateKey) === grade.key }"
+              @click="selectEvaluation(grade.key)"
             >
-              {{ month + 1 }}
+              <img :src="grade.src" class="action-img pixelated" alt="icon" />
+              <span class="action-label">{{ grade.label }}</span>
+              <span class="action-check" v-if="getDayEvaluation(modalTargetDay?.dateKey) === grade.key">✔</span>
             </button>
           </div>
-        </div>
-
-        <div class="modal-actions">
-          <button @click="closeYearMonthModal" class="retro-btn cancel">
-            CANCEL
+          
+          <button 
+            v-if="getDayEvaluation(modalTargetDay?.dateKey)" 
+            @click="removeEvaluation" 
+            class="retro-btn delete-btn"
+          >
+            RESET
           </button>
-          <button @click="applyYearMonth" class="retro-btn confirm">
-            WARP
-          </button>
+          
+          <button @click="closeColorModal" class="retro-btn close-btn">CLOSE</button>
         </div>
       </div>
-    </div>
-  </Teleport>
+    </Teleport>
+
+    <Teleport to="body">
+      <div v-if="isYearMonthModalOpen" class="modal-overlay" @click.self="closeYearMonthModal">
+        <div class="retro-modal time-modal">
+          <h2 class="modal-title">TIME WARP</h2>
+          <div class="control-group">
+            <label>YEAR</label>
+            <div class="stepper">
+              <button @click="tempSelectedYear--" class="step-btn">-</button>
+              <span class="step-val">{{ tempSelectedYear }}</span>
+              <button @click="tempSelectedYear++" class="step-btn">+</button>
+            </div>
+          </div>
+          <div class="control-group">
+            <label>MONTH</label>
+            <div class="month-grid">
+              <button v-for="month in availableMonths" :key="month" :class="['month-chip', { active: tempSelectedMonth === month }]" @click="tempSelectedMonth = month">
+                {{ month + 1 }}
+              </button>
+            </div>
+          </div>
+          <div class="modal-actions">
+            <button @click="closeYearMonthModal" class="retro-btn cancel">CANCEL</button>
+            <button @click="applyYearMonth" class="retro-btn confirm">WARP</button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+  </div>
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
-import { useConfigStore } from "@/stores/configStore"; // Config Store 사용
+import { useConfigStore } from "@/stores/configStore";
 import Footer from "../components/utils/Footer.vue";
 
 const router = useRouter();
 const route = useRoute();
 const config = useConfigStore();
 
-// Pinia Store에서 ID와 Endpoint 가져오기
 const MEMBER_ID = config.MEMBER_ID;
 const API_ENDPOINT = config.API_ENDPOINT;
 
-// === 🔊 Sound FX (간단 버전) ===
+// === 🔊 Sound FX ===
 const playSound = (type) => {
   const AudioContext = window.AudioContext || window.webkitAudioContext;
   if (!AudioContext) return;
@@ -227,62 +189,155 @@ const playSound = (type) => {
   }
 };
 
-// ----------------------------------------------------
-// 1. 상태 관리
-// ----------------------------------------------------
+// --- 1. 데이터 정의 ---
+
+// 이미지 경로 헬퍼
+const getAssetUrl = (path) => {
+  return new URL(path, import.meta.url).href;
+};
+
+// 카테고리 정의
+const categories = [
+  { id: 'DIET', label: '식단' },
+  { id: 'WATER', label: '수분' },
+  { id: 'WEIGHT', label: '몸무게' },
+  { id: 'BOWEL', label: '배변' },
+  { id: 'PERIOD', label: '생리' },
+];
+const currentCategory = ref('DIET');
+
+// 🌟 [수정됨] 모든 등급에 이미지 경로 할당 (SOSO.png 가정)
+const grades = [
+  { 
+    key: 'GOOD', 
+    label: '좋음', 
+    src: getAssetUrl('../assets/images/stickers/GOOD.png'), 
+    color: '#4CAF50' 
+  },
+  { 
+    key: 'SOSO', 
+    label: '보통', 
+    src: getAssetUrl('../assets/images/stickers/SOSO.png'), 
+    color: '#F5C857' 
+  },
+  { 
+    key: 'BAD',  
+    label: '나쁨', 
+    src: getAssetUrl('../assets/images/stickers/BAD.png'), 
+    color: '#FF3838' 
+  },
+];
+
+// 데이터 저장소
+const dailyDataMap = ref({});
+
 const currentDate = ref(new Date());
 const selectedDate = ref(new Date().toDateString());
-const pressTimer = ref(null);
-const isLongPress = ref(false);
-const pressingDateKey = ref(null);
-
 const isColorModalOpen = ref(false);
 const modalTargetDay = ref(null);
 const isYearMonthModalOpen = ref(false);
 const tempSelectedYear = ref(currentDate.value.getFullYear());
 const tempSelectedMonth = ref(currentDate.value.getMonth());
 
-// 🌟 API에서 받아온 데이터를 저장하는 곳 { "2025-12-01": ["ate"], ... }
-const dailyRecords = ref({});
+// --- 2. Helper Methods ---
 
-// RPG 테마에 맞춘 트래킹 상태
-const trackingStates = ref([
-  {
-    key: "ate",
-    label: "HP 회복 (식사)",
-    color: "#4CAF50",
-    emoji: "🍖",
-    icon: new URL("/src/assets/images/stickers/jinji.png", import.meta.url).href,
-  },
-  {
-    key: "burned",
-    label: "EXP 획득 (운동)",
-    color: "#F5C857",
-    emoji: "⚔️",
-    icon: new URL("/src/assets/images/stickers/sad.png", import.meta.url).href,
-  },
-  {
-    key: "weight",
-    label: "RANK 갱신 (체중)",
-    color: "#FF3838",
-    emoji: "🏆",
-    icon: new URL("/src/assets/images/stickers/smile.png", import.meta.url).href,
-  },
-]);
+const getCategoryLabel = (catId) => categories.find(c => c.id === catId)?.label;
 
-// ----------------------------------------------------
-// 2. Computed
-// ----------------------------------------------------
-const availableYears = computed(() => {
-  const currentYear = new Date().getFullYear();
-  return Array.from({ length: 11 }, (_, i) => currentYear - 5 + i);
-});
+const getDayEvaluation = (dateKey) => {
+  if (!dailyDataMap.value[dateKey]) return null;
+  return dailyDataMap.value[dateKey][currentCategory.value];
+};
 
-const availableMonths = computed(() => Array.from({ length: 12 }, (_, i) => i));
+// 🌟 [수정됨] 등급 키로 전체 객체 반환 (src 사용을 위해)
+const getGradeObj = (gradeKey) => {
+  return grades.find(g => g.key === gradeKey);
+};
+
+const changeCategory = (catId) => {
+  playSound("select");
+  currentCategory.value = catId;
+};
+
+// --- 3. API 연동 ---
+
+const fetchEvaluations = async (year, month) => {
+  const apiMonth = month + 1;
+  const url = `${API_ENDPOINT}/diets/evaluations?memberId=${MEMBER_ID}&year=${year}&month=${apiMonth}`;
+  
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("Fetch failed");
+    const data = await res.json();
+    
+    const map = {};
+    data.forEach(item => {
+      if (!map[item.date]) map[item.date] = {};
+      map[item.date][item.category] = item.evaluation;
+    });
+    
+    dailyDataMap.value = map;
+  } catch (e) {
+    console.error(e);
+    dailyDataMap.value = {};
+  }
+};
+
+const selectEvaluation = async (gradeKey) => {
+  playSound("select");
+  if (!modalTargetDay.value) return;
+  const dateKey = modalTargetDay.value.dateKey;
+  
+  // UI 즉시 반영
+  if (!dailyDataMap.value[dateKey]) dailyDataMap.value[dateKey] = {};
+  dailyDataMap.value[dateKey][currentCategory.value] = gradeKey;
+  
+  closeColorModal();
+  
+  // 서버 전송
+  try {
+    await fetch(`${API_ENDPOINT}/diets/evaluation`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        memberId: MEMBER_ID,
+        date: dateKey,
+        category: currentCategory.value, 
+        evaluation: gradeKey
+      })
+    });
+  } catch (e) {
+    console.error("저장 실패");
+    fetchEvaluations(currentYear.value, currentMonth.value);
+  }
+};
+
+const removeEvaluation = async () => {
+  playSound("select");
+  if (!modalTargetDay.value) return;
+  const dateKey = modalTargetDay.value.dateKey;
+  
+  if (dailyDataMap.value[dateKey]) {
+    delete dailyDataMap.value[dateKey][currentCategory.value];
+  }
+  closeColorModal();
+  
+  try {
+    const url = `${API_ENDPOINT}/diets/evaluation?memberId=${MEMBER_ID}&date=${dateKey}&category=${currentCategory.value}`;
+    await fetch(url, { method: "DELETE" });
+  } catch (e) {
+    fetchEvaluations(currentYear.value, currentMonth.value);
+  }
+};
+
+// --- 4. 캘린더 로직 ---
 
 const currentYear = computed(() => currentDate.value.getFullYear());
 const currentMonth = computed(() => currentDate.value.getMonth());
-
+const availableYears = computed(() => {
+  const y = new Date().getFullYear();
+  return Array.from({ length: 11 }, (_, i) => y - 5 + i);
+});
+const availableMonths = computed(() => Array.from({ length: 12 }, (_, i) => i));
 const daysOfWeek = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
 
 const calendarDays = computed(() => {
@@ -298,10 +353,7 @@ const calendarDays = computed(() => {
 
   for (let i = 1; i <= lastDate; i++) {
     const fullDate = new Date(year, month, i);
-    const yearStr = fullDate.getFullYear();
-    const monthStr = String(fullDate.getMonth() + 1).padStart(2, "0");
-    const dayStr = String(fullDate.getDate()).padStart(2, "0");
-    const dateKey = `${yearStr}-${monthStr}-${dayStr}`;
+    const dateKey = `${fullDate.getFullYear()}-${String(fullDate.getMonth() + 1).padStart(2, "0")}-${String(fullDate.getDate()).padStart(2, "0")}`;
 
     days.push({
       day: i,
@@ -309,10 +361,8 @@ const calendarDays = computed(() => {
       isToday: fullDate.toDateString() === new Date().toDateString(),
       isSelected: fullDate.toDateString() === selectedDate.value,
       dateKey: dateKey,
-      records: dailyRecords.value[dateKey] || [],
     });
   }
-
   const totalCells = 42;
   const remainingCells = totalCells - days.length;
   for (let i = 0; i < remainingCells; i++) {
@@ -321,69 +371,18 @@ const calendarDays = computed(() => {
   return days;
 });
 
-// ----------------------------------------------------
-// 3. API Methods (백엔드 연동)
-// ----------------------------------------------------
-
-// (1) 월별 데이터 조회
-const fetchMonthlyEvaluations = async (year, month) => {
-  const apiMonth = month + 1; // 0-based -> 1-based
-  const url = `${API_ENDPOINT}/diets/evaluations?memberId=${MEMBER_ID}&year=${year}&month=${apiMonth}`;
-
-  try {
-    const response = await fetch(url);
-    if (!response.ok) throw new Error("Fetch failed");
-    
-    const data = await response.json();
-    
-    // API 응답([{date: "2025-12-01", evaluation: "ate"}]) -> 프론트 포맷 변환
-    const map = {};
-    data.forEach(item => {
-        // 프론트는 배열을 기대하므로 배열로 감싸줌
-        map[item.date] = [item.evaluation]; 
-    });
-    
-    dailyRecords.value = map;
-    
-  } catch (error) {
-    console.error("평가 데이터 로딩 실패:", error);
-    dailyRecords.value = {};
-  }
-};
-
-// (2) 평가 저장 (Upsert)
-const saveEvaluationApi = async (dateStr, code) => {
-  const url = `${API_ENDPOINT}/diets/evaluation`;
-  await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      memberId: MEMBER_ID,
-      date: dateStr,
-      evaluation: code
-    }),
-  });
-};
-
-// (3) 평가 삭제 (Delete)
-const deleteEvaluationApi = async (dateStr) => {
-  const url = `${API_ENDPOINT}/diets/evaluation?memberId=${MEMBER_ID}&date=${dateStr}`;
-  await fetch(url, { method: "DELETE" });
-};
-
-// ----------------------------------------------------
-// 4. Methods
-// ----------------------------------------------------
-
 const changeMonth = (delta) => {
   playSound("select");
   const newDate = new Date(currentDate.value);
   newDate.setMonth(newDate.getMonth() + delta);
   currentDate.value = newDate;
-  
-  // 🌟 달 변경 시 데이터 로드
-  fetchMonthlyEvaluations(newDate.getFullYear(), newDate.getMonth());
+  fetchEvaluations(newDate.getFullYear(), newDate.getMonth());
 };
+
+// 롱프레스 로직 (마우스 뗄 때 이동 방지 로직 포함)
+const pressTimer = ref(null);
+const isLongPress = ref(false);
+const pressingDateKey = ref(null);
 
 const startPress = (day) => {
   if (!day.dateKey) return;
@@ -393,8 +392,10 @@ const startPress = (day) => {
 
   pressTimer.value = setTimeout(() => {
     isLongPress.value = true;
-    playSound("warp"); 
-    openColorModal(day);
+    playSound("warp");
+    modalTargetDay.value = day;
+    isColorModalOpen.value = true;
+    pressingDateKey.value = null; // 모달 뜨면 흔들림 중지
   }, 500);
 };
 
@@ -403,7 +404,8 @@ const endPress = (day) => {
   pressTimer.value = null;
   pressingDateKey.value = null;
 
-  if (!isLongPress.value) {
+  // 🌟 [핵심] 롱프레스가 아니고, 모달도 안 떴을 때만 이동
+  if (!isLongPress.value && !isColorModalOpen.value) {
     playSound("select");
     selectDayAndNavigate(day);
   }
@@ -424,119 +426,41 @@ const selectDayAndNavigate = (day) => {
   }
 };
 
-const openColorModal = (day) => {
-  modalTargetDay.value = day;
-  isColorModalOpen.value = true;
-};
 const closeColorModal = () => {
   isColorModalOpen.value = false;
   modalTargetDay.value = null;
 };
 
-// 🌟 스티커 선택 로직 (토글 + API 호출)
-const selectColorForRecord = async (recordKey) => {
-  playSound("select");
-  
-  if (modalTargetDay.value && modalTargetDay.value.dateKey) {
-    const dateKey = modalTargetDay.value.dateKey;
-    const currentRecords = dailyRecords.value[dateKey] || [];
-    
-    // 이미 같은 스티커가 있는지 확인 (하루에 하나만!)
-    const isSameIcon = currentRecords.includes(recordKey);
-
-    // 1. 화면 즉시 갱신 (Optimistic UI)
-    let newRecords = [];
-    if (isSameIcon) {
-       // 같은 거 클릭 -> 삭제 (빈 배열)
-       newRecords = [];
-    } else {
-       // 다른 거 클릭 -> 교체 (새 아이콘만 배열에 담음)
-       newRecords = [recordKey];
-    }
-    
-    // 반응형 업데이트
-    dailyRecords.value = {
-        ...dailyRecords.value,
-        [dateKey]: newRecords
-    };
-    
-    closeColorModal();
-
-    // 2. 서버 통신 (Background)
-    try {
-        if (isSameIcon) {
-            await deleteEvaluationApi(dateKey); // 삭제
-        } else {
-            await saveEvaluationApi(dateKey, recordKey); // 저장/수정
-        }
-    } catch (e) {
-        console.error("저장 실패, 롤백 필요", e);
-        // 에러 시 다시 로드해서 원복
-        fetchMonthlyEvaluations(currentYear.value, currentMonth.value);
-    }
-  }
-};
-
-const getRecordIconUrl = (records) => {
-  if (records && records.length > 0) {
-    const state = trackingStates.value.find((s) => s.key === records[0]);
-    return state ? state.icon : "";
-  }
-  return "";
-};
-
-const getRecordEmoji = (records) => {
-  if (records && records.length > 0) {
-    const state = trackingStates.value.find((s) => s.key === records[0]);
-    return state ? state.emoji : "🚩";
-  }
-  return "";
-};
-
-// 년/월 모달
 const openYearMonthModal = () => {
   playSound("select");
   tempSelectedYear.value = currentDate.value.getFullYear();
   tempSelectedMonth.value = currentDate.value.getMonth();
   isYearMonthModalOpen.value = true;
 };
-const closeYearMonthModal = () => {
-  isYearMonthModalOpen.value = false;
-};
+const closeYearMonthModal = () => { isYearMonthModalOpen.value = false; };
 
 const applyYearMonth = () => {
   playSound("warp");
   const currentDayOfMonth = currentDate.value.getDate();
-  let newDate = new Date(
-    tempSelectedYear.value,
-    tempSelectedMonth.value,
-    currentDayOfMonth
-  );
+  let newDate = new Date(tempSelectedYear.value, tempSelectedMonth.value, currentDayOfMonth);
   if (newDate.getMonth() !== tempSelectedMonth.value) {
     newDate = new Date(tempSelectedYear.value, tempSelectedMonth.value + 1, 0);
   }
   currentDate.value = newDate;
   closeYearMonthModal();
-  
-  // 🌟 워프 후 데이터 로드
-  fetchMonthlyEvaluations(newDate.getFullYear(), newDate.getMonth());
+  fetchEvaluations(newDate.getFullYear(), newDate.getMonth());
 };
 
-watch(
-  () => router.currentRoute.value.path,
-  () => {
-    if (isColorModalOpen.value) closeColorModal();
-  }
-);
+watch(() => router.currentRoute.value.path, () => {
+  if (isColorModalOpen.value) closeColorModal();
+});
 
-// 🌟 초기 로딩
 onMounted(() => {
-    fetchMonthlyEvaluations(currentYear.value, currentMonth.value);
+  fetchEvaluations(currentYear.value, currentMonth.value);
 });
 </script>
 
 <style scoped>
-/* 폰트: 둥근모꼴 */
 @import url("https://cdn.jsdelivr.net/gh/neodgm/neodgm-webfont@latest/neodgm/style.css");
 
 .calendar-view.retro-theme {
@@ -551,26 +475,16 @@ onMounted(() => {
 /* 스캔라인 */
 .scanlines {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  top: 0; left: 0; width: 100%; height: 100%;
   pointer-events: none;
   background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
-    linear-gradient(
-      90deg,
-      rgba(255, 0, 0, 0.06),
-      rgba(0, 255, 0, 0.02),
-      rgba(0, 0, 255, 0.06)
-    );
+    linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
   background-size: 100% 4px, 6px 100%;
   z-index: 999;
 }
 
 /* 헤더 */
-.header {
-  padding: 1.5rem;
-}
+.header { padding: 1rem 1rem 0 1rem; }
 .retro-box {
   background: #000;
   border: 2px solid #fff;
@@ -579,399 +493,153 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 10px;
+  margin-bottom: 1rem;
 }
 .pixel-arrow {
-  background: #333;
-  color: #fff;
-  border: 1px solid #fff;
-  width: 32px;
-  height: 32px;
-  cursor: pointer;
+  background: #333; color: #fff; border: 1px solid #fff; width: 32px; height: 32px; cursor: pointer;
 }
-.pixel-arrow:active {
-  background: #fff;
-  color: #000;
-}
+.month-display { display: flex; align-items: baseline; gap: 5px; cursor: pointer; }
+.value { color: #00e5ff; font-size: 1.2rem; text-shadow: 0 0 5px #00e5ff; }
+.blink-cursor { animation: blink 1s infinite; }
 
-.month-display {
+/* 탭 스타일 */
+.category-tabs {
   display: flex;
-  align-items: baseline;
   gap: 5px;
-  cursor: pointer;
+  padding-bottom: 1rem;
+  overflow-x: auto;
 }
-.label {
+.tab-btn {
+  background: #111;
   color: #888;
+  border: 2px solid #555;
+  padding: 8px 10px;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
   font-size: 0.8rem;
+  flex: 1;
+  transition: all 0.2s;
 }
-.value {
-  color: #00e5ff;
-  font-size: 1.2rem;
-  text-shadow: 0 0 5px #00e5ff;
-}
-.blink-cursor {
-  animation: blink 1s infinite;
+.tab-btn.active {
+  background: #00e5ff;
+  color: #000;
+  border-color: #fff;
+  font-weight: bold;
+  box-shadow: 0 0 8px #00e5ff;
+  transform: translateY(-2px);
 }
 
 /* 범례 */
-.content {
-  padding: 0 1rem;
-}
-.legend-box {
-  margin-bottom: 1rem;
-}
+.content { padding: 0 1rem; }
+.legend-box { margin-bottom: 1rem; }
 .pixel-label-sm {
-  font-size: 0.7rem;
-  color: #ffd700;
-  margin-bottom: 5px;
-  border-bottom: 1px dashed #555;
-  display: inline-block;
+  font-size: 0.7rem; color: #ffd700; margin-bottom: 5px; border-bottom: 1px dashed #555; display: inline-block;
 }
-.tracking-states {
-  display: flex;
-  gap: 10px;
-  overflow-x: auto;
-  padding-bottom: 5px;
-}
+.tracking-states { display: flex; gap: 10px; }
 .state-chip {
-  background: #222;
-  border: 1px solid #555;
-  padding: 4px 8px;
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 0.7rem;
+  background: #222; border: 1px solid #555; padding: 4px 8px; border-radius: 4px; display: flex; align-items: center; gap: 5px; font-size: 0.7rem;
 }
-.state-chip.ate {
-  border-color: #4caf50;
-  color: #4caf50;
-}
-.state-chip.burned {
-  border-color: #f5c857;
-  color: #f5c857;
-}
-.state-chip.weight {
-  border-color: #ff3838;
-  color: #ff3838;
-}
+.state-chip.GOOD { border-color: #4CAF50; color: #4CAF50; }
+.state-chip.SOSO { border-color: #F5C857; color: #F5C857; }
+.state-chip.BAD  { border-color: #FF3838; color: #FF3838; }
 
 /* 캘린더 프레임 */
 .calendar-frame {
-  background: #111;
-  border: 2px solid #333;
-  padding: 10px;
-  position: relative;
-  margin-bottom: 2rem;
+  background: #111; border: 2px solid #333; padding: 10px; position: relative; margin-bottom: 2rem;
 }
-.frame-decor {
-  position: absolute;
-  width: 10px;
-  height: 10px;
-  border: 2px solid #fff;
-}
-.tl {
-  top: -2px;
-  left: -2px;
-  border-right: none;
-  border-bottom: none;
-}
-.tr {
-  top: -2px;
-  right: -2px;
-  border-left: none;
-  border-bottom: none;
-}
-.bl {
-  bottom: -2px;
-  left: -2px;
-  border-right: none;
-  border-top: none;
-}
-.br {
-  bottom: -2px;
-  right: -2px;
-  border-left: none;
-  border-top: none;
-}
+.frame-decor { position: absolute; width: 10px; height: 10px; border: 2px solid #fff; }
+.tl { top: -2px; left: -2px; border-right: none; border-bottom: none; }
+.tr { top: -2px; right: -2px; border-left: none; border-bottom: none; }
+.bl { bottom: -2px; left: -2px; border-right: none; border-top: none; }
+.br { bottom: -2px; right: -2px; border-left: none; border-top: none; }
 
 .days-of-week {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  text-align: center;
-  margin-bottom: 10px;
-  border-bottom: 1px solid #333;
+  display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; margin-bottom: 10px; border-bottom: 1px solid #333;
 }
-.weekday-header {
-  font-size: 0.8rem;
-  color: #888;
-  padding: 5px 0;
-}
-.weekday-header.weekend {
-  color: #ff0055;
-}
+.weekday-header { font-size: 0.8rem; color: #888; padding: 5px 0; }
+.weekday-header.weekend { color: #ff0055; }
 
-/* 날짜 그리드 */
-.date-grid {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 4px;
-}
+.date-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
 .date-tile {
-  width: 100%;
-  aspect-ratio: 1;
-  background: #222;
-  border: 1px solid #444;
-  position: relative;
-  cursor: pointer;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 0;
-  color: #aaa;
+  width: 100%; aspect-ratio: 1; background: #222; border: 1px solid #444; position: relative; cursor: pointer; display: flex; justify-content: center; align-items: center; padding: 0; color: #aaa;
 }
-.date-tile:active {
-  transform: translateY(2px);
-}
-.tile-number {
-  position: absolute;
-  top: 2px;
-  left: 3px;
-  font-size: 0.7rem;
-}
+.date-tile:active { transform: translateY(2px); }
+.tile-number { position: absolute; top: 2px; left: 3px; font-size: 0.7rem; }
 
-/* 상태별 타일 스타일 */
-.is-today {
-  border-color: #00e5ff;
-  background: #001a1a;
-  box-shadow: inset 0 0 5px #00e5ff;
-}
-.is-selected {
-  background: #333;
-  border: 2px solid #fff;
-  color: #fff;
-}
-.has-record {
-  background: #2a2a2a;
-}
+.is-today { border-color: #00e5ff; background: #001a1a; box-shadow: inset 0 0 5px #00e5ff; }
+.is-selected { background: #333; border: 2px solid #fff; color: #fff; }
+.has-record { background: #2a2a2a; border-color: #666; }
+.long-pressing { animation: shake 0.5s infinite; background: #ff0055 !important; color: #fff; }
 
-/* 롱프레스 효과 */
-.long-pressing {
-  animation: shake 0.5s infinite;
-  background: #ff0055 !important;
-  color: #fff;
-}
 @keyframes shake {
   0% { transform: translate(1px, 1px) rotate(0deg); }
   10% { transform: translate(-1px, -2px) rotate(-1deg); }
-  20% { transform: translate(-3px, 0px) rotate(1deg); }
   30% { transform: translate(3px, 2px) rotate(0deg); }
-  40% { transform: translate(1px, -1px) rotate(1deg); }
   50% { transform: translate(-1px, 2px) rotate(-1deg); }
-  60% { transform: translate(-3px, 1px) rotate(0deg); }
   70% { transform: translate(3px, 1px) rotate(-1deg); }
-  80% { transform: translate(-1px, -1px) rotate(1deg); }
   90% { transform: translate(1px, 2px) rotate(0deg); }
   100% { transform: translate(1px, -2px) rotate(-1deg); }
 }
 
-/* 아이템/플레이어 표시 */
 .tile-loot {
-  width: 70%;
-  height: 70%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1;
-}
-.loot-icon {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
-.loot-emoji {
-  font-size: 1.2rem;
-  filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.5));
+  width: 70%; height: 70%; display: flex; align-items: center; justify-content: center; z-index: 1;
 }
 .player-cursor {
-  position: absolute;
-  bottom: 1px;
-  right: 1px;
-  font-size: 0.5rem;
-  background: #00e5ff;
-  color: #000;
-  padding: 0 2px;
+  position: absolute; bottom: 1px; right: 1px; font-size: 0.5rem; background: #00e5ff; color: #000; padding: 0 2px;
 }
-.empty-tile {
-  background: transparent;
-  border: 1px dashed #222;
-  opacity: 0.5;
+.empty-tile { background: transparent; border: 1px dashed #222; opacity: 0.5; }
+
+/* 🌟 이미지 스타일 추가 */
+.pixelated {
+  image-rendering: pixelated; 
+}
+.loot-img {
+  width: 80%; height: 80%; object-fit: contain;
+}
+.chip-img {
+  width: 16px; height: 16px; margin-right: 5px;
+}
+.action-img {
+  width: 24px; height: 24px; margin-right: 10px;
 }
 
-/* === 모달 공통 === */
+/* 모달 */
 .modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.8);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-  font-family: "NeoDunggeunmo", monospace;
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.8); display: flex; justify-content: center; align-items: center; z-index: 1000;
 }
 .retro-modal {
-  background: #202028;
-  border: 4px solid #fff;
-  padding: 1.5rem;
-  width: 90%;
-  max-width: 350px;
-  box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.5);
-  color: #fff;
+  background: #202028; border: 4px solid #fff; padding: 1.5rem; width: 90%; max-width: 350px; box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.5); color: #fff;
 }
-.modal-title {
-  color: #ff0055;
-  margin-top: 0;
-  text-align: center;
-  font-size: 1.2rem;
-  text-shadow: 2px 2px #000;
-}
-.modal-subtitle {
-  text-align: center;
-  color: #888;
-  font-size: 0.8rem;
-  margin-bottom: 1rem;
-  border-bottom: 1px dashed #555;
-  padding-bottom: 0.5rem;
-}
+.modal-title { color: #ff0055; margin-top: 0; text-align: center; font-size: 1.2rem; text-shadow: 2px 2px #000; }
+.modal-subtitle { text-align: center; color: #888; font-size: 0.8rem; margin-bottom: 1rem; border-bottom: 1px dashed #555; padding-bottom: 0.5rem; }
 
-/* 기록 선택 모달 */
-.action-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-bottom: 1.5rem;
-}
+.action-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 1rem; }
 .action-btn {
-  background: #000;
-  border: 2px solid #555;
-  color: #fff;
-  padding: 10px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  cursor: pointer;
-  transition: all 0.2s;
-  font-family: inherit;
+  background: #000; border: 2px solid #555; color: #fff; padding: 12px; display: flex; align-items: center; gap: 10px; cursor: pointer; transition: all 0.2s; font-family: inherit;
 }
-.action-btn:hover,
-.action-btn.active {
-  border-color: #00e5ff;
-  background: #111;
-}
-.action-btn.active .action-label {
-  color: #00e5ff;
-  font-weight: bold;
-}
-.action-check {
-  margin-left: auto;
-  font-size: 0.7rem;
-  color: #00e5ff;
-}
-.close-btn {
-  width: 100%;
-}
+.action-btn:hover, .action-btn.active { border-color: #00e5ff; background: #111; }
+.action-btn.active .action-label { color: #00e5ff; font-weight: bold; }
+.action-check { margin-left: auto; font-size: 0.9rem; color: #00e5ff; }
 
-/* 년/월 모달 */
-.time-modal {
-  border-color: #00e5ff;
-}
-.time-modal .modal-title {
-  color: #00e5ff;
-}
-.control-group {
-  margin-bottom: 1.5rem;
-}
-.control-group label {
-  display: block;
-  color: #ffd700;
-  font-size: 0.8rem;
-  margin-bottom: 5px;
-}
+.delete-btn { width: 100%; margin-top: 10px; background: #333; color: #ff3838; border: 1px solid #ff3838; padding: 10px; cursor: pointer; font-family: inherit; }
+.close-btn { width: 100%; margin-top: 10px; background: #000; color: #fff; border: 1px solid #fff; padding: 10px; cursor: pointer; font-family: inherit; }
 
-.stepper {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 10px;
-  background: #000;
-  padding: 5px;
-  border: 1px solid #333;
-}
-.step-btn {
-  width: 30px;
-  height: 30px;
-  background: #333;
-  color: #fff;
-  border: 1px solid #fff;
-  cursor: pointer;
-}
-.step-val {
-  font-size: 1.2rem;
-  width: 80px;
-  text-align: center;
-}
+/* 년/월 모달 등 기타 스타일 */
+.time-modal { border-color: #00e5ff; }
+.time-modal .modal-title { color: #00e5ff; }
+.control-group { margin-bottom: 1.5rem; }
+.control-group label { display: block; color: #ffd700; font-size: 0.8rem; margin-bottom: 5px; }
+.stepper { display: flex; justify-content: center; align-items: center; gap: 10px; background: #000; padding: 5px; border: 1px solid #333; }
+.step-btn { width: 30px; height: 30px; background: #333; color: #fff; border: 1px solid #fff; cursor: pointer; }
+.step-val { font-size: 1.2rem; width: 80px; text-align: center; }
+.month-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
+.month-chip { background: #222; color: #aaa; border: 1px solid #444; padding: 8px 0; cursor: pointer; font-family: inherit; }
+.month-chip.active { background: #00e5ff; color: #000; border-color: #fff; }
+.modal-actions { display: flex; gap: 10px; }
+.retro-btn { flex: 1; padding: 10px; border: 2px solid #fff; font-family: inherit; cursor: pointer; font-weight: bold; }
+.retro-btn.cancel { background: #333; color: #fff; }
+.retro-btn.confirm { background: #00e5ff; color: #000; }
 
-.month-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 5px;
-}
-.month-chip {
-  background: #222;
-  color: #aaa;
-  border: 1px solid #444;
-  padding: 8px 0;
-  cursor: pointer;
-  font-family: inherit;
-}
-.month-chip.active {
-  background: #00e5ff;
-  color: #000;
-  border-color: #fff;
-}
-
-.modal-actions {
-  display: flex;
-  gap: 10px;
-}
-.retro-btn {
-  flex: 1;
-  padding: 10px;
-  border: 2px solid #fff;
-  font-family: inherit;
-  cursor: pointer;
-  font-weight: bold;
-}
-.retro-btn.cancel {
-  background: #333;
-  color: #fff;
-}
-.retro-btn.confirm {
-  background: #00e5ff;
-  color: #000;
-}
-.retro-btn.close-btn {
-  background: #ff0055;
-  color: #fff;
-}
-
-/* Utils */
-.pixelated {
-  image-rendering: pixelated;
-}
-@keyframes blink {
-  50% { opacity: 0; }
-}
+@keyframes blink { 50% { opacity: 0; } }
 </style>
