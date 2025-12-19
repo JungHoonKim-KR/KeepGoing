@@ -1,24 +1,30 @@
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref } from "vue";
 import { useRouter } from "vue-router";
-import { analyzeDiet } from "../api/diet/dietApi"; // 1. API 함수 임포트
+// API 함수 경로가 맞는지 확인해주세요
+import { analyzeDiet } from "../api/diet/dietApi"; 
 import Footer from "../components/utils/Footer.vue";
+
 const router = useRouter();
 
 // ----------------------------------------------------
-// 1. 상태 관리
+// 1. 상태 관리 변수들
 // ----------------------------------------------------
-const isLoading = ref(false); // 초기엔 로딩 아님 (클릭 대기)
-const isAnalyzing = ref(false); // 분석 중 상태
-const analysisData = ref(null); // 결과 데이터
-const bootLogs = ref([]); // 터미널 로그
+const isLoading = ref(false);     // 로딩 상태
+const isAnalyzing = ref(false);   // 분석 중 상태 (중복 방지)
+const analysisData = ref(null);   // 분석 결과 데이터
+const bootLogs = ref([]);         // 터미널 로그 배열
 
-// 임시 사용자 정보 (나중에 Pinia나 로그인 정보에서 가져오세요)
+// [New] 모달 & 아이템 관련 상태
+const showLootModal = ref(false); // 모달 표시 여부
+const selectedKeywords = ref([]); // 사용자가 선택한 키워드
+
+// 임시 사용자 정보
 const MEMBER_ID = 1;
-const TODAY_DATE = new Date().toISOString().split("T")[0]; // "2024-05-22"
+const TODAY_DATE = new Date().toISOString().split("T")[0];
 
 // ----------------------------------------------------
-// 2. 랭크 시스템 (백엔드에서 안 줄 경우 대비용)
+// 2. 유틸리티 함수 (랭크 색상 등)
 // ----------------------------------------------------
 const getRankColor = (score) => {
   if (score >= 90) return "#ffd700"; // Gold
@@ -29,51 +35,79 @@ const getRankColor = (score) => {
 };
 
 // ----------------------------------------------------
-// 3. 서버 통신 및 데이터 매핑
+// 3. 모달 관련 로직 (New)
+// ----------------------------------------------------
+const openLootModal = () => {
+  showLootModal.value = true;
+};
+
+const closeLootModal = () => {
+  showLootModal.value = false;
+  // 필요하다면 여기서 selectedKeywords.value를 백엔드로 전송
+  console.log("선택된 키워드:", selectedKeywords.value);
+};
+
+const toggleKeyword = (keywordName) => {
+  if (selectedKeywords.value.includes(keywordName)) {
+    selectedKeywords.value = selectedKeywords.value.filter(k => k !== keywordName);
+  } else {
+    selectedKeywords.value.push(keywordName);
+  }
+};
+
+// ----------------------------------------------------
+// 4. 서버 통신 및 데이터 처리
 // ----------------------------------------------------
 const fetchAnalysis = async () => {
-  if (isAnalyzing.value) return; // 중복 클릭 방지
+  if (isAnalyzing.value) return; 
 
-  // 상태 변경
   isAnalyzing.value = true;
   isLoading.value = true;
-  bootLogs.value = []; // 로그 초기화
-
-  // 부팅 로그 애니메이션 실행
+  bootLogs.value = [];
+  
+  // 부팅 로그 시작
   runBootSequence();
 
   try {
-    // [핵심] 실제 서버 요청
+    // API 호출
     const data = await analyzeDiet(MEMBER_ID, TODAY_DATE);
 
-    // 백엔드 데이터 -> 프론트엔드 포맷으로 매핑
+    // 데이터 매핑
     analysisData.value = {
-      overallScore: data.score, // 점수
-      rank: data.rank, // 랭크 (S, A, B...)
-      title: data.dailyTitle, // 칭호 (근육 몬스터)
-
-      // 인사이트 (아이콘, 설명)
+      overallScore: data.score,
+      rank: data.rank,
+      title: data.dailyTitle,
+      
       insights: data.insights.map((item, index) => ({
         id: index,
-        type: item.type, // positive, warning...
-        iconType: item.iconType, // sword, skull...
+        type: item.type,
+        iconType: item.iconType,
         title: item.title,
         description: item.description,
       })),
 
-      recommendation: data.oneLineSummary, // 한줄평
-
-      // 내일 식단 퀘스트 (recommendations -> questItems)
+      recommendation: data.oneLineSummary,
       questItems: data.recommendations,
+
+      // [New] 키워드 데이터 (백엔드에 없으면 가짜 데이터 사용)
+      miningKeywords: data.keywords || [
+         { name: "닭가슴살", rarity: "COMMON" },
+         { name: "현미밥", rarity: "COMMON" },
+         { name: "아보카도", rarity: "RARE" },
+         { name: "스테이크", rarity: "EPIC" },
+         { name: "프로틴", rarity: "LEGEND" },
+         { name: "사과", rarity: "COMMON" }
+      ]
     };
 
-    // 로딩 종료 (로그 애니메이션 끝날 때쯤)
+    // 연출을 위한 딜레이 후 로딩 종료
     setTimeout(() => {
       isLoading.value = false;
       isAnalyzing.value = false;
-    }, 2500); // 2.5초 정도 연출 시간 확보
+    }, 2500);
+
   } catch (error) {
-    alert("서버 연결에 실패했습니다. 백엔드가 켜져있는지 확인해주세요.");
+    alert("서버 연결 실패: 백엔드 상태를 확인하세요.");
     isLoading.value = false;
     isAnalyzing.value = false;
   }
@@ -82,12 +116,9 @@ const fetchAnalysis = async () => {
 // 부팅 로그 애니메이션
 const runBootSequence = () => {
   const logs = [
-    "INITIALIZING SYSTEM...",
-    "CONNECTING TO NEURAL NET...",
-    "SCANNING BIOMETRICS...",
-    "DECRYPTING FOOD LOGS...",
-    "CALCULATING POWER LEVEL...",
-    "ACCESS GRANTED.",
+    "INITIALIZING SYSTEM...", "CONNECTING TO NEURAL NET...",
+    "SCANNING BIOMETRICS...", "DECRYPTING FOOD LOGS...",
+    "CALCULATING POWER LEVEL...", "ACCESS GRANTED."
   ];
   let logIndex = 0;
   const logInterval = setInterval(() => {
@@ -101,14 +132,8 @@ const runBootSequence = () => {
 };
 
 const goToAIDietPlan = () => {
-  // 퀘스트 플랜(내일 식단) 페이지로 이동하거나 모달 띄우기
+  alert("퀘스트 플랜 페이지로 이동합니다 (구현 필요)");
   // router.push("/ai-analysis/diet-plan");
-  alert(
-    "내일의 퀘스트: \n" +
-      analysisData.value.questItems
-        .map((q) => `- ${q.menu}: ${q.reason}`)
-        .join("\n")
-  );
 };
 </script>
 <template>
@@ -117,7 +142,6 @@ const goToAIDietPlan = () => {
 
     <div class="content-wrapper">
       
-
       <div v-if="isLoading" class="loading-terminal">
         <div class="terminal-screen">
           <div v-for="(log, index) in bootLogs" :key="index" class="log-line">
@@ -131,7 +155,8 @@ const goToAIDietPlan = () => {
       </div>
 
       <div v-else class="dashboard-container">
-        <div class="ai-avatar-section clickable" @click="fetchAnalysis">
+        
+        <div class="ai-avatar-section clickable" @click="fetchAnalysis" v-if="!analysisData">
           <div class="cyber-eye-container">
             <div class="eye-ring" :class="{ 'fast-spin': isAnalyzing }"></div>
             <div class="eye-iris">
@@ -151,127 +176,33 @@ const goToAIDietPlan = () => {
         </div>
 
         <div v-if="analysisData" class="result-section pop-in">
+          
           <div class="power-card">
-            <div class="card-deco tl"></div>
-            <div class="card-deco tr"></div>
-            <div class="card-deco bl"></div>
-            <div class="card-deco br"></div>
+            <div class="card-deco tl"></div><div class="card-deco tr"></div>
+            <div class="card-deco bl"></div><div class="card-deco br"></div>
 
-            <div
-              class="rank-badge"
-              :style="{
-                color: getRankColor(analysisData.overallScore),
-                borderColor: getRankColor(analysisData.overallScore),
-                boxShadow: `4px 4px 0 ${getRankColor(
-                  analysisData.overallScore
-                )}33`,
-              }"
-            >
-              RANK {{ analysisData.rank || getRank(analysisData.overallScore) }}
+            <div class="rank-badge" :style="{ color: getRankColor(analysisData.overallScore), borderColor: getRankColor(analysisData.overallScore) }">
+              RANK {{ analysisData.rank }}
             </div>
 
             <div class="score-row">
               <div class="score-label">POWER LEVEL</div>
-              <div
-                class="score-val"
-                :style="{ color: getRankColor(analysisData.overallScore) }"
-              >
+              <div class="score-val" :style="{ color: getRankColor(analysisData.overallScore) }">
                 {{ analysisData.overallScore }} <span class="max">/ 100</span>
               </div>
             </div>
-
             <div class="retro-progress">
-              <div
-                class="fill"
-                :style="{
-                  width: `${analysisData.overallScore}%`,
-                  background: getRankColor(analysisData.overallScore),
-                  boxShadow: `0 0 10px ${getRankColor(
-                    analysisData.overallScore
-                  )}`,
-                }"
-              ></div>
+              <div class="fill" :style="{ width: `${analysisData.overallScore}%`, background: getRankColor(analysisData.overallScore) }"></div>
             </div>
           </div>
 
           <div class="insight-grid">
-            <div
-              v-for="(item, idx) in analysisData.insights"
-              :key="item.id"
-              class="insight-card pop-in"
-              :class="item.type"
-              :style="{ animationDelay: `${idx * 0.1}s` }"
-            >
+            <div v-for="(item, idx) in analysisData.insights" :key="item.id" class="insight-card pop-in" :class="item.type" :style="{ animationDelay: `${idx * 0.1}s` }">
               <div class="icon-box">
-                <svg
-                  v-if="item.iconType === 'sword'"
-                  viewBox="0 0 24 24"
-                  class="animated-icon sword"
-                >
-                  <path d="M14.5 4l-8.5 8.5 2 2 8.5-8.5z" fill="currentColor" />
-                  <path d="M4 14.5l2-2 2 2-2 2z" fill="currentColor" />
-                </svg>
-                <svg
-                  v-if="item.iconType === 'skull'"
-                  viewBox="0 0 24 24"
-                  class="animated-icon skull"
-                >
-                  <circle cx="9" cy="9" r="2" fill="currentColor" />
-                  <circle cx="15" cy="9" r="2" fill="currentColor" />
-                  <path d="M8 15h8" stroke="currentColor" stroke-width="2" />
-                  <path
-                    d="M12 2a10 10 0 0 0-10 10c0 5.5 4.5 10 10 10s10-4.5 10-10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16z"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                  />
-                </svg>
-                <svg
-                  v-if="item.iconType === 'scale'"
-                  viewBox="0 0 24 24"
-                  class="animated-icon scale"
-                >
-                  <path d="M12 2L2 12h20L12 2z" fill="currentColor" />
-                  <rect
-                    x="11"
-                    y="12"
-                    width="2"
-                    height="10"
-                    fill="currentColor"
-                  />
-                </svg>
-                <svg
-                  v-if="item.iconType === 'scroll'"
-                  viewBox="0 0 24 24"
-                  class="animated-icon scroll"
-                >
-                  <rect
-                    x="4"
-                    y="4"
-                    width="16"
-                    height="16"
-                    rx="2"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    fill="none"
-                  />
-                  <line
-                    x1="8"
-                    y1="8"
-                    x2="16"
-                    y2="8"
-                    stroke="currentColor"
-                    stroke-width="2"
-                  />
-                  <line
-                    x1="8"
-                    y1="12"
-                    x2="16"
-                    y2="12"
-                    stroke="currentColor"
-                    stroke-width="2"
-                  />
-                </svg>
+                <span v-if="item.iconType === 'sword'">⚔️</span>
+                <span v-else-if="item.iconType === 'skull'">💀</span>
+                <span v-else-if="item.iconType === 'scale'">⚖️</span>
+                <span v-else>📜</span>
               </div>
               <div class="text-box">
                 <div class="card-title">{{ item.title }}</div>
@@ -282,19 +213,52 @@ const goToAIDietPlan = () => {
 
           <div class="advice-terminal">
             <div class="terminal-header">/// ORACLE_ADVICE.TXT ///</div>
-            <div class="terminal-body">
-              {{ analysisData.recommendation }}
-            </div>
+            <div class="terminal-body">{{ analysisData.recommendation }}</div>
           </div>
 
           <div class="action-buttons">
             <button class="retro-btn primary" @click="goToAIDietPlan">
-              <span class="btn-icon">📜</span> VIEW QUEST PLAN
+              <span class="btn-icon">📜</span> VIEW QUEST
+            </button>
+            <button class="retro-btn secondary" @click="openLootModal">
+              <span class="btn-icon">⛏️</span> LOOT BOX
             </button>
           </div>
         </div>
       </div>
+      
       <router-view></router-view>
+    </div>
+
+    <div v-if="showLootModal" class="loot-modal-overlay">
+      <div class="loot-modal-content">
+        <h2 class="loot-title">/// ITEM_DROP_DETECTED ///</h2>
+        <p class="loot-desc">오늘 식단에서 발견된 키워드입니다.<br>스와이프하여 확인하세요.</p>
+        
+        <div class="card-scroll-container">
+          <div 
+            v-for="(item, idx) in analysisData.miningKeywords" 
+            :key="idx"
+            class="loot-card"
+            :class="{ 
+              'selected': selectedKeywords.includes(item.name),
+              'rare': item.rarity === 'RARE',
+              'epic': item.rarity === 'EPIC',
+              'legend': item.rarity === 'LEGEND'
+            }"
+            @click="toggleKeyword(item.name)"
+          >
+            <div class="card-header">{{ item.rarity || 'COMMON' }}</div>
+            <div class="card-icon">🍖</div> 
+            <div class="card-name">{{ item.name }}</div>
+            <div class="card-check" v-if="selectedKeywords.includes(item.name)">V</div>
+          </div>
+        </div>
+
+        <button class="retro-btn primary full-width" @click="closeLootModal">
+          CONFIRM SELECTION
+        </button>
+      </div>
     </div>
     <Footer />
   </div>
@@ -810,5 +774,126 @@ const goToAIDietPlan = () => {
     opacity: 1;
     transform: scale(1);
   }
+}
+/* ========================================= */
+/* [추가됨] 아이템 채굴 모달 및 카드 스타일 */
+/* ========================================= */
+
+/* 모달 오버레이 */
+.loot-modal-overlay {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(5px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.3s ease;
+}
+
+/* 모달 본문 */
+.loot-modal-content {
+  width: 90%;
+  max-width: 420px;
+  background: #111;
+  border: 2px solid #00ff00;
+  padding: 1.5rem;
+  text-align: center;
+  box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
+  position: relative;
+}
+
+.loot-title {
+  color: #00ff00;
+  margin-bottom: 0.5rem;
+  font-size: 1.2rem;
+  text-shadow: 2px 2px #000;
+  animation: blink 2s infinite;
+}
+
+.loot-desc {
+  color: #aaa;
+  font-size: 0.8rem;
+  margin-bottom: 1.5rem;
+}
+
+/* 가로 스크롤 컨테이너 (핵심) */
+.card-scroll-container {
+  display: flex;
+  overflow-x: auto; /* 가로 스크롤 */
+  gap: 15px;
+  padding: 10px 5px 20px 5px;
+  scroll-snap-type: x mandatory; /* 카드 단위 스냅 */
+  -webkit-overflow-scrolling: touch;
+  margin-bottom: 1rem;
+}
+
+/* 스크롤바 디자인 */
+.card-scroll-container::-webkit-scrollbar { height: 6px; }
+.card-scroll-container::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+
+/* 개별 아이템 카드 */
+.loot-card {
+  flex: 0 0 130px; /* 카드 고정 너비 */
+  height: 170px;
+  background: #222;
+  border: 2px solid #555;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem;
+  scroll-snap-align: center; /* 중앙 정렬 스냅 */
+  position: relative;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+/* 선택된 상태 효과 */
+.loot-card.selected {
+  border-color: #00ff00;
+  background: #002200;
+  transform: translateY(-5px);
+  box-shadow: 0 5px 15px rgba(0, 255, 0, 0.4);
+}
+.card-check {
+  position: absolute;
+  top: 5px; right: 5px;
+  color: #00ff00;
+  font-weight: bold;
+}
+
+/* 등급별 색상 처리 */
+.loot-card.rare { border-color: #00e5ff; }
+.loot-card.epic { border-color: #d000ff; }
+.loot-card.legend { border-color: #ffd700; box-shadow: 0 0 10px #ffd700; }
+
+.card-header {
+  font-size: 0.7rem;
+  color: #888;
+  background: #000;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.card-icon {
+  font-size: 2.5rem;
+  filter: drop-shadow(0 0 5px rgba(255,255,255,0.3));
+}
+.card-name {
+  font-size: 0.9rem;
+  color: #fff;
+  font-weight: bold;
+}
+
+.full-width {
+  width: 100%;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
 }
 </style>
