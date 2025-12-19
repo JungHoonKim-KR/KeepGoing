@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="keepgoing.demo.domain.member.mapper.MemberMapper">
-<!--Start Weight -->
+    <!--Start Weight -->
     <select id="findWeightByMemberId">
         SELECT id,
                member_id,
@@ -9,7 +9,7 @@
                diff, date, memo
         FROM weight_log
         WHERE member_id = #{memberId} AND
-              date = #{date}
+            date = #{date}
     </select>
 
     <select id="findWeightLogsByMemberId"
@@ -56,73 +56,73 @@
         WHERE member_id = #{memberId} AND date = #{date}
     </update>
 
-<!--End Weight -->
+    <!--End Weight -->
 
 
     <select id="findById" resultType="keepgoing.demo.domain.member.entity.Member">
         SELECT
-        id,
-        email,          password,       name,
-        role,           height,
-        weight,
-        age,
-        gender,
-        activity,
-        goal,
-        health_condition,
-        allergies,
-        disliked_food,
-        target_weight,
-        target_water,
-        level,
-        exp,
-        current_points,
-        refresh_token   FROM member
+            id,
+            email,          password,       name,
+            role,           height,
+            weight,
+            age,
+            gender,
+            activity,
+            goal,
+            health_condition,
+            allergies,
+            disliked_food,
+            target_weight,
+            target_water,
+            level,
+            exp,
+            current_points,
+            refresh_token   FROM member
         WHERE id = #{id}
     </select>
 
     <update id="update" parameterType="keepgoing.demo.domain.member.entity.Member">
         UPDATE member
         SET height = #{height},
-        weight = #{weight},
-        activity = #{activity},
-        goal = #{goal},
-        target_weight = #{targetWeight}
+            weight = #{weight},
+            activity = #{activity},
+            goal = #{goal},
+            target_weight = #{targetWeight}
         WHERE id = #{id}
     </update>
 
     <select id="selectWightListByMemberId">
         SELECT
-        date,
-        weight,
-        diff,
-        memo
+            date,
+            weight,
+            diff,
+            memo
         FROM weight_log
         WHERE member_id= #{memberId}
     </select>
 
     <select id="findByEmail" resultType="keepgoing.demo.domain.member.entity.Member">
         SELECT
-        id,
-        email,
-        password,
-        name,
-        role,
-        height,
-        weight,
-        age,
-        gender,
-        activity,
-        goal,
-        health_condition,
-        allergies,
-        disliked_food,
-        target_weight,
+            id,
+            email,
+            password,
+            name,
+            role,
+            height,
+            weight,
+            age,
+            gender,
+            activity,
+            goal,
+            health_condition,
+            allergies,
+            disliked_food,
+            target_weight,
 
-        target_water,  level,
-        exp,
-        current_points,
-        refresh_token
+            target_water,  level,
+            exp,
+            current_points,
+            refresh_token
         FROM member
         WHERE email = #{email}
     </select>
@@ -135,45 +135,53 @@
 
     <insert id="save" parameterType="keepgoing.demo.domain.member.entity.Member" useGeneratedKeys="true" keyProperty="id">
         INSERT INTO member (
-        email,
-        password,
-        name,
-        role,
-        height,
-        weight,
-        age,
-        gender,
-        activity,
-        goal,
-        target_weight,
-        target_water,
-        health_condition,
-        allergies,
-        disliked_food,
-        level,
-        exp,
-        current_points,
-        created_at
+            email,
+            password,
+            name,
+            role,
+            height,
+            weight,
+            age,
+            gender,
+            activity,
+            goal,
+            target_weight,
+            target_water,
+            health_condition,
+            allergies,
+            disliked_food,
+            level,
+            exp,
+            current_points,
+            created_at
         ) VALUES (
-        #{email},
-        #{password},
-        #{name},
-        #{role},
-        #{height},
-        #{weight},
-        #{age},
-        #{gender},
-        #{activity},
-        #{goal},
-        #{targetWeight},
-        #{targetWater},
-        #{healthCondition},
-        #{allergies},
-        #{dislikedFood},
-        1,
-        0,
-        0,
-        NOW()
-        )
+                     #{email},
+                     #{password},
+                     #{name},
+                     #{role},
+                     #{height},
+                     #{weight},
+                     #{age},
+                     #{gender},
+                     #{activity},
+                     #{goal},
+                     #{targetWeight},
+                     #{targetWater},
+                     #{healthCondition},
+                     #{allergies},
+                     #{dislikedFood},
+                     1,
+                     0,
+                     0,
+                     NOW()
+                 )
     </insert>
+
+    <update id="updateExp">
+        UPDATE member
+        SET
+            level = #{level},
+            exp = #{exp}
+        WHERE id = #{memberId}
+    </update>
 </mapper>

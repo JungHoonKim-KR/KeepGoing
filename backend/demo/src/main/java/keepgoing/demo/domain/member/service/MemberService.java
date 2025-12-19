@@ -143,4 +143,16 @@ public class MemberService {
         // DB 업데이트
         memberMapper.update(member);
     }
+    public void updateExp(Long memberId, Integer exp){
+        Member member = memberMapper.findById(memberId).get();
+
+        int memberExp = member.getExp() + exp;
+        int memberLevel = member.getLevel();
+        if(memberExp >= 100){
+            memberExp %= 100;
+            memberLevel += 1;
+        }
+        memberMapper.updateExp(memberId, memberLevel, memberExp);
+
+    }
 }

@@ -1,30 +1,28 @@
 <script setup>
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
-// API 함수 경로가 맞는지 확인해주세요
-import { analyzeDiet } from "../api/diet/dietApi"; 
+import { analyzeDiet } from "../api/diet/dietApi";
 import Footer from "../components/utils/Footer.vue";
+import axios from "axios"; // [추가] axios 임포트
+import { useConfigStore } from "@/stores/configStore"; // [추가] 설정 정보용 (MEMBER_ID 및 API URL)
 
 const router = useRouter();
+const config = useConfigStore();
 
 // ----------------------------------------------------
-// 1. 상태 관리 변수들
+// 1. 상태 관리
 // ----------------------------------------------------
-const isLoading = ref(false);     // 로딩 상태
-const isAnalyzing = ref(false);   // 분석 중 상태 (중복 방지)
-const analysisData = ref(null);   // 분석 결과 데이터
-const bootLogs = ref([]);         // 터미널 로그 배열
+const isLoading = ref(false);
+const isAnalyzing = ref(false);
+const analysisData = ref(null);
+const bootLogs = ref([]);
 
-// [New] 모달 & 아이템 관련 상태
-const showLootModal = ref(false); // 모달 표시 여부
-const selectedKeywords = ref([]); // 사용자가 선택한 키워드
-
-// 임시 사용자 정보
-const MEMBER_ID = 1;
+// 사용자 정보 (Pinia 스토어에서 가져오거나 기본값 1 사용)
+const MEMBER_ID = config.MEMBER_ID || 1;
 const TODAY_DATE = new Date().toISOString().split("T")[0];
 
 // ----------------------------------------------------
-// 2. 유틸리티 함수 (랭크 색상 등)
+// 2. 랭크 컬러 시스템
 // ----------------------------------------------------
 const getRankColor = (score) => {
   if (score >= 90) return "#ffd700"; // Gold
@@ -35,49 +33,26 @@ const getRankColor = (score) => {
 };
 
 // ----------------------------------------------------
-// 3. 모달 관련 로직 (New)
+// 3. 서버 통신 로직
 // ----------------------------------------------------
-const openLootModal = () => {
-  showLootModal.value = true;
-};
 
-const closeLootModal = () => {
-  showLootModal.value = false;
-  // 필요하다면 여기서 selectedKeywords.value를 백엔드로 전송
-  console.log("선택된 키워드:", selectedKeywords.value);
-};
-
-const toggleKeyword = (keywordName) => {
-  if (selectedKeywords.value.includes(keywordName)) {
-    selectedKeywords.value = selectedKeywords.value.filter(k => k !== keywordName);
-  } else {
-    selectedKeywords.value.push(keywordName);
-  }
-};
-
-// ----------------------------------------------------
-// 4. 서버 통신 및 데이터 처리
-// ----------------------------------------------------
+// [식단 분석 요청]
 const fetchAnalysis = async () => {
-  if (isAnalyzing.value) return; 
+  if (isAnalyzing.value) return;
 
   isAnalyzing.value = true;
   isLoading.value = true;
   bootLogs.value = [];
-  
-  // 부팅 로그 시작
+
   runBootSequence();
 
   try {
-    // API 호출
     const data = await analyzeDiet(MEMBER_ID, TODAY_DATE);
 
-    // 데이터 매핑
     analysisData.value = {
       overallScore: data.score,
       rank: data.rank,
       title: data.dailyTitle,
-      
       insights: data.insights.map((item, index) => ({
         id: index,
         type: item.type,
@@ -85,40 +60,63 @@ const fetchAnalysis = async () => {
         title: item.title,
         description: item.description,
       })),
-
       recommendation: data.oneLineSummary,
       questItems: data.recommendations,
-
-      // [New] 키워드 데이터 (백엔드에 없으면 가짜 데이터 사용)
-      miningKeywords: data.keywords || [
-         { name: "닭가슴살", rarity: "COMMON" },
-         { name: "현미밥", rarity: "COMMON" },
-         { name: "아보카도", rarity: "RARE" },
-         { name: "스테이크", rarity: "EPIC" },
-         { name: "프로틴", rarity: "LEGEND" },
-         { name: "사과", rarity: "COMMON" }
-      ]
     };
 
-    // 연출을 위한 딜레이 후 로딩 종료
     setTimeout(() => {
       isLoading.value = false;
       isAnalyzing.value = false;
     }, 2500);
-
   } catch (error) {
-    alert("서버 연결 실패: 백엔드 상태를 확인하세요.");
+    console.error("분석 실패:", error);
+    alert("서버 연결에 실패했습니다. 백엔드가 켜져있는지 확인해주세요.");
     isLoading.value = false;
     isAnalyzing.value = false;
+  }
+};
+
+// [경험치 반영 및 퀘스트 확인]
+const goToAIDietPlan = async () => {
+  if (!analysisData.value) return;
+
+  try {
+    // 백엔드 엔드포인트 URL (configStore에 정의된 API_ENDPOINT 사용 권장)
+    const url = `${config.API_ENDPOINT}/api/member/level`;
+
+    // 백엔드 @RequestBody LevelUpRequest 구조에 맞춘 페이로드
+    const payload = {
+      id: MEMBER_ID,
+      score: analysisData.value.overallScore,
+    };
+
+    // axios를 사용한 POST 요청
+    await axios.post(url, payload);
+
+    // 성공 시 로직
+    alert(
+      "✨ 경험치가 성공적으로 반영되었습니다! ✨\n\n" +
+        "--- 내일의 퀘스트 ---\n" +
+        analysisData.value.questItems.map((q) => `📌 ${q.menu}: ${q.reason}`).join("\n")
+    );
+
+    // 필요 시 퀘스트 페이지로 이동하려면 아래 주석 해제
+    // router.push("/ai-analysis/diet-plan");
+  } catch (error) {
+    console.error("경험치 업데이트 실패:", error);
+    alert("경험치 반영 중 오류가 발생했습니다. 다시 시도해주세요.");
   }
 };
 
 // 부팅 로그 애니메이션
 const runBootSequence = () => {
   const logs = [
-    "INITIALIZING SYSTEM...", "CONNECTING TO NEURAL NET...",
-    "SCANNING BIOMETRICS...", "DECRYPTING FOOD LOGS...",
-    "CALCULATING POWER LEVEL...", "ACCESS GRANTED."
+    "INITIALIZING SYSTEM...",
+    "CONNECTING TO NEURAL NET...",
+    "SCANNING BIOMETRICS...",
+    "DECRYPTING FOOD LOGS...",
+    "CALCULATING POWER LEVEL...",
+    "ACCESS GRANTED.",
   ];
   let logIndex = 0;
   const logInterval = setInterval(() => {
@@ -131,22 +129,27 @@ const runBootSequence = () => {
   }, 350);
 };
 
-const goToAIDietPlan = () => {
-  alert("퀘스트 플랜 페이지로 이동합니다 (구현 필요)");
-  // router.push("/ai-analysis/diet-plan");
+const initAudioContext = () => {
+  // 브라우저 오디오 정책 대응 (필요 시 구현)
 };
 </script>
+
 <template>
-  <div class="ai-view retro-theme">
+  <div class="ai-view retro-theme" @click="initAudioContext">
     <div class="scanlines"></div>
 
     <div class="content-wrapper">
-      
+      <div class="retro-header">
+        <div class="system-status">
+          <span class="status-light blink"></span>
+          SYSTEM_ONLINE
+        </div>
+        <h1 class="page-title">MAINFRAME ANALYSIS</h1>
+      </div>
+
       <div v-if="isLoading" class="loading-terminal">
         <div class="terminal-screen">
-          <div v-for="(log, index) in bootLogs" :key="index" class="log-line">
-            > {{ log }}
-          </div>
+          <div v-for="(log, index) in bootLogs" :key="index" class="log-line">> {{ log }}</div>
           <div class="cursor-line">> <span class="blink-cursor">_</span></div>
         </div>
         <div class="loading-bar-container">
@@ -155,8 +158,7 @@ const goToAIDietPlan = () => {
       </div>
 
       <div v-else class="dashboard-container">
-        
-        <div class="ai-avatar-section clickable" @click="fetchAnalysis" v-if="!analysisData">
+        <div class="ai-avatar-section clickable" @click="fetchAnalysis">
           <div class="cyber-eye-container">
             <div class="eye-ring" :class="{ 'fast-spin': isAnalyzing }"></div>
             <div class="eye-iris">
@@ -166,22 +168,26 @@ const goToAIDietPlan = () => {
             <div class="scanning-beam"></div>
           </div>
           <div class="ai-message-box">
-            <p v-if="!analysisData" class="blink-text">
-              "시스템 대기 중... [터치하여 분석 시작]"
-            </p>
-            <p v-else class="typing-effect">
-              "분석 완료. 랭크 [{{ analysisData.rank }}] 달성."
-            </p>
+            <p v-if="!analysisData" class="blink-text">"시스템 대기 중... [터치하여 분석 시작]"</p>
+            <p v-else class="typing-effect">"분석 완료. 랭크 [{{ analysisData.rank }}] 달성."</p>
           </div>
         </div>
 
         <div v-if="analysisData" class="result-section pop-in">
-          
           <div class="power-card">
-            <div class="card-deco tl"></div><div class="card-deco tr"></div>
-            <div class="card-deco bl"></div><div class="card-deco br"></div>
+            <div class="card-deco tl"></div>
+            <div class="card-deco tr"></div>
+            <div class="card-deco bl"></div>
+            <div class="card-deco br"></div>
 
-            <div class="rank-badge" :style="{ color: getRankColor(analysisData.overallScore), borderColor: getRankColor(analysisData.overallScore) }">
+            <div
+              class="rank-badge"
+              :style="{
+                color: getRankColor(analysisData.overallScore),
+                borderColor: getRankColor(analysisData.overallScore),
+                boxShadow: `4px 4px 0 ${getRankColor(analysisData.overallScore)}33`,
+              }"
+            >
               RANK {{ analysisData.rank }}
             </div>
 
@@ -191,18 +197,68 @@ const goToAIDietPlan = () => {
                 {{ analysisData.overallScore }} <span class="max">/ 100</span>
               </div>
             </div>
+
             <div class="retro-progress">
-              <div class="fill" :style="{ width: `${analysisData.overallScore}%`, background: getRankColor(analysisData.overallScore) }"></div>
+              <div
+                class="fill"
+                :style="{
+                  width: `${analysisData.overallScore}%`,
+                  background: getRankColor(analysisData.overallScore),
+                  boxShadow: `0 0 10px ${getRankColor(analysisData.overallScore)}`,
+                }"
+              ></div>
             </div>
           </div>
 
           <div class="insight-grid">
-            <div v-for="(item, idx) in analysisData.insights" :key="item.id" class="insight-card pop-in" :class="item.type" :style="{ animationDelay: `${idx * 0.1}s` }">
+            <div
+              v-for="(item, idx) in analysisData.insights"
+              :key="item.id"
+              class="insight-card pop-in"
+              :class="item.type"
+              :style="{ animationDelay: `${idx * 0.1}s` }"
+            >
               <div class="icon-box">
-                <span v-if="item.iconType === 'sword'">⚔️</span>
-                <span v-else-if="item.iconType === 'skull'">💀</span>
-                <span v-else-if="item.iconType === 'scale'">⚖️</span>
-                <span v-else>📜</span>
+                <svg
+                  v-if="item.iconType === 'sword' || item.iconType === 'muscle'"
+                  viewBox="0 0 24 24"
+                  class="animated-icon sword"
+                >
+                  <path d="M14.5 4l-8.5 8.5 2 2 8.5-8.5z" fill="currentColor" />
+                  <path d="M4 14.5l2-2 2 2-2 2z" fill="currentColor" />
+                </svg>
+                <svg
+                  v-if="item.iconType === 'skull' || item.iconType === 'warning'"
+                  viewBox="0 0 24 24"
+                  class="animated-icon skull"
+                >
+                  <circle cx="9" cy="9" r="2" fill="currentColor" />
+                  <circle cx="15" cy="9" r="2" fill="currentColor" />
+                  <path d="M8 15h8" stroke="currentColor" stroke-width="2" />
+                  <path
+                    d="M12 2a10 10 0 0 0-10 10c0 5.5 4.5 10 10 10s10-4.5 10-10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16z"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  />
+                </svg>
+                <svg
+                  v-if="item.iconType === 'scale' || item.iconType === 'balance'"
+                  viewBox="0 0 24 24"
+                  class="animated-icon scale"
+                >
+                  <path d="M12 2L2 12h20L12 2z" fill="currentColor" />
+                  <rect x="11" y="12" width="2" height="10" fill="currentColor" />
+                </svg>
+                <svg
+                  v-if="item.iconType === 'scroll' || item.iconType === 'energy'"
+                  viewBox="0 0 24 24"
+                  class="animated-icon scroll"
+                >
+                  <rect x="4" y="4" width="16" height="16" rx="2" stroke="currentColor" stroke-width="2" fill="none" />
+                  <line x1="8" y1="8" x2="16" y2="8" stroke="currentColor" stroke-width="2" />
+                  <line x1="8" y1="12" x2="16" y2="12" stroke="currentColor" stroke-width="2" />
+                </svg>
               </div>
               <div class="text-box">
                 <div class="card-title">{{ item.title }}</div>
@@ -213,59 +269,26 @@ const goToAIDietPlan = () => {
 
           <div class="advice-terminal">
             <div class="terminal-header">/// ORACLE_ADVICE.TXT ///</div>
-            <div class="terminal-body">{{ analysisData.recommendation }}</div>
+            <div class="terminal-body">
+              {{ analysisData.recommendation }}
+            </div>
           </div>
 
           <div class="action-buttons">
             <button class="retro-btn primary" @click="goToAIDietPlan">
-              <span class="btn-icon">📜</span> VIEW QUEST
-            </button>
-            <button class="retro-btn secondary" @click="openLootModal">
-              <span class="btn-icon">⛏️</span> LOOT BOX
+              <span class="btn-icon">📜</span> VIEW QUEST PLAN
             </button>
           </div>
         </div>
       </div>
-      
       <router-view></router-view>
-    </div>
-
-    <div v-if="showLootModal" class="loot-modal-overlay">
-      <div class="loot-modal-content">
-        <h2 class="loot-title">/// ITEM_DROP_DETECTED ///</h2>
-        <p class="loot-desc">오늘 식단에서 발견된 키워드입니다.<br>스와이프하여 확인하세요.</p>
-        
-        <div class="card-scroll-container">
-          <div 
-            v-for="(item, idx) in analysisData.miningKeywords" 
-            :key="idx"
-            class="loot-card"
-            :class="{ 
-              'selected': selectedKeywords.includes(item.name),
-              'rare': item.rarity === 'RARE',
-              'epic': item.rarity === 'EPIC',
-              'legend': item.rarity === 'LEGEND'
-            }"
-            @click="toggleKeyword(item.name)"
-          >
-            <div class="card-header">{{ item.rarity || 'COMMON' }}</div>
-            <div class="card-icon">🍖</div> 
-            <div class="card-name">{{ item.name }}</div>
-            <div class="card-check" v-if="selectedKeywords.includes(item.name)">V</div>
-          </div>
-        </div>
-
-        <button class="retro-btn primary full-width" @click="closeLootModal">
-          CONFIRM SELECTION
-        </button>
-      </div>
     </div>
     <Footer />
   </div>
 </template>
 
 <style scoped>
-/* 폰트: 둥근모꼴 */
+/* 폰트 및 애니메이션 스타일은 기존과 동일 */
 @import url("https://cdn.jsdelivr.net/gh/neodgm/neodgm-webfont@latest/neodgm/style.css");
 
 .ai-view {
@@ -279,7 +302,6 @@ const goToAIDietPlan = () => {
   overflow-x: hidden;
 }
 
-/* 스캔라인 */
 .scanlines {
   position: fixed;
   top: 0;
@@ -288,12 +310,7 @@ const goToAIDietPlan = () => {
   height: 100%;
   pointer-events: none;
   background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
-    linear-gradient(
-      90deg,
-      rgba(255, 0, 0, 0.06),
-      rgba(0, 255, 0, 0.02),
-      rgba(0, 0, 255, 0.06)
-    );
+    linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
   background-size: 100% 4px, 6px 100%;
   z-index: 99;
 }
@@ -306,7 +323,6 @@ const goToAIDietPlan = () => {
   z-index: 100;
 }
 
-/* 헤더 */
 .retro-header {
   display: flex;
   justify-content: space-between;
@@ -339,7 +355,6 @@ const goToAIDietPlan = () => {
   margin: 0;
 }
 
-/* 1. 로딩 터미널 */
 .loading-terminal {
   background: #000;
   border: 2px solid #00ff00;
@@ -376,7 +391,6 @@ const goToAIDietPlan = () => {
   }
 }
 
-/* 2. 대시보드 - AI 아바타 (눈) */
 .ai-avatar-section {
   display: flex;
   flex-direction: column;
@@ -391,7 +405,6 @@ const goToAIDietPlan = () => {
   align-items: center;
   justify-content: center;
 }
-/* 눈 테두리 */
 .eye-ring {
   width: 100%;
   height: 100%;
@@ -402,7 +415,9 @@ const goToAIDietPlan = () => {
   animation: spin 4s linear infinite;
   box-shadow: 0 0 15px #00e5ff;
 }
-/* 눈동자 */
+.eye-ring.fast-spin {
+  animation: spin 1s linear infinite;
+}
 .eye-iris {
   width: 60px;
   height: 60px;
@@ -434,7 +449,6 @@ const goToAIDietPlan = () => {
   box-shadow: 0 0 5px #00ff00;
 }
 
-/* AI 메시지 */
 .ai-message-box {
   margin-top: 1rem;
   background: rgba(0, 229, 255, 0.1);
@@ -445,7 +459,6 @@ const goToAIDietPlan = () => {
   font-size: 0.8rem;
 }
 
-/* 파워 카드 */
 .power-card {
   background: #111;
   border: 2px solid #333;
@@ -497,7 +510,6 @@ const goToAIDietPlan = () => {
   transform: rotate(5deg);
   box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.5);
 }
-
 .score-row {
   display: flex;
   justify-content: space-between;
@@ -518,7 +530,6 @@ const goToAIDietPlan = () => {
   font-size: 1rem;
   color: #555;
 }
-
 .retro-progress {
   height: 12px;
   background: #222;
@@ -531,7 +542,6 @@ const goToAIDietPlan = () => {
   box-shadow: 0 0 10px currentColor;
 }
 
-/* 인사이트 그리드 */
 .insight-grid {
   display: grid;
   gap: 1rem;
@@ -551,30 +561,16 @@ const goToAIDietPlan = () => {
   transform: translateX(5px);
   background: rgba(255, 255, 255, 0.08);
 }
-
-/* 카드 타입별 색상 */
 .insight-card.positive {
   border-left: 4px solid #00ff00;
 }
-.insight-card.positive .icon-box {
-  color: #00ff00;
-}
-
 .insight-card.warning {
   border-left: 4px solid #ff0055;
 }
-.insight-card.warning .icon-box {
-  color: #ff0055;
-}
-
 .insight-card.suggestion {
   border-left: 4px solid #00e5ff;
 }
-.insight-card.suggestion .icon-box {
-  color: #00e5ff;
-}
 
-/* 움직이는 아이콘 */
 .icon-box {
   width: 40px;
   height: 40px;
@@ -584,8 +580,6 @@ const goToAIDietPlan = () => {
   width: 100%;
   height: 100%;
 }
-
-/* 아이콘 애니메이션 정의 */
 .sword {
   animation: swing 2s infinite ease-in-out;
   transform-origin: bottom left;
@@ -616,7 +610,6 @@ const goToAIDietPlan = () => {
   line-height: 1.3;
 }
 
-/* 어드바이스 터미널 */
 .advice-terminal {
   background: #000;
   border: 1px solid #666;
@@ -636,11 +629,6 @@ const goToAIDietPlan = () => {
   line-height: 1.4;
 }
 
-/* 버튼 */
-.action-buttons {
-  display: flex;
-  gap: 10px;
-}
 .retro-btn {
   flex: 1;
   padding: 12px;
@@ -654,26 +642,19 @@ const goToAIDietPlan = () => {
   gap: 8px;
   box-shadow: 4px 4px 0 #000;
   transition: transform 0.1s;
+  background: #00e5ff;
+  color: #000;
 }
 .retro-btn:active {
   transform: translate(4px, 4px);
   box-shadow: none;
 }
-.retro-btn.primary {
-  background: #00e5ff;
-  color: #000;
-}
-.retro-btn.secondary {
-  background: #222;
-  color: #fff;
-}
 
-/* 애니메이션 키프레임 */
 @keyframes spin {
-  0% {
+  from {
     transform: rotate(0deg);
   }
-  100% {
+  to {
     transform: rotate(360deg);
   }
 }
@@ -761,7 +742,7 @@ const goToAIDietPlan = () => {
     opacity: 1;
   }
   50% {
-    opacity: 0;
+    opacity: 0.5;
   }
 }
 .pop-in {
@@ -774,126 +755,5 @@ const goToAIDietPlan = () => {
     opacity: 1;
     transform: scale(1);
   }
-}
-/* ========================================= */
-/* [추가됨] 아이템 채굴 모달 및 카드 스타일 */
-/* ========================================= */
-
-/* 모달 오버레이 */
-.loot-modal-overlay {
-  position: fixed;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  background: rgba(0, 0, 0, 0.85);
-  backdrop-filter: blur(5px);
-  z-index: 9999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  animation: fadeIn 0.3s ease;
-}
-
-/* 모달 본문 */
-.loot-modal-content {
-  width: 90%;
-  max-width: 420px;
-  background: #111;
-  border: 2px solid #00ff00;
-  padding: 1.5rem;
-  text-align: center;
-  box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
-  position: relative;
-}
-
-.loot-title {
-  color: #00ff00;
-  margin-bottom: 0.5rem;
-  font-size: 1.2rem;
-  text-shadow: 2px 2px #000;
-  animation: blink 2s infinite;
-}
-
-.loot-desc {
-  color: #aaa;
-  font-size: 0.8rem;
-  margin-bottom: 1.5rem;
-}
-
-/* 가로 스크롤 컨테이너 (핵심) */
-.card-scroll-container {
-  display: flex;
-  overflow-x: auto; /* 가로 스크롤 */
-  gap: 15px;
-  padding: 10px 5px 20px 5px;
-  scroll-snap-type: x mandatory; /* 카드 단위 스냅 */
-  -webkit-overflow-scrolling: touch;
-  margin-bottom: 1rem;
-}
-
-/* 스크롤바 디자인 */
-.card-scroll-container::-webkit-scrollbar { height: 6px; }
-.card-scroll-container::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
-
-/* 개별 아이템 카드 */
-.loot-card {
-  flex: 0 0 130px; /* 카드 고정 너비 */
-  height: 170px;
-  background: #222;
-  border: 2px solid #555;
-  border-radius: 8px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: space-between;
-  padding: 1rem;
-  scroll-snap-align: center; /* 중앙 정렬 스냅 */
-  position: relative;
-  transition: all 0.2s;
-  cursor: pointer;
-}
-
-/* 선택된 상태 효과 */
-.loot-card.selected {
-  border-color: #00ff00;
-  background: #002200;
-  transform: translateY(-5px);
-  box-shadow: 0 5px 15px rgba(0, 255, 0, 0.4);
-}
-.card-check {
-  position: absolute;
-  top: 5px; right: 5px;
-  color: #00ff00;
-  font-weight: bold;
-}
-
-/* 등급별 색상 처리 */
-.loot-card.rare { border-color: #00e5ff; }
-.loot-card.epic { border-color: #d000ff; }
-.loot-card.legend { border-color: #ffd700; box-shadow: 0 0 10px #ffd700; }
-
-.card-header {
-  font-size: 0.7rem;
-  color: #888;
-  background: #000;
-  padding: 2px 6px;
-  border-radius: 4px;
-}
-.card-icon {
-  font-size: 2.5rem;
-  filter: drop-shadow(0 0 5px rgba(255,255,255,0.3));
-}
-.card-name {
-  font-size: 0.9rem;
-  color: #fff;
-  font-weight: bold;
-}
-
-.full-width {
-  width: 100%;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: scale(0.9); }
-  to { opacity: 1; transform: scale(1); }
 }
 </style>
