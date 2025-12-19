@@ -1,24 +1,28 @@
 <script setup>
 import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
-import { analyzeDiet } from "../api/diet/dietApi"; // 1. API 함수 임포트
+import { analyzeDiet } from "../api/diet/dietApi";
 import Footer from "../components/utils/Footer.vue";
+import axios from "axios"; // [추가] axios 임포트
+import { useConfigStore } from "@/stores/configStore"; // [추가] 설정 정보용 (MEMBER_ID 및 API URL)
+
 const router = useRouter();
+const config = useConfigStore();
 
 // ----------------------------------------------------
 // 1. 상태 관리
 // ----------------------------------------------------
-const isLoading = ref(false); // 초기엔 로딩 아님 (클릭 대기)
-const isAnalyzing = ref(false); // 분석 중 상태
-const analysisData = ref(null); // 결과 데이터
-const bootLogs = ref([]); // 터미널 로그
+const isLoading = ref(false);
+const isAnalyzing = ref(false);
+const analysisData = ref(null);
+const bootLogs = ref([]);
 
-// 임시 사용자 정보 (나중에 Pinia나 로그인 정보에서 가져오세요)
-const MEMBER_ID = 1;
-const TODAY_DATE = new Date().toISOString().split("T")[0]; // "2024-05-22"
+// 사용자 정보 (Pinia 스토어에서 가져오거나 기본값 1 사용)
+const MEMBER_ID = config.MEMBER_ID || 1;
+const TODAY_DATE = new Date().toISOString().split("T")[0];
 
 // ----------------------------------------------------
-// 2. 랭크 시스템 (백엔드에서 안 줄 경우 대비용)
+// 2. 랭크 컬러 시스템
 // ----------------------------------------------------
 const getRankColor = (score) => {
   if (score >= 90) return "#ffd700"; // Gold
@@ -29,53 +33,78 @@ const getRankColor = (score) => {
 };
 
 // ----------------------------------------------------
-// 3. 서버 통신 및 데이터 매핑
+// 3. 서버 통신 로직
 // ----------------------------------------------------
-const fetchAnalysis = async () => {
-  if (isAnalyzing.value) return; // 중복 클릭 방지
 
-  // 상태 변경
+// [식단 분석 요청]
+const fetchAnalysis = async () => {
+  if (isAnalyzing.value) return;
+
   isAnalyzing.value = true;
   isLoading.value = true;
-  bootLogs.value = []; // 로그 초기화
+  bootLogs.value = [];
 
-  // 부팅 로그 애니메이션 실행
   runBootSequence();
 
   try {
-    // [핵심] 실제 서버 요청
     const data = await analyzeDiet(MEMBER_ID, TODAY_DATE);
 
-    // 백엔드 데이터 -> 프론트엔드 포맷으로 매핑
     analysisData.value = {
-      overallScore: data.score, // 점수
-      rank: data.rank, // 랭크 (S, A, B...)
-      title: data.dailyTitle, // 칭호 (근육 몬스터)
-
-      // 인사이트 (아이콘, 설명)
+      overallScore: data.score,
+      rank: data.rank,
+      title: data.dailyTitle,
       insights: data.insights.map((item, index) => ({
         id: index,
-        type: item.type, // positive, warning...
-        iconType: item.iconType, // sword, skull...
+        type: item.type,
+        iconType: item.iconType,
         title: item.title,
         description: item.description,
       })),
-
-      recommendation: data.oneLineSummary, // 한줄평
-
-      // 내일 식단 퀘스트 (recommendations -> questItems)
+      recommendation: data.oneLineSummary,
       questItems: data.recommendations,
     };
 
-    // 로딩 종료 (로그 애니메이션 끝날 때쯤)
     setTimeout(() => {
       isLoading.value = false;
       isAnalyzing.value = false;
-    }, 2500); // 2.5초 정도 연출 시간 확보
+    }, 2500);
   } catch (error) {
+    console.error("분석 실패:", error);
     alert("서버 연결에 실패했습니다. 백엔드가 켜져있는지 확인해주세요.");
     isLoading.value = false;
     isAnalyzing.value = false;
+  }
+};
+
+// [경험치 반영 및 퀘스트 확인]
+const goToAIDietPlan = async () => {
+  if (!analysisData.value) return;
+
+  try {
+    // 백엔드 엔드포인트 URL (configStore에 정의된 API_ENDPOINT 사용 권장)
+    const url = `${config.API_ENDPOINT}/api/member/level`;
+
+    // 백엔드 @RequestBody LevelUpRequest 구조에 맞춘 페이로드
+    const payload = {
+      id: MEMBER_ID,
+      score: analysisData.value.overallScore,
+    };
+
+    // axios를 사용한 POST 요청
+    await axios.post(url, payload);
+
+    // 성공 시 로직
+    alert(
+      "✨ 경험치가 성공적으로 반영되었습니다! ✨\n\n" +
+        "--- 내일의 퀘스트 ---\n" +
+        analysisData.value.questItems.map((q) => `📌 ${q.menu}: ${q.reason}`).join("\n")
+    );
+
+    // 필요 시 퀘스트 페이지로 이동하려면 아래 주석 해제
+    // router.push("/ai-analysis/diet-plan");
+  } catch (error) {
+    console.error("경험치 업데이트 실패:", error);
+    alert("경험치 반영 중 오류가 발생했습니다. 다시 시도해주세요.");
   }
 };
 
@@ -100,29 +129,27 @@ const runBootSequence = () => {
   }, 350);
 };
 
-const goToAIDietPlan = () => {
-  // 퀘스트 플랜(내일 식단) 페이지로 이동하거나 모달 띄우기
-  // router.push("/ai-analysis/diet-plan");
-  alert(
-    "내일의 퀘스트: \n" +
-      analysisData.value.questItems
-        .map((q) => `- ${q.menu}: ${q.reason}`)
-        .join("\n")
-  );
+const initAudioContext = () => {
+  // 브라우저 오디오 정책 대응 (필요 시 구현)
 };
 </script>
+
 <template>
-  <div class="ai-view retro-theme">
+  <div class="ai-view retro-theme" @click="initAudioContext">
     <div class="scanlines"></div>
 
     <div class="content-wrapper">
-      
+      <div class="retro-header">
+        <div class="system-status">
+          <span class="status-light blink"></span>
+          SYSTEM_ONLINE
+        </div>
+        <h1 class="page-title">MAINFRAME ANALYSIS</h1>
+      </div>
 
       <div v-if="isLoading" class="loading-terminal">
         <div class="terminal-screen">
-          <div v-for="(log, index) in bootLogs" :key="index" class="log-line">
-            > {{ log }}
-          </div>
+          <div v-for="(log, index) in bootLogs" :key="index" class="log-line">> {{ log }}</div>
           <div class="cursor-line">> <span class="blink-cursor">_</span></div>
         </div>
         <div class="loading-bar-container">
@@ -141,12 +168,8 @@ const goToAIDietPlan = () => {
             <div class="scanning-beam"></div>
           </div>
           <div class="ai-message-box">
-            <p v-if="!analysisData" class="blink-text">
-              "시스템 대기 중... [터치하여 분석 시작]"
-            </p>
-            <p v-else class="typing-effect">
-              "분석 완료. 랭크 [{{ analysisData.rank }}] 달성."
-            </p>
+            <p v-if="!analysisData" class="blink-text">"시스템 대기 중... [터치하여 분석 시작]"</p>
+            <p v-else class="typing-effect">"분석 완료. 랭크 [{{ analysisData.rank }}] 달성."</p>
           </div>
         </div>
 
@@ -162,20 +185,15 @@ const goToAIDietPlan = () => {
               :style="{
                 color: getRankColor(analysisData.overallScore),
                 borderColor: getRankColor(analysisData.overallScore),
-                boxShadow: `4px 4px 0 ${getRankColor(
-                  analysisData.overallScore
-                )}33`,
+                boxShadow: `4px 4px 0 ${getRankColor(analysisData.overallScore)}33`,
               }"
             >
-              RANK {{ analysisData.rank || getRank(analysisData.overallScore) }}
+              RANK {{ analysisData.rank }}
             </div>
 
             <div class="score-row">
               <div class="score-label">POWER LEVEL</div>
-              <div
-                class="score-val"
-                :style="{ color: getRankColor(analysisData.overallScore) }"
-              >
+              <div class="score-val" :style="{ color: getRankColor(analysisData.overallScore) }">
                 {{ analysisData.overallScore }} <span class="max">/ 100</span>
               </div>
             </div>
@@ -186,9 +204,7 @@ const goToAIDietPlan = () => {
                 :style="{
                   width: `${analysisData.overallScore}%`,
                   background: getRankColor(analysisData.overallScore),
-                  boxShadow: `0 0 10px ${getRankColor(
-                    analysisData.overallScore
-                  )}`,
+                  boxShadow: `0 0 10px ${getRankColor(analysisData.overallScore)}`,
                 }"
               ></div>
             </div>
@@ -204,7 +220,7 @@ const goToAIDietPlan = () => {
             >
               <div class="icon-box">
                 <svg
-                  v-if="item.iconType === 'sword'"
+                  v-if="item.iconType === 'sword' || item.iconType === 'muscle'"
                   viewBox="0 0 24 24"
                   class="animated-icon sword"
                 >
@@ -212,7 +228,7 @@ const goToAIDietPlan = () => {
                   <path d="M4 14.5l2-2 2 2-2 2z" fill="currentColor" />
                 </svg>
                 <svg
-                  v-if="item.iconType === 'skull'"
+                  v-if="item.iconType === 'skull' || item.iconType === 'warning'"
                   viewBox="0 0 24 24"
                   class="animated-icon skull"
                 >
@@ -227,50 +243,21 @@ const goToAIDietPlan = () => {
                   />
                 </svg>
                 <svg
-                  v-if="item.iconType === 'scale'"
+                  v-if="item.iconType === 'scale' || item.iconType === 'balance'"
                   viewBox="0 0 24 24"
                   class="animated-icon scale"
                 >
                   <path d="M12 2L2 12h20L12 2z" fill="currentColor" />
-                  <rect
-                    x="11"
-                    y="12"
-                    width="2"
-                    height="10"
-                    fill="currentColor"
-                  />
+                  <rect x="11" y="12" width="2" height="10" fill="currentColor" />
                 </svg>
                 <svg
-                  v-if="item.iconType === 'scroll'"
+                  v-if="item.iconType === 'scroll' || item.iconType === 'energy'"
                   viewBox="0 0 24 24"
                   class="animated-icon scroll"
                 >
-                  <rect
-                    x="4"
-                    y="4"
-                    width="16"
-                    height="16"
-                    rx="2"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    fill="none"
-                  />
-                  <line
-                    x1="8"
-                    y1="8"
-                    x2="16"
-                    y2="8"
-                    stroke="currentColor"
-                    stroke-width="2"
-                  />
-                  <line
-                    x1="8"
-                    y1="12"
-                    x2="16"
-                    y2="12"
-                    stroke="currentColor"
-                    stroke-width="2"
-                  />
+                  <rect x="4" y="4" width="16" height="16" rx="2" stroke="currentColor" stroke-width="2" fill="none" />
+                  <line x1="8" y1="8" x2="16" y2="8" stroke="currentColor" stroke-width="2" />
+                  <line x1="8" y1="12" x2="16" y2="12" stroke="currentColor" stroke-width="2" />
                 </svg>
               </div>
               <div class="text-box">
@@ -301,7 +288,7 @@ const goToAIDietPlan = () => {
 </template>
 
 <style scoped>
-/* 폰트: 둥근모꼴 */
+/* 폰트 및 애니메이션 스타일은 기존과 동일 */
 @import url("https://cdn.jsdelivr.net/gh/neodgm/neodgm-webfont@latest/neodgm/style.css");
 
 .ai-view {
@@ -315,7 +302,6 @@ const goToAIDietPlan = () => {
   overflow-x: hidden;
 }
 
-/* 스캔라인 */
 .scanlines {
   position: fixed;
   top: 0;
@@ -324,12 +310,7 @@ const goToAIDietPlan = () => {
   height: 100%;
   pointer-events: none;
   background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
-    linear-gradient(
-      90deg,
-      rgba(255, 0, 0, 0.06),
-      rgba(0, 255, 0, 0.02),
-      rgba(0, 0, 255, 0.06)
-    );
+    linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
   background-size: 100% 4px, 6px 100%;
   z-index: 99;
 }
@@ -342,7 +323,6 @@ const goToAIDietPlan = () => {
   z-index: 100;
 }
 
-/* 헤더 */
 .retro-header {
   display: flex;
   justify-content: space-between;
@@ -375,7 +355,6 @@ const goToAIDietPlan = () => {
   margin: 0;
 }
 
-/* 1. 로딩 터미널 */
 .loading-terminal {
   background: #000;
   border: 2px solid #00ff00;
@@ -412,7 +391,6 @@ const goToAIDietPlan = () => {
   }
 }
 
-/* 2. 대시보드 - AI 아바타 (눈) */
 .ai-avatar-section {
   display: flex;
   flex-direction: column;
@@ -427,7 +405,6 @@ const goToAIDietPlan = () => {
   align-items: center;
   justify-content: center;
 }
-/* 눈 테두리 */
 .eye-ring {
   width: 100%;
   height: 100%;
@@ -438,7 +415,9 @@ const goToAIDietPlan = () => {
   animation: spin 4s linear infinite;
   box-shadow: 0 0 15px #00e5ff;
 }
-/* 눈동자 */
+.eye-ring.fast-spin {
+  animation: spin 1s linear infinite;
+}
 .eye-iris {
   width: 60px;
   height: 60px;
@@ -470,7 +449,6 @@ const goToAIDietPlan = () => {
   box-shadow: 0 0 5px #00ff00;
 }
 
-/* AI 메시지 */
 .ai-message-box {
   margin-top: 1rem;
   background: rgba(0, 229, 255, 0.1);
@@ -481,7 +459,6 @@ const goToAIDietPlan = () => {
   font-size: 0.8rem;
 }
 
-/* 파워 카드 */
 .power-card {
   background: #111;
   border: 2px solid #333;
@@ -533,7 +510,6 @@ const goToAIDietPlan = () => {
   transform: rotate(5deg);
   box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.5);
 }
-
 .score-row {
   display: flex;
   justify-content: space-between;
@@ -554,7 +530,6 @@ const goToAIDietPlan = () => {
   font-size: 1rem;
   color: #555;
 }
-
 .retro-progress {
   height: 12px;
   background: #222;
@@ -567,7 +542,6 @@ const goToAIDietPlan = () => {
   box-shadow: 0 0 10px currentColor;
 }
 
-/* 인사이트 그리드 */
 .insight-grid {
   display: grid;
   gap: 1rem;
@@ -587,30 +561,16 @@ const goToAIDietPlan = () => {
   transform: translateX(5px);
   background: rgba(255, 255, 255, 0.08);
 }
-
-/* 카드 타입별 색상 */
 .insight-card.positive {
   border-left: 4px solid #00ff00;
 }
-.insight-card.positive .icon-box {
-  color: #00ff00;
-}
-
 .insight-card.warning {
   border-left: 4px solid #ff0055;
 }
-.insight-card.warning .icon-box {
-  color: #ff0055;
-}
-
 .insight-card.suggestion {
   border-left: 4px solid #00e5ff;
 }
-.insight-card.suggestion .icon-box {
-  color: #00e5ff;
-}
 
-/* 움직이는 아이콘 */
 .icon-box {
   width: 40px;
   height: 40px;
@@ -620,8 +580,6 @@ const goToAIDietPlan = () => {
   width: 100%;
   height: 100%;
 }
-
-/* 아이콘 애니메이션 정의 */
 .sword {
   animation: swing 2s infinite ease-in-out;
   transform-origin: bottom left;
@@ -652,7 +610,6 @@ const goToAIDietPlan = () => {
   line-height: 1.3;
 }
 
-/* 어드바이스 터미널 */
 .advice-terminal {
   background: #000;
   border: 1px solid #666;
@@ -672,11 +629,6 @@ const goToAIDietPlan = () => {
   line-height: 1.4;
 }
 
-/* 버튼 */
-.action-buttons {
-  display: flex;
-  gap: 10px;
-}
 .retro-btn {
   flex: 1;
   padding: 12px;
@@ -690,26 +642,19 @@ const goToAIDietPlan = () => {
   gap: 8px;
   box-shadow: 4px 4px 0 #000;
   transition: transform 0.1s;
+  background: #00e5ff;
+  color: #000;
 }
 .retro-btn:active {
   transform: translate(4px, 4px);
   box-shadow: none;
 }
-.retro-btn.primary {
-  background: #00e5ff;
-  color: #000;
-}
-.retro-btn.secondary {
-  background: #222;
-  color: #fff;
-}
 
-/* 애니메이션 키프레임 */
 @keyframes spin {
-  0% {
+  from {
     transform: rotate(0deg);
   }
-  100% {
+  to {
     transform: rotate(360deg);
   }
 }
@@ -797,7 +742,7 @@ const goToAIDietPlan = () => {
     opacity: 1;
   }
   50% {
-    opacity: 0;
+    opacity: 0.5;
   }
 }
 .pop-in {
