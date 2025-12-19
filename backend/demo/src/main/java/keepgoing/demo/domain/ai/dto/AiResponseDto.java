@@ -1,4 +1,4 @@
-package com.ssafy.gms.domain.diet.dto;
+package keepgoing.demo.domain.ai.dto;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
