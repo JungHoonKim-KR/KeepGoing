@@ -19,17 +19,17 @@ const goHome = () => {
 <template>
   <header class="global-header retro-theme">
     <div class="header-content">
-      <div class="header-left" @click="goHome">
+      <!-- <div class="header-left" @click="goHome">
         <div class="system-status">
           <span class="status-light blink"></span>
           <span class="status-text">SYS_ONLINE</span>
         </div>
         <h1 class="brand-logo">KEEP GOING</h1>
-      </div>
+      </div> -->
 
       <div class="header-right" v-if="authStore.isAuthenticated">
         <span class="user-name">PLAYER: {{ authStore.name }}</span>
-        <button class="logout-btn" @click="handleLogout">[ EXIT ]</button>
+        <button class="logout-btn" @click="handleLogout">EXIT</button>
       </div>
     </div>
     <div class="header-line"></div>
@@ -48,7 +48,7 @@ const goHome = () => {
 }
 
 .header-content {
-  display: flex;
+  /* display: flex; */
   justify-content: space-between;
   align-items: center;
   padding: 0 20px 15px 20px;
@@ -90,6 +90,7 @@ const goHome = () => {
 .header-right {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 20px;
 }
 

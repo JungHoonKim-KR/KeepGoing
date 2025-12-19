@@ -86,13 +86,13 @@ const cancelEdit = () => {
 
     <div class="content">
       <header class="header">
-        <div class="player-info">
+        <!-- <div class="player-info">
           <div class="name-group">
             <span class="player-badge">ID</span>
             <span class="player-name">{{ profile.name }}</span>
           </div>
           <span class="level-badge">Lv.{{ profile.level }}</span>
-        </div>
+        </div> -->
         <button v-if="!isEditing" @click="startEdit" class="retro-btn sm-btn">
           EDIT
         </button>
@@ -372,7 +372,7 @@ const cancelEdit = () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 2rem;
+  /* margin-bottom: 2rem; */
   border-bottom: 2px solid #333;
   padding-bottom: 1rem;
 }
@@ -450,7 +450,7 @@ const cancelEdit = () => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  margin-bottom: 2rem;
+  /* margin-bottom: 2rem; */
   position: relative;
   height: 160px;
 }
