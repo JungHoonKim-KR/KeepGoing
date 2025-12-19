@@ -9,18 +9,12 @@
       </div>
 
       <div class="modal-body">
-
         <div class="potion-section">
           <div class="potion-bottle-container">
             <div class="potion-bottle">
-              <div
-                class="potion-liquid"
-                :style="{ height: waterPercentage + '%' }"
-              >
+              <div class="potion-liquid" :style="{ height: waterPercentage + '%' }">
                 <div class="potion-surface"></div>
-                <div class="bubbles">
-                  <span></span><span></span><span></span><span></span>
-                </div>
+                <div class="bubbles"><span></span><span></span><span></span><span></span></div>
               </div>
               <div class="bottle-shine"></div>
             </div>
@@ -36,27 +30,15 @@
         <div class="inventory-section">
           <h3 class="pixel-subtitle">SELECT ITEM</h3>
           <div class="item-grid">
-            <button
-              @click="addWater(0.1)"
-              class="item-slot"
-              title="Small Potion"
-            >
+            <button @click="addWater(0.1)" class="item-slot" title="Small Potion">
               <div class="item-icon">💧</div>
               <div class="item-name">Small<br />+100</div>
             </button>
-            <button
-              @click="addWater(0.2)"
-              class="item-slot"
-              title="Medium Potion"
-            >
+            <button @click="addWater(0.2)" class="item-slot" title="Medium Potion">
               <div class="item-icon">🧪</div>
               <div class="item-name">Medium<br />+200</div>
             </button>
-            <button
-              @click="addWater(0.3)"
-              class="item-slot"
-              title="Large Potion"
-            >
+            <button @click="addWater(0.3)" class="item-slot" title="Large Potion">
               <div class="item-icon">🏺</div>
               <div class="item-name">Large<br />+300</div>
             </button>
@@ -80,12 +62,8 @@
           />
         </div>
 
-        
-
         <div class="action-footer">
-          <button @click="saveWater" class="retro-btn save-btn">
-            SAVE GAME
-          </button>
+          <button @click="saveWater" class="retro-btn save-btn">SAVE GAME</button>
         </div>
       </div>
     </div>
@@ -95,38 +73,35 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import dayjs from "dayjs";
-import { useConfigStore } from '@/stores/configStore'; // Pinia Store 경로를 정확히 확인해주세요.
+import { useConfigStore } from "@/stores/configStore"; // Pinia Store 경로를 정확히 확인해주세요.
 const emit = defineEmits(["close", "update-water"]);
 
 // Data
 const config = useConfigStore();
 const props = defineProps({
-    initialAmount: {
-        type: Number,
-        default: 0.0
-    },
-    initialGoal: {
-        type: Number,
-        default: 2.0
-    },
-    dateToUse: {
-        type: String,
-        required: true
-    }
+  initialAmount: {
+    type: Number,
+    default: 0.0,
+  },
+  initialGoal: {
+    type: Number,
+    default: 2.0,
+  },
+  dateToUse: {
+    type: String,
+    required: true,
+  },
 });
-const formattedDate = computed(() => ref(props.dateToUse)); 
+const formattedDate = computed(() => ref(props.dateToUse));
 const MEMBER_ID = config.MEMBER_ID;
 const API_ENDPOINT = config.API_ENDPOINT;
 
-
-const todayRecords = ref([
-
-]);
+const todayRecords = ref([]);
 
 // Data
 // 🌟 props 값으로 초기화 (API 데이터 반영)
 const currentAmount = ref(props.initialAmount);
-const goalAmount = ref(props.initialGoal); 
+const goalAmount = ref(props.initialGoal);
 const sliderValue = ref(Math.round(props.initialAmount * 10));
 // Computed
 const waterPercentage = computed(() => {
@@ -237,7 +212,6 @@ const saveWater = async () => {
 // Lifecycle
 onMounted(() => {
   document.body.style.overflow = "hidden";
-
 });
 onUnmounted(() => {
   document.body.style.overflow = "";
@@ -271,12 +245,7 @@ onUnmounted(() => {
   height: 100%;
   pointer-events: none;
   background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
-    linear-gradient(
-      90deg,
-      rgba(255, 0, 0, 0.06),
-      rgba(0, 255, 0, 0.02),
-      rgba(0, 0, 255, 0.06)
-    );
+    linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
   background-size: 100% 4px, 6px 100%;
 }
 
@@ -465,14 +434,14 @@ onUnmounted(() => {
 .item-grid {
   /* 4열 대신 flex-wrap으로 유연하게 처리 */
   display: flex;
-  flex-wrap: wrap; 
+  flex-wrap: wrap;
   justify-content: space-between;
   gap: 8px;
 }
 
 .item-slot {
   /* 4개 대신 2개가 한 줄에 오도록 48% 설정 */
-  flex-basis: calc(50% - 4px); 
+  flex-basis: calc(50% - 4px);
   background: #222;
   border: 2px solid #555;
   color: #fff;
@@ -537,7 +506,7 @@ onUnmounted(() => {
   background: rgba(0, 0, 0, 0.5);
   border: 2px solid #333;
   /* 높이 축소하여 공간 확보 */
-  height: 80px; 
+  height: 80px;
   overflow-y: auto;
   padding: 5px;
   font-size: 0.75rem;
@@ -557,7 +526,7 @@ onUnmounted(() => {
   flex: 1;
   color: #ccc;
   /* 작은 화면에서 텍스트가 잘리지 않도록 */
-  word-break: break-all; 
+  word-break: break-all;
 }
 .delete-x {
   background: none;
@@ -570,7 +539,7 @@ onUnmounted(() => {
   color: #555;
   justify-content: center;
   /* 높이 축소에 맞춰 패딩 조절 */
-  padding-top: 15px; 
+  padding-top: 15px;
   border: none;
 }
 
@@ -597,14 +566,14 @@ onUnmounted(() => {
 
 /* 450px 이하 화면을 위한 미디어 쿼리 */
 @media (max-width: 450px) {
-    .retro-modal {
-        /* 모바일 환경에서 모달의 높이가 화면을 초과하는 경우를 대비하여 padding-bottom 제거 */
-        padding-bottom: 0; 
-        /* 모바일에서 모달이 화면의 중앙이 아닌 상단에서 시작하도록 조정 */
-        margin: 10px auto; 
-    }
-    .modal-overlay {
-        align-items: flex-start; /* 모달을 상단에 정렬 */
-    }
+  .retro-modal {
+    /* 모바일 환경에서 모달의 높이가 화면을 초과하는 경우를 대비하여 padding-bottom 제거 */
+    padding-bottom: 0;
+    /* 모바일에서 모달이 화면의 중앙이 아닌 상단에서 시작하도록 조정 */
+    margin: 10px auto;
+  }
+  .modal-overlay {
+    align-items: flex-start; /* 모달을 상단에 정렬 */
+  }
 }
 </style>
