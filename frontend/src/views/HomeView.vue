@@ -17,15 +17,14 @@
           </div>
         </div>
 
-        <div class="game-screen-container" @click="handleScreenClick">
+        <div class="game-screen-container" @click="playRetroSound('jump')">
           <div class="pixel-border">
             <div class="screen-bg">
               <div class="level-badge" :class="{ 'level-up-anim': isLevelingUp }">
-                {{ isLevelingUp ? "LEVEL UP!" : `Lv.${currentLevel}` }}
+                {{ isLevelingUp ? "LEVEL UP!" : "Lv.24" }}
               </div>
-
               <img
-                :src="currentCharacterImage"
+                :src="characterImage"
                 alt="Character"
                 class="character-gif pixelated"
                 :class="{ bounce: isBouncing }"
@@ -33,8 +32,6 @@
               <div class="dialog-box">
                 <p class="typing-effect">{{ dialogText }}</p>
               </div>
-
-              <div class="edit-hint">Click screen to change character</div>
             </div>
           </div>
         </div>
@@ -160,32 +157,6 @@
         </div>
       </div>
     </section>
-
-    <div v-if="showCharModal" class="modal-overlay" @click.self="showCharModal = false">
-      <div class="pixel-card char-select-modal" @click.stop>
-        <div class="retro-header-sm">SELECT CHARACTER</div>
-
-        <div class="char-grid">
-          <div
-            v-for="char in characterList"
-            :key="char.id"
-            class="char-slot"
-            :class="{
-              locked: char.isLocked,
-              selected: char.id === selectedCharId,
-            }"
-            @click="selectCharacter(char)"
-          >
-            <div v-if="char.isLocked" class="lock-overlay">🔒</div>
-            <img :src="char.src" class="grid-char-img" />
-            <span class="char-num">NO.{{ char.id }}</span>
-          </div>
-        </div>
-
-        <button class="retro-btn" @click="showCharModal = false">CLOSE</button>
-      </div>
-    </div>
-
     <div v-if="showModal" class="modal-overlay" @click="closeModal"></div>
     <MealRecordModal v-if="showMealModal" @close="closeMealModal" :date-to-use="formattedDate" />
     <WaterRecordModal
@@ -208,13 +179,14 @@
 
 <script setup>
 import { ref, computed, onMounted } from "vue";
-import { useConfigStore } from "@/stores/configStore";
+import { useConfigStore } from "@/stores/configStore"; // Pinia Store 경로를 정확히 확인해주세요.
 import { useRoute } from "vue-router";
 import Footer from "@/components/utils/Footer.vue";
 import dayjs from "dayjs";
 import confetti from "canvas-confetti";
+import characterImage from "../assets/images/characters/test.gif";
 
-// 컴포넌트 import
+// 컴포넌트 import (경로가 올바르다고 가정)
 import WaterRecordModal from "@/components/record/WaterRecordModal.vue";
 import WeightRecordModal from "@/components/record/WeightRecordModal.vue";
 import MealRecordModal from "@/components/record/MealRecordModal.vue";
@@ -235,57 +207,6 @@ const formattedDate = computed(() => {
   }
 });
 
-// =========================
-// 🎮 캐릭터 및 레벨 시스템 (신규 추가)
-// =========================
-const currentLevel = ref(10); // 테스트용 현재 레벨 (API에서 받아온 값으로 교체 필요)
-const selectedCharId = ref(1); // 현재 선택된 캐릭터 ID (기본 1번)
-const showCharModal = ref(false); // 캐릭터 변경 모달 표시 여부
-
-// 이미지 경로 동적 생성 (Vite 기준)
-// assets/images/characters/1.png ~ 16.png 파일이 있어야 함
-const getCharImage = (id) => {
-  return new URL(`../assets/images/characters/${id}.png`, import.meta.url).href;
-};
-
-// 메인 화면에 표시될 현재 캐릭터 이미지
-const currentCharacterImage = computed(() => getCharImage(selectedCharId.value));
-
-// 캐릭터 리스트 (1~16번) 생성 및 잠금 상태 계산
-const characterList = computed(() => {
-  return Array.from({ length: 16 }, (_, i) => {
-    const id = i + 1;
-    return {
-      id,
-      src: getCharImage(id),
-      isLocked: id > currentLevel.value, // 현재 레벨보다 높으면 잠금
-    };
-  });
-});
-
-// 캐릭터 선택 핸들러
-const selectCharacter = (char) => {
-  if (char.isLocked) {
-    // 잠긴 캐릭터 클릭 시 (효과음 등 추가 가능)
-    console.log("Locked Character");
-    return;
-  }
-  selectedCharId.value = char.id;
-  playRetroSound("coin");
-  showCharModal.value = false; // 선택 후 모달 닫기
-};
-
-// 게임 스크린 클릭 핸들러 (캐릭터 변경 모달 열기)
-// ... 기존 코드 유지 ...
-
-// [수정] 게임 스크린 클릭 핸들러
-const handleScreenClick = () => {
-  // playRetroSound("jump"); // <--- 이 줄을 삭제하여 점프(바운스) 제거
-  console.log("캐릭터 선택 모달 열기"); // 디버깅용 로그
-  showCharModal.value = true; // 모달 열기
-};
-
-// ... 기존 코드 유지 ...
 // =========================
 // 🍽 식단 데이터
 // =========================
@@ -311,6 +232,7 @@ const todayMeals = computed(() => {
       type,
       icon: mealIcons[type] || "🍽️",
       cal: Math.round(meal.energy || 0),
+      // foods 배열이 유효한지 확인하고 name을 join합니다.
       name:
         meal.foods
           ?.map((f) => f.name)
@@ -339,9 +261,10 @@ const showModal = ref(false);
 const showWaterModal = ref(false);
 const showWeightModal = ref(false);
 const showMealModal = ref(false);
+const showRadio = ref(false);
 
 // =========================
-// 🧠 캐릭터 상태 (기존 유지)
+// 🧠 캐릭터 상태
 // =========================
 const isLevelingUp = ref(false);
 const isBouncing = ref(false);
@@ -350,7 +273,7 @@ const dialogText = ref('"오늘도 힘내보자구!"');
 // =========================
 // 📊 스탯 (에너지 및 매크로 계산)
 // =========================
-const maxEnergy = 3000;
+const maxEnergy = 3000; // 일일 권장 칼로리 (임의 설정)
 const currentEnergy = computed(() => {
   return Object.values(todayMealMap.value)
     .reduce((acc, meal) => acc + (meal ? meal.energy : 0), 0)
@@ -422,8 +345,6 @@ const triggerLevelUp = () => {
   setTimeout(() => {
     isLevelingUp.value = false;
     dialogText.value = '"다음 레벨로 가보자!"';
-    // 레벨업 시뮬레이션 (원하시면 주석 해제)
-    // currentLevel.value++;
   }, 3000);
 };
 
@@ -519,6 +440,7 @@ async function fetchDailyDiet() {
 }
 
 async function fetchHydrationData() {
+  // 물 데이터 API 호출 로직 (임의 구현)
   const baseURL = `${API_ENDPOINT}/diets/hydration`;
   const params = new URLSearchParams({
     memberId: MEMBER_ID,
@@ -564,7 +486,6 @@ onMounted(async () => {
   await fetchWeightData();
 });
 </script>
-
 <style scoped>
 /* 폰트: 둥근모꼴 */
 @import url("https://cdn.jsdelivr.net/gh/neodgm/neodgm-webfont@latest/neodgm/style.css");
@@ -604,7 +525,7 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   align-items: center; /* 가로 중앙 정렬 */
-  justify-content: flex-start; /* 세로 상단 정렬 */
+  justify-content: flex-start; /* 세로 상단 정렬 (기존 center에서 변경) */
   padding: 4rem 1rem 6rem 1rem; /* 상단 여백 확보, 하단은 푸터 공간 확보 */
   box-sizing: border-box;
   padding-top: 10rem;
@@ -615,10 +536,10 @@ onMounted(async () => {
   max-width: 600px;
   display: flex;
   flex-direction: column;
-  gap: 0.8rem;
+  gap: 0.8rem; /* 기존 1.5rem에서 축소하여 더 촘촘하게 */
 }
 
-/* === 공통 박스 스타일 === */
+/* === 공통 박스 스타일 수정: 패딩 축소 === */
 .pixel-box,
 .pixel-card {
   border: 4px solid #fff;
@@ -630,11 +551,11 @@ onMounted(async () => {
 
 .pixel-box {
   background: #2d2d3a;
-  padding: 0.8rem;
+  padding: 0.8rem; /* 기존 1rem에서 축소 */
 }
 
 .pixel-card {
-  padding: 1rem;
+  padding: 1rem; /* 기존 1.5rem에서 축소 */
   text-align: center;
   background: #e6dac3;
   color: #3e2723;
@@ -649,10 +570,12 @@ onMounted(async () => {
 /* === 페이지별 배경색 === */
 .page.daily-page {
   background: #222034;
-  padding-top: 4rem;
+
+  padding: 1rem 1rem 6rem 1rem;
 }
 .meal-page {
   background: #4b692f;
+  padding: 1rem 1rem 6rem 1rem;
 }
 .water-page {
   background: #000022;
@@ -664,7 +587,7 @@ onMounted(async () => {
 .retro-header {
   text-align: center;
   color: var(--secondary-color);
-  margin-bottom: 0.2rem;
+  margin-bottom: 0.2rem; /* 마진 축소 */
   font-size: 1.1rem;
 }
 
@@ -674,7 +597,7 @@ onMounted(async () => {
 
 /* 프로그레스 바 */
 .retro-progress-container {
-  height: 20px;
+  height: 20px; /* 높이 약간 축소 */
   background: #333;
   border: 2px solid #fff;
   padding: 2px;
@@ -695,42 +618,29 @@ onMounted(async () => {
   animation: blink 0.5s infinite alternate;
 }
 
-/* === 캐릭터 화면 === */
+/* === 캐릭터 화면 수정: 높이 축소 === */
 .game-screen-container .pixel-border {
-  border: 6px solid #444;
+  border: 6px solid #444; /* 테두리 두께 약간 축소 */
   background: #8fb8ca;
-  padding: 0;
+  padding: 0; /* 내부 패딩 제거하여 공간 확보 */
   border-radius: 6px;
   overflow: hidden;
 }
 
 .screen-bg {
   background: url("https://i.pinimg.com/originals/10/78/3f/10783f947938361b02390a382c44843b.png") repeat-x bottom;
-  background-size: cover;
+  background-size: cover; /* contain -> cover로 변경하여 꽉 차게 */
   width: 100%;
-  height: 150px;
+  height: 150px; /* 기존 200px -> 150px로 축소 (핵심) */
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: flex-end;
   position: relative;
-  cursor: pointer; /* 클릭 가능 표시 */
-}
-
-/* 클릭 유도 힌트 */
-.edit-hint {
-  position: absolute;
-  top: 5px;
-  right: 5px;
-  font-size: 0.6rem;
-  color: rgba(255, 255, 255, 0.6);
-  text-shadow: 1px 1px 0 #000;
-  animation: blink 2s infinite;
-  pointer-events: none;
 }
 
 .character-gif {
-  width: 80px;
+  width: 80px; /* 캐릭터 크기 약간 축소 */
   image-rendering: pixelated;
   margin-bottom: 5px;
 }
@@ -783,7 +693,7 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 0.3rem;
+  margin-bottom: 0.3rem; /* 간격 축소 */
 }
 .stat-icon {
   width: 70px;
@@ -797,7 +707,7 @@ onMounted(async () => {
 }
 .retro-bar-bg {
   flex: 1;
-  height: 10px;
+  height: 10px; /* 두께 축소 */
   background: #111;
   border: 1px solid #555;
 }
@@ -853,12 +763,12 @@ onMounted(async () => {
   image-rendering: pixelated;
 }
 
-/* === 식단 리스트 스타일 === */
+/* === 식단 리스트 스타일 (Inventory Style) === */
 .meal-log-container {
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.5rem; /* 간격 축소 */
 }
 
 .retro-header-sm {
@@ -877,7 +787,7 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  max-height: 55vh;
+  max-height: 55vh; /* 스크롤 영역 확보 */
   overflow-y: auto;
   padding-right: 5px;
 }
@@ -895,7 +805,7 @@ onMounted(async () => {
   align-items: center;
   background: rgba(0, 0, 0, 0.6);
   border: 2px solid #fff;
-  padding: 8px;
+  padding: 8px; /* 패딩 축소 */
   gap: 10px;
   cursor: pointer;
   transition: transform 0.1s, background 0.1s;
@@ -972,7 +882,7 @@ onMounted(async () => {
   font-size: 0.8rem;
 }
 
-/* === 공통 유틸 === */
+/* === 공통 유틸 및 기타 페이지 === */
 .pixel-text-center {
   text-align: center;
   color: rgba(255, 255, 255, 0.7);
@@ -981,7 +891,7 @@ onMounted(async () => {
   line-height: 1.4;
 }
 .empty-state-icon {
-  font-size: 2.5rem;
+  font-size: 2.5rem; /* 아이콘 크기 축소 */
   text-align: center;
   margin-bottom: 8px;
   opacity: 0.8;
@@ -1002,7 +912,7 @@ onMounted(async () => {
   padding-bottom: 4px;
 }
 .current-water {
-  font-size: 3rem;
+  font-size: 3rem; /* 폰트 축소 */
   font-weight: bold;
   color: #00e5ff;
   text-shadow: 0 0 10px #00e5ff;
@@ -1023,7 +933,7 @@ onMounted(async () => {
 
 /* === 체중 (Score) === */
 .score-val {
-  font-size: 3rem;
+  font-size: 3rem; /* 폰트 축소 */
   font-weight: bold;
   color: #d500f9;
   text-shadow: 0 0 10px #d500f9;
@@ -1042,104 +952,6 @@ onMounted(async () => {
   margin-top: 10px;
 }
 
-/* === 캐릭터 선택 모달 스타일 (신규) === */
-.char-select-modal {
-  width: 90%;
-  max-width: 400px;
-  background: #2d2d3a;
-  border: 4px solid #ffd700;
-  color: #fff;
-  z-index: 10000; /* [중요] 값을 매우 높임 */
-  position: relative;
-}
-.char-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr); /* 4열 */
-  gap: 10px;
-  margin: 1rem 0;
-  max-height: 50vh;
-  overflow-y: auto;
-  padding: 5px;
-}
-/* 스크롤바 커스텀 */
-.char-grid::-webkit-scrollbar {
-  width: 5px;
-}
-.char-grid::-webkit-scrollbar-thumb {
-  background: #ffd700;
-}
-
-.char-slot {
-  position: relative;
-  background: rgba(0, 0, 0, 0.3);
-  border: 2px solid #555;
-  border-radius: 4px;
-  padding: 5px;
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.1s;
-}
-
-.grid-char-img {
-  width: 100%;
-  height: auto;
-  image-rendering: pixelated;
-}
-
-.char-num {
-  font-size: 0.6rem;
-  margin-top: 4px;
-  color: #aaa;
-}
-
-/* 선택된 캐릭터 */
-.char-slot.selected {
-  border-color: #00e5ff;
-  background: rgba(0, 229, 255, 0.2);
-  box-shadow: 0 0 5px #00e5ff;
-}
-.char-slot.selected .char-num {
-  color: #00e5ff;
-}
-
-/* 잠긴 캐릭터 */
-.char-slot.locked {
-  border-color: #333;
-  opacity: 0.7;
-  cursor: not-allowed;
-}
-
-.char-slot.locked .grid-char-img {
-  filter: grayscale(100%) brightness(0.3);
-}
-
-.lock-overlay {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 1.5rem;
-  z-index: 10;
-  text-shadow: 2px 2px 0 #000;
-}
-
-/* 모달 오버레이 */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.85);
-  z-index: 9999; /* [중요] 스캔라인(999)보다 훨씬 높아야 함 */
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  animation: fadeIn 0.2s;
-}
 @keyframes float {
   0%,
   100% {
@@ -1156,14 +968,6 @@ onMounted(async () => {
   }
   50% {
     opacity: 0.5;
-  }
-}
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
   }
 }
 </style>
