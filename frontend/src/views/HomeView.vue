@@ -649,8 +649,9 @@ onMounted(async () => {
 
 /* === 페이지별 배경색 === */
 .page.daily-page { background: #222034; 
-              padding-top: 4rem;}
-.meal-page { background: #4b692f; }
+              
+            padding: 1rem 1rem 6rem 1rem;}
+.meal-page { background: #4b692f; padding: 1rem 1rem 6rem 1rem;}
 .water-page { background: #000022; }
 .weight-page { background: #2a0a29; }
 

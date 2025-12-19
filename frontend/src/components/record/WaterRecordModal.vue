@@ -9,7 +9,6 @@
       </div>
 
       <div class="modal-body">
-        <div class="date-display">Date: {{ formattedDate }}</div>
 
         <div class="potion-section">
           <div class="potion-bottle-container">
@@ -81,23 +80,7 @@
           />
         </div>
 
-        <div class="log-section">
-          <h3 class="pixel-subtitle">SYSTEM LOG</h3>
-          <div class="log-console">
-            <div v-if="todayRecords.length === 0" class="log-line empty">
-              > No records found...
-            </div>
-            <div
-              v-for="(record, index) in todayRecords"
-              :key="index"
-              class="log-line"
-            >
-              <span class="time">[{{ record.time }}]</span>
-              <span class="msg">Recovered {{ record.amount }}L MP</span>
-              <button @click="removeRecord(index)" class="delete-x">[x]</button>
-            </div>
-          </div>
-        </div>
+        
 
         <div class="action-footer">
           <button @click="saveWater" class="retro-btn save-btn">

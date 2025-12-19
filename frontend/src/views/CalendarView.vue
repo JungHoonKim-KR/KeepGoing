@@ -7,7 +7,7 @@
         <button @click="changeMonth(-1)" class="pixel-arrow">◀</button>
         <div class="month-display" @click.stop="openYearMonthModal">
           <span class="value">{{ currentYear }}.{{ String(currentMonth + 1).padStart(2, "0") }}</span>
-          <span class="blink-cursor">_</span>
+          <!-- <span class="blink-cursor">_</span> -->
         </div>
         <button @click="changeMonth(1)" class="pixel-arrow">▶</button>
       </div>
