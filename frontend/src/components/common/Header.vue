@@ -15,21 +15,17 @@ const goHome = () => {
   router.push("/");
 };
 </script>
-
 <template>
   <header class="global-header retro-theme">
     <div class="header-content">
-      <!-- <div class="header-left" @click="goHome">
-        <div class="system-status">
-          <span class="status-light blink"></span>
-          <span class="status-text">SYS_ONLINE</span>
-        </div>
-        <h1 class="brand-logo">KEEP GOING</h1>
-      </div> -->
-
       <div class="header-right" v-if="authStore.isAuthenticated">
         <span class="user-name">PLAYER: {{ authStore.name }}</span>
+
+        <div class="btn-container">
+          <div id="header-extra-actions"></div>
         <button class="logout-btn" @click="handleLogout">EXIT</button>
+        </div>
+        
       </div>
     </div>
     <div class="header-line"></div>
@@ -37,6 +33,10 @@ const goHome = () => {
 </template>
 
 <style scoped>
+  .btn-container{
+    display: flex;
+    gap: 0.2rem;
+  }
 .global-header {
   width: 100%;
   background-color: #000; /* 헤더 배경은 검정 */
@@ -87,11 +87,18 @@ const goHome = () => {
   letter-spacing: 2px;
 }
 
+/* 기존 style scoped 내에서 수정 */
 .header-right {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 20px;
+  justify-content: space-between;  
+  
+  gap: 20px; /* 요소 사이 간격 */
+}
+
+/* 만약 #header-extra-actions 안에 내용이 들어오면 간격을 줍니다 */
+#header-extra-actions:not(:empty) {
+    margin-right: 10px; /* EXIT 버튼과의 간격 */
 }
 
 .user-name {

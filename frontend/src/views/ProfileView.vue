@@ -84,26 +84,25 @@ const cancelEdit = () => {
   <div class="profile-view retro-theme">
     <div class="scanlines"></div>
 
-    <div class="content">
-      <header class="header">
-        <!-- <div class="player-info">
-          <div class="name-group">
-            <span class="player-badge">ID</span>
-            <span class="player-name">{{ profile.name }}</span>
-          </div>
-          <span class="level-badge">Lv.{{ profile.level }}</span>
-        </div> -->
-        <button v-if="!isEditing" @click="startEdit" class="retro-btn sm-btn">
+    <Teleport to="#header-extra-actions">
+        <button
+          v-if="!isEditing"
+          @click="startEdit"
+          class="retro-header-btn edit"
+        >
           EDIT
         </button>
         <button
           v-if="isEditing"
           @click="cancelEdit"
-          class="retro-btn sm-btn cancel"
+          class="retro-header-btn cancel"
         >
           CANCEL
         </button>
-      </header>
+    </Teleport>
+
+    <div class="content">
+      
 
       <div class="character-showcase">
         <div class="holo-pad"></div>
@@ -707,5 +706,42 @@ const cancelEdit = () => {
     flex-direction: column;
     gap: 15px;
   } /* 입력창 세로 배치 */
+}
+
+/* EXIT 버튼 스타일(.logout-btn)을 기반으로 작성 */
+.retro-header-btn {
+  background: transparent;
+  padding: 5px 12px;
+  font-family: "NeoDunggeunmo", monospace; /* 폰트 강제 지정 */
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: all 0.2s;
+  border: 1px solid; /* 테두리 두께 */
+  /* 마진을 주어 EXIT 버튼과 너무 딱 붙지 않게 합니다 */
+  margin-left: 10px;
+}
+
+/* EDIT 버튼 스타일 (네온 블루/화이트 계열) */
+.retro-header-btn.edit {
+  border-color: #00e5ff; /* 네온 사이안 색상 */
+  color: #00e5ff;
+}
+
+.retro-header-btn.edit:hover {
+  background: #00e5ff;
+  color: #000; /* 배경이 밝아지므로 글자는 검정 */
+  box-shadow: 0 0 10px #00e5ff;
+}
+
+/* CANCEL 버튼 스타일 (EXIT 버튼과 동일한 붉은 계열) */
+.retro-header-btn.cancel {
+  border-color: #ff0055; /* 네온 핑크/레드 색상 */
+  color: #ff0055;
+}
+
+.retro-header-btn.cancel:hover {
+  background: #ff0055;
+  color: #fff;
+  box-shadow: 0 0 10px #ff0055;
 }
 </style>
