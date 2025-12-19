@@ -17,14 +17,15 @@
           </div>
         </div>
 
-        <div class="game-screen-container" @click="playRetroSound('jump')">
+        <div class="game-screen-container" @click="handleScreenClick">
           <div class="pixel-border">
             <div class="screen-bg">
               <div class="level-badge" :class="{ 'level-up-anim': isLevelingUp }">
-                {{ isLevelingUp ? "LEVEL UP!" : "Lv.24" }}
+                {{ isLevelingUp ? "LEVEL UP!" : `Lv.${currentLevel}` }}
               </div>
+
               <img
-                :src="characterImage"
+                :src="currentCharacterImage"
                 alt="Character"
                 class="character-gif pixelated"
                 :class="{ bounce: isBouncing }"
@@ -32,6 +33,8 @@
               <div class="dialog-box">
                 <p class="typing-effect">{{ dialogText }}</p>
               </div>
+
+              <div class="edit-hint">Click screen to change character</div>
             </div>
           </div>
         </div>
@@ -157,6 +160,32 @@
         </div>
       </div>
     </section>
+
+    <div v-if="showCharModal" class="modal-overlay" @click.self="showCharModal = false">
+      <div class="pixel-card char-select-modal" @click.stop>
+        <div class="retro-header-sm">SELECT CHARACTER</div>
+
+        <div class="char-grid">
+          <div
+            v-for="char in characterList"
+            :key="char.id"
+            class="char-slot"
+            :class="{
+              locked: char.isLocked,
+              selected: char.id === selectedCharId,
+            }"
+            @click="selectCharacter(char)"
+          >
+            <div v-if="char.isLocked" class="lock-overlay">🔒</div>
+            <img :src="char.src" class="grid-char-img" />
+            <span class="char-num">NO.{{ char.id }}</span>
+          </div>
+        </div>
+
+        <button class="retro-btn" @click="showCharModal = false">CLOSE</button>
+      </div>
+    </div>
+
     <div v-if="showModal" class="modal-overlay" @click="closeModal"></div>
     <MealRecordModal v-if="showMealModal" @close="closeMealModal" :date-to-use="formattedDate" />
     <WaterRecordModal
@@ -184,7 +213,7 @@ import { useRoute } from "vue-router";
 import Footer from "@/components/utils/Footer.vue";
 import dayjs from "dayjs";
 import confetti from "canvas-confetti";
-import characterImage from "../assets/images/characters/test.gif";
+// import characterImage from "../assets/images/characters/test.gif"; // [삭제됨] 동적 로딩으로 변경
 
 // 컴포넌트 import (경로가 올바르다고 가정)
 import WaterRecordModal from "@/components/record/WaterRecordModal.vue";
@@ -206,6 +235,50 @@ const formattedDate = computed(() => {
     return dayjs().format("YYYY-MM-DD");
   }
 });
+
+// =========================
+// 🎮 캐릭터 및 레벨 시스템 (신규 추가)
+// =========================
+const currentLevel = ref(10); // 테스트용 현재 레벨 (API에서 받아온 값으로 교체 필요)
+const selectedCharId = ref(1); // 현재 선택된 캐릭터 ID (기본 1번)
+const showCharModal = ref(false); // 캐릭터 변경 모달 표시 여부
+
+// [수정됨] 이미지 경로: characters
+const getCharImage = (id) => {
+  return new URL(`../assets/images/characters/${id}.png`, import.meta.url).href;
+};
+
+// 메인 화면에 표시될 현재 캐릭터 이미지
+const currentCharacterImage = computed(() => getCharImage(selectedCharId.value));
+
+// 캐릭터 리스트 (1~16번) 생성 및 잠금 상태 계산
+const characterList = computed(() => {
+  return Array.from({ length: 16 }, (_, i) => {
+    const id = i + 1;
+    return {
+      id,
+      src: getCharImage(id),
+      isLocked: id > currentLevel.value, // 현재 레벨보다 높으면 잠금
+    };
+  });
+});
+
+// 캐릭터 선택 핸들러
+const selectCharacter = (char) => {
+  if (char.isLocked) {
+    console.log("Locked Character");
+    return;
+  }
+  selectedCharId.value = char.id;
+  playRetroSound("coin");
+  showCharModal.value = false;
+};
+
+// [수정됨] 스크린 클릭 핸들러 (점프 제거, 모달 오픈)
+const handleScreenClick = () => {
+  console.log("캐릭터 선택 모달 오픈");
+  showCharModal.value = true;
+};
 
 // =========================
 // 🍽 식단 데이터
@@ -486,6 +559,7 @@ onMounted(async () => {
   await fetchWeightData();
 });
 </script>
+
 <style scoped>
 /* 폰트: 둥근모꼴 */
 @import url("https://cdn.jsdelivr.net/gh/neodgm/neodgm-webfont@latest/neodgm/style.css");
@@ -570,7 +644,6 @@ onMounted(async () => {
 /* === 페이지별 배경색 === */
 .page.daily-page {
   background: #222034;
-
   padding: 1rem 1rem 6rem 1rem;
 }
 .meal-page {
@@ -637,6 +710,19 @@ onMounted(async () => {
   align-items: center;
   justify-content: flex-end;
   position: relative;
+  cursor: pointer;
+}
+
+/* [추가] 힌트 메시지 스타일 */
+.edit-hint {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  font-size: 0.6rem;
+  color: rgba(255, 255, 255, 0.6);
+  text-shadow: 1px 1px 0 #000;
+  animation: blink 2s infinite;
+  pointer-events: none;
 }
 
 .character-gif {
@@ -968,6 +1054,115 @@ onMounted(async () => {
   }
   50% {
     opacity: 0.5;
+  }
+}
+
+/* ========================================================= */
+/* [추가] 캐릭터 선택 모달 스타일 (기존 CSS 아래에 안전하게 추가) */
+/* ========================================================= */
+.char-select-modal {
+  width: 90%;
+  max-width: 400px;
+  background: #2d2d3a;
+  border: 4px solid #ffd700;
+  color: #fff;
+  z-index: 10000; /* 최상위 우선순위 */
+  position: relative;
+}
+
+.char-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr); /* 4열 */
+  gap: 10px;
+  margin: 1rem 0;
+  max-height: 50vh;
+  overflow-y: auto;
+  padding: 5px;
+}
+.char-grid::-webkit-scrollbar {
+  width: 5px;
+}
+.char-grid::-webkit-scrollbar-thumb {
+  background: #ffd700;
+}
+
+.char-slot {
+  position: relative;
+  background: rgba(0, 0, 0, 0.3);
+  border: 2px solid #555;
+  border-radius: 4px;
+  padding: 5px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.1s;
+}
+
+.grid-char-img {
+  width: 100%;
+  height: auto;
+  image-rendering: pixelated;
+}
+
+.char-num {
+  font-size: 0.6rem;
+  margin-top: 4px;
+  color: #aaa;
+}
+
+/* 선택된 캐릭터 */
+.char-slot.selected {
+  border-color: #00e5ff;
+  background: rgba(0, 229, 255, 0.2);
+  box-shadow: 0 0 5px #00e5ff;
+}
+.char-slot.selected .char-num {
+  color: #00e5ff;
+}
+
+/* 잠긴 캐릭터 */
+.char-slot.locked {
+  border-color: #333;
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+.char-slot.locked .grid-char-img {
+  filter: grayscale(100%) brightness(0.3);
+}
+
+.lock-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 1.5rem;
+  z-index: 10;
+  text-shadow: 2px 2px 0 #000;
+}
+
+/* 모달 오버레이 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.85);
+  z-index: 9999; /* 스캔라인(999)보다 위 */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  animation: fadeIn 0.2s;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
   }
 }
 </style>
