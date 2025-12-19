@@ -116,13 +116,7 @@ const goToAIDietPlan = () => {
     <div class="scanlines"></div>
 
     <div class="content-wrapper">
-      <div class="retro-header">
-        <div class="system-status">
-          <span class="status-light blink"></span>
-          SYSTEM_ONLINE
-        </div>
-        <h1 class="page-title">MAINFRAME ANALYSIS</h1>
-      </div>
+      
 
       <div v-if="isLoading" class="loading-terminal">
         <div class="terminal-screen">
@@ -311,6 +305,8 @@ const goToAIDietPlan = () => {
 @import url("https://cdn.jsdelivr.net/gh/neodgm/neodgm-webfont@latest/neodgm/style.css");
 
 .ai-view {
+  display: flex;
+  align-items: center;
   min-height: 100vh;
   background-color: #050510;
   color: #e0e0e0;
