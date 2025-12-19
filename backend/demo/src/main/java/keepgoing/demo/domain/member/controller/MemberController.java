@@ -50,5 +50,10 @@ public class MemberController {
         return ResponseEntity.ok().build();
     }
 
-
+    @PostMapping("/level")
+    public ResponseEntity<Void> updateLevel(@RequestBody LevelUpRequest request) {
+        // 이제 request.getId()와 request.getScore()로 안전하게 접근 가능합니다.
+        memberService.updateExp(request.getId(), request.getScore());
+        return ResponseEntity.ok().build();
+    }
 }

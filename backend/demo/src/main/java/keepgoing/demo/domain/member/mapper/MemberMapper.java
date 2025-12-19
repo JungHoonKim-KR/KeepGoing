@@ -22,6 +22,9 @@ public interface MemberMapper {
     // 입력 날짜 이전의 가장 최신 기록 1개 조회 (Diff 계산용)
     WeightLog findLatestWeightLogBeforeDate(Long memberId, LocalDate date);
     List<WeightLog> findWeightLogsByMemberId(Long memberId, LocalDate date);
+
+    void updateExp(Long memberId,Integer level, Integer exp);
+
     Optional<Member> findByEmail(String email);
     void save(Member member);
     void updateRefreshToken(Member member);
