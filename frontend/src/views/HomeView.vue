@@ -20,9 +20,7 @@
         <div class="game-screen-container" @click="handleScreenClick">
           <div class="pixel-border">
             <div class="screen-bg">
-              <div class="level-badge" :class="{ 'level-up-anim': isLevelingUp }">
-                {{ isLevelingUp ? "LEVEL UP!" : `Lv.${currentLevel}` }}
-              </div>
+              
 
               <img
                 :src="currentCharacterImage"
@@ -30,11 +28,8 @@
                 class="character-gif pixelated"
                 :class="{ bounce: isBouncing }"
               />
-              <div class="dialog-box">
-                <p class="typing-effect">{{ dialogText }}</p>
-              </div>
+              
 
-              <div class="edit-hint">Click screen to change character</div>
             </div>
           </div>
         </div>
@@ -704,7 +699,6 @@ onMounted(async () => {
   background: url("https://i.pinimg.com/originals/10/78/3f/10783f947938361b02390a382c44843b.png") repeat-x bottom;
   background-size: cover; /* contain -> cover로 변경하여 꽉 차게 */
   width: 100%;
-  height: 150px; /* 기존 200px -> 150px로 축소 (핵심) */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -726,7 +720,7 @@ onMounted(async () => {
 }
 
 .character-gif {
-  width: 80px; /* 캐릭터 크기 약간 축소 */
+  width: 60%; /* 캐릭터 크기 약간 축소 */
   image-rendering: pixelated;
   margin-bottom: 5px;
 }
