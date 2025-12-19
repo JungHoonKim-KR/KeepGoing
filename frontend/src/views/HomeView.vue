@@ -539,7 +539,7 @@ onMounted(async () => {
   background: url("https://i.pinimg.com/originals/10/78/3f/10783f947938361b02390a382c44843b.png") repeat-x bottom;
   background-size: cover;
   width: 100%;
-  height: 150px;
+  /* height: 150px; */
   display: flex;
   flex-direction: column;
   align-items: center;
