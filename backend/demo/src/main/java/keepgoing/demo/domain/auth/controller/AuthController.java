@@ -42,7 +42,7 @@ public class AuthController {
         // memberId나 name은 토큰에서 꺼내거나 DB조회해야 하는데,
         // 재발급 땐 보통 accessToken만 주면 됩니다.
         // 일단 TokenResponseDto 형식을 맞추기 위해 null 채워서 보냅니다.
-        return ResponseEntity.ok(new TokenResponseDto(newAccessToken, refreshToken, null, null));
+        return ResponseEntity.ok(new TokenResponseDto(newAccessToken, refreshToken, null, null,null, null));
     }
 
     // [추가] 로그아웃

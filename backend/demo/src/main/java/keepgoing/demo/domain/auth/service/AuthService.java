@@ -75,7 +75,7 @@ public class AuthService {
         member.updateRefreshToken(refreshToken);
         memberMapper.updateRefreshToken(member);
 
-        return new TokenResponseDto(accessToken, refreshToken, member.getId(), member.getName());
+        return new TokenResponseDto(accessToken, refreshToken, member.getId(), member.getLevel(), member.getExp(), member.getName());
     }
 
     // 3. 토큰 재발급

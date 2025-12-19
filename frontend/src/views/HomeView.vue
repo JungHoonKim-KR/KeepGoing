@@ -214,6 +214,7 @@
 <script setup>
 import { ref, computed, onMounted } from "vue";
 import { useConfigStore } from "@/stores/configStore";
+import { useAuthStore } from "@/stores/authStore"; // 1. Auth Store 임포트
 import { useRoute } from "vue-router";
 import Footer from "@/components/utils/Footer.vue";
 import dayjs from "dayjs";
@@ -223,6 +224,7 @@ import WaterRecordModal from "@/components/record/WaterRecordModal.vue";
 import WeightRecordModal from "@/components/record/WeightRecordModal.vue";
 import MealRecordModal from "@/components/record/MealRecordModal.vue";
 
+const authStore = useAuthStore(); // 2. 스토어 인스턴스 생성
 const config = useConfigStore();
 const route = useRoute();
 const MEMBER_ID = config.MEMBER_ID;
@@ -233,9 +235,11 @@ const formattedDate = computed(() => {
   return routeDate ? dayjs(routeDate).format("YYYY-MM-DD") : dayjs().format("YYYY-MM-DD");
 });
 
-// 캐릭터 & 레벨
-const currentLevel = ref(24);
-const currentLevelExpPercent = ref(65); // 임시 경험치 퍼센트
+// =========================
+// 🎮 캐릭터 및 레벨 시스템 (computed로 반응성 확보)
+// =========================
+const currentLevel = computed(() => authStore.level || 1);
+const currentLevelExpPercent = computed(() => authStore.exp || 0);
 const selectedCharId = ref(1);
 const showCharModal = ref(false);
 
@@ -267,7 +271,7 @@ const handleScreenClick = () => {
   showCharModal.value = true;
 };
 
-// 식단
+// 식단 데이터
 const todayMealMap = ref({ 아침: null, 점심: null, 저녁: null, 간식: null });
 const todayMeals = computed(() => {
   if (!todayMealMap.value) return [];
@@ -283,7 +287,7 @@ const todayMeals = computed(() => {
     }));
 });
 
-// 물 & 체중
+// 물 & 체중 데이터
 const waterData = ref({ water: 1.2, goal: 2.0 });
 const weightData = ref({ weight: 70.5, diff: -0.3 });
 
@@ -293,7 +297,7 @@ const showWaterModal = ref(false);
 const showWeightModal = ref(false);
 const showMealModal = ref(false);
 
-// 캐릭터 모션
+// 캐릭터 상태 애니메이션
 const isLevelingUp = ref(false);
 const isBouncing = ref(false);
 const dialogText = ref('"오늘도 힘내보자구!"');
@@ -320,7 +324,7 @@ const stats = computed(() => {
   ];
 });
 
-// 유틸리티
+// 효과음 및 애니메이션
 const initAudioContext = () => {};
 const playRetroSound = (type) => {
   if (type === "coin" || type === "jump") {
@@ -339,7 +343,7 @@ const triggerLevelUp = () => {
   }, 3000);
 };
 
-// 모달 컨트롤러
+// 이벤트 핸들러
 const handleMealClick = () => {
   showMealModal.value = true;
 };
@@ -364,7 +368,7 @@ const handleWeightUpdate = async (newWeight) => {
 };
 const closeModal = () => (showModal.value = false);
 
-// API 호출
+// API 호출부
 async function fetchDailyDiet() {
   const url = `${API_ENDPOINT}/diets/meal-daily?memberId=${MEMBER_ID}&date=${formattedDate.value}`;
   try {
@@ -429,10 +433,10 @@ onMounted(async () => {
   left: 0;
   width: 100%;
   height: 100%;
+  pointer-events: none;
   background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
     linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
   background-size: 100% 4px, 6px 100%;
-  pointer-events: none;
   z-index: 999;
 }
 
@@ -535,15 +539,17 @@ onMounted(async () => {
   border-radius: 6px;
   overflow: hidden;
 }
+
+/* 캐릭터 화면 컨테이너 */
 .screen-bg {
   background: url("https://i.pinimg.com/originals/10/78/3f/10783f947938361b02390a382c44843b.png") repeat-x bottom;
   background-size: cover;
   width: 100%;
-  /* height: 150px; */
+  height: 150px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center; /* 캐릭터 중앙 배치 */
+  justify-content: center;
   position: relative;
   cursor: pointer;
 }
@@ -560,6 +566,7 @@ onMounted(async () => {
 }
 .character-gif {
   width: 60%;
+  max-height: 100px;
   image-rendering: pixelated;
   margin-bottom: 5px;
 }
@@ -575,7 +582,7 @@ onMounted(async () => {
   }
 }
 
-/* [수정] 좌측 상단 레벨 배지 */
+/* [좌측 상단] 레벨 배지 */
 .level-badge {
   position: absolute;
   top: 8px;
@@ -585,9 +592,10 @@ onMounted(async () => {
   padding: 2px 6px;
   font-size: 0.7rem;
   border: 2px solid #fff;
+  z-index: 10;
 }
 
-/* [신규] 하단 경험치 바 영역 */
+/* [하단 고정] 경험치 바 영역 */
 .screen-xp-area {
   position: absolute;
   bottom: 0;
@@ -595,9 +603,11 @@ onMounted(async () => {
   width: 100%;
   display: flex;
   align-items: center;
-  background: rgba(0, 0, 0, 0.5);
-  padding: 2px 5px;
-  gap: 5px;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 3px 8px;
+  gap: 8px;
+  box-sizing: border-box;
+  z-index: 10;
 }
 .screen-xp-label {
   font-size: 0.6rem;
@@ -606,7 +616,7 @@ onMounted(async () => {
 }
 .screen-xp-bar {
   flex: 1;
-  height: 4px;
+  height: 6px;
   background: #222;
   border: 1px solid #777;
   overflow: hidden;
@@ -614,20 +624,8 @@ onMounted(async () => {
 .screen-xp-fill {
   height: 100%;
   background: #00e5ff;
-  transition: width 0.3s;
-}
-
-.dialog-box {
-  width: 95%;
-  background: rgba(0, 40, 150, 0.9);
-  border: 2px solid #fff;
-  padding: 4px;
-  margin-bottom: 5px;
-  text-align: center;
-  font-size: 0.75rem;
-  line-height: 1.2;
-  position: absolute;
-  bottom: 15px;
+  transition: width 0.5s;
+  box-shadow: 0 0 5px #00e5ff;
 }
 
 .box-title {
@@ -799,114 +797,6 @@ onMounted(async () => {
   max-width: 200px;
 }
 
-.meal-slot.add-slot {
-  border: 2px dashed #aaa;
-  background: transparent;
-  justify-content: center;
-  color: #aaa;
-  box-shadow: none;
-  padding: 6px;
-}
-.meal-slot.add-slot:hover {
-  border-color: #ffd700;
-  color: #ffd700;
-  background: rgba(255, 215, 0, 0.1);
-}
-.plus-icon {
-  font-size: 1rem;
-  font-weight: bold;
-  margin-right: 5px;
-}
-.add-text {
-  font-size: 0.8rem;
-}
-
-.pixel-text-center {
-  text-align: center;
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 0.85rem;
-  margin-bottom: 0.8rem;
-  line-height: 1.4;
-}
-.empty-state-icon {
-  font-size: 2.5rem;
-  text-align: center;
-  margin-bottom: 8px;
-  opacity: 0.8;
-  animation: float 3s infinite ease-in-out;
-}
-.page-title {
-  font-size: 1.5rem;
-  margin-bottom: 0.5rem;
-}
-
-.hud-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
-  border-bottom: 2px dashed rgba(255, 255, 255, 0.3);
-  padding-bottom: 4px;
-}
-.current-water {
-  font-size: 3rem;
-  font-weight: bold;
-  color: #00e5ff;
-  text-shadow: 0 0 10px #00e5ff;
-  line-height: 1;
-}
-.current-water .unit {
-  font-size: 1.2rem;
-  margin-left: 5px;
-}
-.goal-water {
-  font-size: 0.8rem;
-  margin-top: 4px;
-}
-.mana-bar-container {
-  height: 16px;
-  margin-top: 5px;
-}
-
-.score-val {
-  font-size: 3rem;
-  font-weight: bold;
-  color: #d500f9;
-  text-shadow: 0 0 10px #d500f9;
-}
-.score-unit {
-  font-size: 1.2rem;
-}
-.score-change {
-  font-size: 0.9rem;
-  margin-top: 8px;
-  padding: 4px 8px;
-}
-.sm-btn {
-  padding: 6px;
-  font-size: 0.85rem;
-  margin-top: 10px;
-}
-
-@keyframes float {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-5px);
-  }
-}
-@keyframes blink {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
-}
-
 .char-select-modal {
   width: 90%;
   max-width: 400px;
@@ -958,9 +848,6 @@ onMounted(async () => {
   border-color: #00e5ff;
   background: rgba(0, 229, 255, 0.2);
   box-shadow: 0 0 5px #00e5ff;
-}
-.char-slot.selected .char-num {
-  color: #00e5ff;
 }
 .char-slot.locked {
   border-color: #333;
