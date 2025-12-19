@@ -5,6 +5,8 @@ export const useAuthStore = defineStore("auth", {
     accessToken: null,
     refreshToken: null,
     memberId: null,
+    level: null,
+    exp: null,
     name: null,
     isAuthenticated: false,
   }),
@@ -14,6 +16,8 @@ export const useAuthStore = defineStore("auth", {
       this.accessToken = data.accessToken;
       this.refreshToken = data.refreshToken;
       this.memberId = data.memberId;
+      this.level = data.level;
+      this.exp = data.exp;
       this.name = data.name;
       this.isAuthenticated = true;
     },
@@ -30,6 +34,8 @@ export const useAuthStore = defineStore("auth", {
         this.accessToken = null;
         this.refreshToken = null;
         this.memberId = null;
+        this.level = null;
+        this.exp = null;
         this.name = null;
         this.isAuthenticated = false;
 
