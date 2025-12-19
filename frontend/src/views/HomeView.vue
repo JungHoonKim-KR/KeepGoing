@@ -20,7 +20,9 @@
         <div class="game-screen-container" @click="handleScreenClick">
           <div class="pixel-border">
             <div class="screen-bg">
-              
+              <div class="level-badge" :class="{ 'level-up-anim': isLevelingUp }">
+                {{ isLevelingUp ? "LEVEL UP!" : `Lv.${currentLevel}` }}
+              </div>
 
               <img
                 :src="currentCharacterImage"
@@ -28,8 +30,15 @@
                 class="character-gif pixelated"
                 :class="{ bounce: isBouncing }"
               />
-              
 
+              <div class="screen-xp-area">
+                <div class="screen-xp-label">EXP</div>
+                <div class="screen-xp-bar">
+                  <div class="screen-xp-fill" :style="{ width: currentLevelExpPercent + '%' }"></div>
+                </div>
+              </div>
+
+              <div class="edit-hint">Click screen to change character</div>
             </div>
           </div>
         </div>
@@ -123,6 +132,7 @@
         </div>
       </div>
     </section>
+
     <section class="page weight-page">
       <div class="page-content">
         <div v-if="weightData.weight == 0.0" class="pixel-card interactive purple-theme" @click="handleWeightClick">
@@ -203,96 +213,65 @@
 
 <script setup>
 import { ref, computed, onMounted } from "vue";
-import { useConfigStore } from "@/stores/configStore"; // Pinia Store 경로를 정확히 확인해주세요.
+import { useConfigStore } from "@/stores/configStore";
 import { useRoute } from "vue-router";
 import Footer from "@/components/utils/Footer.vue";
 import dayjs from "dayjs";
 import confetti from "canvas-confetti";
-// import characterImage from "../assets/images/characters/test.gif"; // [삭제됨] 동적 로딩으로 변경
 
-// 컴포넌트 import (경로가 올바르다고 가정)
 import WaterRecordModal from "@/components/record/WaterRecordModal.vue";
 import WeightRecordModal from "@/components/record/WeightRecordModal.vue";
 import MealRecordModal from "@/components/record/MealRecordModal.vue";
 
-// =========================
-// 🚀 Pinia 스토어 및 상수 설정
-// =========================
 const config = useConfigStore();
 const route = useRoute();
 const MEMBER_ID = config.MEMBER_ID;
 const API_ENDPOINT = config.API_ENDPOINT;
+
 const formattedDate = computed(() => {
   const routeDate = route.query.date;
-  if (routeDate) {
-    return dayjs(routeDate).format("YYYY-MM-DD");
-  } else {
-    return dayjs().format("YYYY-MM-DD");
-  }
+  return routeDate ? dayjs(routeDate).format("YYYY-MM-DD") : dayjs().format("YYYY-MM-DD");
 });
 
-// =========================
-// 🎮 캐릭터 및 레벨 시스템 (신규 추가)
-// =========================
-const currentLevel = ref(10); // 테스트용 현재 레벨 (API에서 받아온 값으로 교체 필요)
-const selectedCharId = ref(1); // 현재 선택된 캐릭터 ID (기본 1번)
-const showCharModal = ref(false); // 캐릭터 변경 모달 표시 여부
+// 캐릭터 & 레벨
+const currentLevel = ref(24);
+const currentLevelExpPercent = ref(65); // 임시 경험치 퍼센트
+const selectedCharId = ref(1);
+const showCharModal = ref(false);
 
-// [수정됨] 이미지 경로: characters
 const getCharImage = (id) => {
   return new URL(`../assets/images/characters/${id}.png`, import.meta.url).href;
 };
 
-// 메인 화면에 표시될 현재 캐릭터 이미지
 const currentCharacterImage = computed(() => getCharImage(selectedCharId.value));
 
-// 캐릭터 리스트 (1~16번) 생성 및 잠금 상태 계산
 const characterList = computed(() => {
   return Array.from({ length: 16 }, (_, i) => {
     const id = i + 1;
     return {
       id,
       src: getCharImage(id),
-      isLocked: id > currentLevel.value, // 현재 레벨보다 높으면 잠금
+      isLocked: id > currentLevel.value,
     };
   });
 });
 
-// 캐릭터 선택 핸들러
 const selectCharacter = (char) => {
-  if (char.isLocked) {
-    console.log("Locked Character");
-    return;
-  }
+  if (char.isLocked) return;
   selectedCharId.value = char.id;
   playRetroSound("coin");
   showCharModal.value = false;
 };
 
-// [수정됨] 스크린 클릭 핸들러 (점프 제거, 모달 오픈)
 const handleScreenClick = () => {
-  console.log("캐릭터 선택 모달 오픈");
   showCharModal.value = true;
 };
 
-// =========================
-// 🍽 식단 데이터
-// =========================
-const todayMealMap = ref({
-  아침: null,
-  점심: null,
-  저녁: null,
-  간식: null,
-});
-
-// 화면에 표시할 식단 리스트 (computed)
+// 식단
+const todayMealMap = ref({ 아침: null, 점심: null, 저녁: null, 간식: null });
 const todayMeals = computed(() => {
-  if (!todayMealMap.value || Object.keys(todayMealMap.value).length === 0) {
-    return [];
-  }
-
+  if (!todayMealMap.value) return [];
   const mealIcons = { 아침: "🍳", 점심: "🍖", 저녁: "🍲", 간식: "🍰" };
-
   return Object.entries(todayMealMap.value)
     .filter(([_, meal]) => meal !== null)
     .map(([type, meal], idx) => ({
@@ -300,48 +279,27 @@ const todayMeals = computed(() => {
       type,
       icon: mealIcons[type] || "🍽️",
       cal: Math.round(meal.energy || 0),
-      // foods 배열이 유효한지 확인하고 name을 join합니다.
-      name:
-        meal.foods
-          ?.map((f) => f.name)
-          .filter((n) => n)
-          .join(", ") || "기록된 음식 없음",
+      name: meal.foods?.map((f) => f.name).join(", ") || "기록된 음식 없음",
     }));
 });
 
-// =========================
-// 💧 물 / ⚖️ 체중
-// =========================
-const waterData = ref({
-  water: 1.2,
-  goal: 2.0,
-});
+// 물 & 체중
+const waterData = ref({ water: 1.2, goal: 2.0 });
+const weightData = ref({ weight: 70.5, diff: -0.3 });
 
-const weightData = ref({
-  weight: 70.5,
-  diff: -0.3,
-});
-
-// =========================
-// 📦 모달 상태
-// =========================
+// 모달 상태
 const showModal = ref(false);
 const showWaterModal = ref(false);
 const showWeightModal = ref(false);
 const showMealModal = ref(false);
-const showRadio = ref(false);
 
-// =========================
-// 🧠 캐릭터 상태
-// =========================
+// 캐릭터 모션
 const isLevelingUp = ref(false);
 const isBouncing = ref(false);
 const dialogText = ref('"오늘도 힘내보자구!"');
 
-// =========================
-// 📊 스탯 (에너지 및 매크로 계산)
-// =========================
-const maxEnergy = 3000; // 일일 권장 칼로리 (임의 설정)
+// 스탯 계산
+const maxEnergy = 3000;
 const currentEnergy = computed(() => {
   return Object.values(todayMealMap.value)
     .reduce((acc, meal) => acc + (meal ? meal.energy : 0), 0)
@@ -350,77 +308,39 @@ const currentEnergy = computed(() => {
 const hpPercent = computed(() => Math.min((currentEnergy.value / maxEnergy) * 100, 100).toFixed(0));
 
 const stats = computed(() => {
-  const totalProtein = Object.values(todayMealMap.value).reduce((acc, meal) => acc + (meal ? meal.protein : 0), 0);
-  const totalCarb = Object.values(todayMealMap.value).reduce((acc, meal) => acc + (meal ? meal.carbohydrate : 0), 0);
-  const totalFat = Object.values(todayMealMap.value).reduce((acc, meal) => acc + (meal ? meal.fat : 0), 0);
-  const totalMacro = totalProtein + totalCarb + totalFat;
-
-  const getPercent = (value) => (totalMacro > 0 ? ((value / totalMacro) * 100).toFixed(0) : 0);
-
+  const tProtein = Object.values(todayMealMap.value).reduce((acc, meal) => acc + (meal ? meal.protein : 0), 0);
+  const tCarb = Object.values(todayMealMap.value).reduce((acc, meal) => acc + (meal ? meal.carbohydrate : 0), 0);
+  const tFat = Object.values(todayMealMap.value).reduce((acc, meal) => acc + (meal ? meal.fat : 0), 0);
+  const total = tProtein + tCarb + tFat;
+  const getP = (v) => (total > 0 ? ((v / total) * 100).toFixed(0) : 0);
   return [
-    {
-      label: "⚡STR (탄)",
-      class: "carb",
-      percent: `${getPercent(totalCarb)}%`,
-      val: `${totalCarb.toFixed(1)}g`,
-    },
-    {
-      label: "🛡️DEF (단)",
-      class: "protein",
-      percent: `${getPercent(totalProtein)}%`,
-      val: `${totalProtein.toFixed(1)}g`,
-    },
-    {
-      label: "🔮INT (지)",
-      class: "fat",
-      percent: `${getPercent(totalFat)}%`,
-      val: `${totalFat.toFixed(1)}g`,
-    },
+    { label: "⚡STR (탄)", class: "carb", percent: `${getP(tCarb)}%`, val: `${tCarb.toFixed(1)}g` },
+    { label: "🛡️DEF (단)", class: "protein", percent: `${getP(tProtein)}%`, val: `${tProtein.toFixed(1)}g` },
+    { label: "🔮INT (지)", class: "fat", percent: `${getP(tFat)}%`, val: `${tFat.toFixed(1)}g` },
   ];
 });
 
-// =========================
-// 🔊 사운드 및 효과
-// =========================
-const audioCtx = ref(null);
-
-const initAudioContext = () => {
-  if (!audioCtx.value) {
-    console.log("Audio Context Initialized (Dummy)");
+// 유틸리티
+const initAudioContext = () => {};
+const playRetroSound = (type) => {
+  if (type === "coin" || type === "jump") {
+    isBouncing.value = true;
+    setTimeout(() => (isBouncing.value = false), 500);
   }
 };
-
-const playRetroSound = (type) => {
-  console.log(`Playing sound: ${type}`);
-  isBouncing.value = type === "jump";
-  setTimeout(() => (isBouncing.value = false), 500);
-};
-
 const triggerLevelUp = () => {
   if (isLevelingUp.value) return;
-
   isLevelingUp.value = true;
   dialogText.value = "LEVEL UP! 능력이 상승했다!";
-
-  playRetroSound("levelup");
-
-  confetti({
-    particleCount: 120,
-    spread: 70,
-    origin: { y: 0.6 },
-  });
-
+  confetti({ particleCount: 120, spread: 70, origin: { y: 0.6 } });
   setTimeout(() => {
     isLevelingUp.value = false;
     dialogText.value = '"다음 레벨로 가보자!"';
   }, 3000);
 };
 
-// =========================
-// 🧭 이벤트 및 모달 컨트롤
-// =========================
+// 모달 컨트롤러
 const handleMealClick = () => {
-  playRetroSound("coin");
   showMealModal.value = true;
 };
 const closeMealModal = async () => {
@@ -429,122 +349,53 @@ const closeMealModal = async () => {
 };
 const closeWaterModal = () => (showWaterModal.value = false);
 const closeWeightModal = () => (showWeightModal.value = false);
-
 const handleWaterClick = () => {
-  playRetroSound("potion");
   showWaterModal.value = true;
 };
 const handleWeightClick = () => {
-  playRetroSound("jump");
   showWeightModal.value = true;
 };
 const handleWaterUpdate = async (newAmount) => {
   waterData.value.water = newAmount;
 };
 const handleWeightUpdate = async (newWeight) => {
-  if (newWeight) {
-    weightData.value.weight = newWeight;
-  }
+  if (newWeight) weightData.value.weight = newWeight;
   await fetchWeightData();
 };
 const closeModal = () => (showModal.value = false);
 
-// =========================
-// 📡 API 로딩 (서비스 통합)
-// =========================
-
+// API 호출
 async function fetchDailyDiet() {
   const url = `${API_ENDPOINT}/diets/meal-daily?memberId=${MEMBER_ID}&date=${formattedDate.value}`;
-
   try {
-    const response = await fetch(url);
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! Status: ${response.status}`);
-    }
-
-    const data = await response.json();
-
-    todayMealMap.value = data;
-    console.log("API 데이터 로드 성공:", data);
-  } catch (error) {
-    console.error("일일 식단 데이터를 불러오는 데 실패했습니다. Mock 데이터를 사용합니다.", error);
-    // default
-    todayMealMap.value = {
-      아침: null,
-      점심: null,
-      저녁: {
-        id: 3,
-        memberId: 1,
-        date: "2025-12-09",
-        foods: [
-          {
-            code: "D103-150010000-0001",
-            name: "만두_고기만두",
-            energy: 159.0,
-            protein: 12.38,
-            fat: 4.45,
-            carbohydrate: 17.4,
-          },
-          {
-            code: "D105-205000000-0001",
-            name: "김치국",
-            energy: 23.0,
-            protein: 1.34,
-            fat: 0.76,
-            carbohydrate: 2.63,
-          },
-        ],
-        energy: 441.8,
-        water: 520.16,
-        protein: 32.6,
-        fat: 0.0,
-        carbohydrate: 48.8,
-        mealTime: "저녁",
-      },
-      간식: null,
-    };
+    const res = await fetch(url);
+    if (res.ok) todayMealMap.value = await res.json();
+  } catch (e) {
+    console.error(e);
   }
 }
 
 async function fetchHydrationData() {
-  // 물 데이터 API 호출 로직 (임의 구현)
-  const baseURL = `${API_ENDPOINT}/diets/hydration`;
-  const params = new URLSearchParams({
-    memberId: MEMBER_ID,
-    date: formattedDate.value,
-  });
-  const url = `${baseURL}?${params.toString()}`;
+  const url = `${API_ENDPOINT}/diets/hydration?memberId=${MEMBER_ID}&date=${formattedDate.value}`;
   try {
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`HTTP error! Status: ${response.status}`);
-    }
-    const data = await response.json();
-    waterData.value.water = data;
-  } catch (error) {
-    console.error("물 데이터를 불러오는 데 실패했습니다. Mock 데이터를 사용합니다.", error);
-    waterData.value = { water: 1.2, goal: 2.0 };
+    const res = await fetch(url);
+    if (res.ok) waterData.value.water = await res.json();
+  } catch (e) {
+    console.error(e);
   }
 }
-async function fetchWeightData() {
-  const baseURL = `${API_ENDPOINT}/api/member/weight`;
-  const params = new URLSearchParams({
-    memberId: MEMBER_ID,
-    date: formattedDate.value,
-  });
-  const url = `${baseURL}?${params.toString()}`;
-  try {
-    const response = await fetch(url);
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! Status: ${response.status}`);
+async function fetchWeightData() {
+  const url = `${API_ENDPOINT}/api/member/weight?memberId=${MEMBER_ID}&date=${formattedDate.value}`;
+  try {
+    const res = await fetch(url);
+    if (res.ok) {
+      const d = await res.json();
+      weightData.value.weight = d.weight;
+      weightData.value.diff = d.diff;
     }
-    const data = await response.json();
-    weightData.value.weight = data.weight;
-    weightData.value.diff = data.diff;
-  } catch (error) {
-    console.error("일일 식단 데이터를 불러오는 데 실패했습니다. Mock 데이터를 사용합니다.", error);
+  } catch (e) {
+    console.error(e);
   }
 }
 
@@ -556,7 +407,6 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-/* 폰트: 둥근모꼴 */
 @import url("https://cdn.jsdelivr.net/gh/neodgm/neodgm-webfont@latest/neodgm/style.css");
 
 .retro-theme {
@@ -573,7 +423,6 @@ onMounted(async () => {
   scroll-snap-type: y mandatory;
 }
 
-/* 스캔라인 효과 */
 .scanlines {
   position: fixed;
   top: 0;
@@ -587,15 +436,14 @@ onMounted(async () => {
   z-index: 999;
 }
 
-/* === 레이아웃 수정: 상단 정렬 및 여백 축소 === */
 .page {
   min-height: 100vh;
   scroll-snap-align: start;
   display: flex;
   flex-direction: column;
-  align-items: center; /* 가로 중앙 정렬 */
-  justify-content: flex-start; /* 세로 상단 정렬 (기존 center에서 변경) */
-  padding: 4rem 1rem 6rem 1rem; /* 상단 여백 확보, 하단은 푸터 공간 확보 */
+  align-items: center;
+  justify-content: flex-start;
+  padding: 4rem 1rem 6rem 1rem;
   box-sizing: border-box;
   padding-top: 10rem;
 }
@@ -605,10 +453,9 @@ onMounted(async () => {
   max-width: 600px;
   display: flex;
   flex-direction: column;
-  gap: 0.8rem; /* 기존 1.5rem에서 축소하여 더 촘촘하게 */
+  gap: 0.8rem;
 }
 
-/* === 공통 박스 스타일 수정: 패딩 축소 === */
 .pixel-box,
 .pixel-card {
   border: 4px solid #fff;
@@ -620,23 +467,20 @@ onMounted(async () => {
 
 .pixel-box {
   background: #2d2d3a;
-  padding: 0.8rem; /* 기존 1rem에서 축소 */
+  padding: 0.8rem;
 }
-
 .pixel-card {
-  padding: 1rem; /* 기존 1.5rem에서 축소 */
+  padding: 1rem;
   text-align: center;
   background: #e6dac3;
   color: #3e2723;
   border-color: #5d4037;
 }
-
 .interactive:active {
   transform: translate(2px, 2px);
   box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.5);
 }
 
-/* === 페이지별 배경색 === */
 .page.daily-page {
   background: #222034;
   padding: 1rem 1rem 6rem 1rem;
@@ -655,17 +499,15 @@ onMounted(async () => {
 .retro-header {
   text-align: center;
   color: var(--secondary-color);
-  margin-bottom: 0.2rem; /* 마진 축소 */
+  margin-bottom: 0.2rem;
   font-size: 1.1rem;
 }
-
 .blinking-cursor {
   animation: blink 1s step-end infinite;
 }
 
-/* 프로그레스 바 */
 .retro-progress-container {
-  height: 20px; /* 높이 약간 축소 */
+  height: 20px;
   background: #333;
   border: 2px solid #fff;
   padding: 2px;
@@ -686,28 +528,26 @@ onMounted(async () => {
   animation: blink 0.5s infinite alternate;
 }
 
-/* === 캐릭터 화면 수정: 높이 축소 === */
 .game-screen-container .pixel-border {
-  border: 6px solid #444; /* 테두리 두께 약간 축소 */
+  border: 6px solid #444;
   background: #8fb8ca;
-  padding: 0; /* 내부 패딩 제거하여 공간 확보 */
+  padding: 0;
   border-radius: 6px;
   overflow: hidden;
 }
-
 .screen-bg {
   background: url("https://i.pinimg.com/originals/10/78/3f/10783f947938361b02390a382c44843b.png") repeat-x bottom;
-  background-size: cover; /* contain -> cover로 변경하여 꽉 차게 */
+  background-size: cover;
   width: 100%;
+  height: 150px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: center; /* 캐릭터 중앙 배치 */
   position: relative;
   cursor: pointer;
 }
 
-/* [추가] 힌트 메시지 스타일 */
 .edit-hint {
   position: absolute;
   top: 5px;
@@ -718,9 +558,8 @@ onMounted(async () => {
   animation: blink 2s infinite;
   pointer-events: none;
 }
-
 .character-gif {
-  width: 60%; /* 캐릭터 크기 약간 축소 */
+  width: 60%;
   image-rendering: pixelated;
   margin-bottom: 5px;
 }
@@ -736,6 +575,7 @@ onMounted(async () => {
   }
 }
 
+/* [수정] 좌측 상단 레벨 배지 */
 .level-badge {
   position: absolute;
   top: 8px;
@@ -746,10 +586,35 @@ onMounted(async () => {
   font-size: 0.7rem;
   border: 2px solid #fff;
 }
-.level-up-anim {
-  color: var(--accent-color);
-  border-color: var(--accent-color);
-  animation: blink 0.2s infinite;
+
+/* [신규] 하단 경험치 바 영역 */
+.screen-xp-area {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.5);
+  padding: 2px 5px;
+  gap: 5px;
+}
+.screen-xp-label {
+  font-size: 0.6rem;
+  color: #00e5ff;
+  font-weight: bold;
+}
+.screen-xp-bar {
+  flex: 1;
+  height: 4px;
+  background: #222;
+  border: 1px solid #777;
+  overflow: hidden;
+}
+.screen-xp-fill {
+  height: 100%;
+  background: #00e5ff;
+  transition: width 0.3s;
 }
 
 .dialog-box {
@@ -761,9 +626,10 @@ onMounted(async () => {
   text-align: center;
   font-size: 0.75rem;
   line-height: 1.2;
+  position: absolute;
+  bottom: 15px;
 }
 
-/* 스탯 */
 .box-title {
   margin: 0 0 0.5rem 0;
   font-size: 0.9rem;
@@ -773,7 +639,7 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 0.3rem; /* 간격 축소 */
+  margin-bottom: 0.3rem;
 }
 .stat-icon {
   width: 70px;
@@ -787,7 +653,7 @@ onMounted(async () => {
 }
 .retro-bar-bg {
   flex: 1;
-  height: 10px; /* 두께 축소 */
+  height: 10px;
   background: #111;
   border: 1px solid #555;
 }
@@ -809,7 +675,6 @@ onMounted(async () => {
   text-align: right;
 }
 
-/* 버튼 및 기타 */
 .retro-btn {
   margin-top: 0.8rem;
   background: #ff0055;
@@ -843,14 +708,12 @@ onMounted(async () => {
   image-rendering: pixelated;
 }
 
-/* === 식단 리스트 스타일 (Inventory Style) === */
 .meal-log-container {
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem; /* 간격 축소 */
+  gap: 0.5rem;
 }
-
 .retro-header-sm {
   display: flex;
   justify-content: space-between;
@@ -862,12 +725,11 @@ onMounted(async () => {
   text-shadow: 1px 1px 0 #000;
   margin-bottom: 0.5rem;
 }
-
 .meal-list {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  max-height: 55vh; /* 스크롤 영역 확보 */
+  max-height: 55vh;
   overflow-y: auto;
   padding-right: 5px;
 }
@@ -879,13 +741,12 @@ onMounted(async () => {
   border-radius: 2px;
 }
 
-/* 개별 슬롯 (아이템 창) */
 .meal-slot {
   display: flex;
   align-items: center;
   background: rgba(0, 0, 0, 0.6);
   border: 2px solid #fff;
-  padding: 8px; /* 패딩 축소 */
+  padding: 8px;
   gap: 10px;
   cursor: pointer;
   transition: transform 0.1s, background 0.1s;
@@ -896,7 +757,6 @@ onMounted(async () => {
   box-shadow: 1px 1px 0 rgba(0, 0, 0, 0.3);
   background: rgba(255, 255, 255, 0.1);
 }
-
 .slot-icon-box {
   width: 32px;
   height: 32px;
@@ -907,7 +767,6 @@ onMounted(async () => {
   justify-content: center;
   font-size: 1.2rem;
 }
-
 .slot-info {
   flex: 1;
   display: flex;
@@ -962,7 +821,6 @@ onMounted(async () => {
   font-size: 0.8rem;
 }
 
-/* === 공통 유틸 및 기타 페이지 === */
 .pixel-text-center {
   text-align: center;
   color: rgba(255, 255, 255, 0.7);
@@ -971,7 +829,7 @@ onMounted(async () => {
   line-height: 1.4;
 }
 .empty-state-icon {
-  font-size: 2.5rem; /* 아이콘 크기 축소 */
+  font-size: 2.5rem;
   text-align: center;
   margin-bottom: 8px;
   opacity: 0.8;
@@ -982,7 +840,6 @@ onMounted(async () => {
   margin-bottom: 0.5rem;
 }
 
-/* === 물 (Mana) === */
 .hud-top {
   display: flex;
   justify-content: space-between;
@@ -992,7 +849,7 @@ onMounted(async () => {
   padding-bottom: 4px;
 }
 .current-water {
-  font-size: 3rem; /* 폰트 축소 */
+  font-size: 3rem;
   font-weight: bold;
   color: #00e5ff;
   text-shadow: 0 0 10px #00e5ff;
@@ -1011,9 +868,8 @@ onMounted(async () => {
   margin-top: 5px;
 }
 
-/* === 체중 (Score) === */
 .score-val {
-  font-size: 3rem; /* 폰트 축소 */
+  font-size: 3rem;
   font-weight: bold;
   color: #d500f9;
   text-shadow: 0 0 10px #d500f9;
@@ -1051,22 +907,18 @@ onMounted(async () => {
   }
 }
 
-/* ========================================================= */
-/* [추가] 캐릭터 선택 모달 스타일 (기존 CSS 아래에 안전하게 추가) */
-/* ========================================================= */
 .char-select-modal {
   width: 90%;
   max-width: 400px;
   background: #2d2d3a;
   border: 4px solid #ffd700;
   color: #fff;
-  z-index: 10000; /* 최상위 우선순위 */
+  z-index: 10000;
   position: relative;
 }
-
 .char-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr); /* 4열 */
+  grid-template-columns: repeat(4, 1fr);
   gap: 10px;
   margin: 1rem 0;
   max-height: 50vh;
@@ -1079,7 +931,6 @@ onMounted(async () => {
 .char-grid::-webkit-scrollbar-thumb {
   background: #ffd700;
 }
-
 .char-slot {
   position: relative;
   background: rgba(0, 0, 0, 0.3);
@@ -1093,20 +944,16 @@ onMounted(async () => {
   justify-content: center;
   transition: all 0.1s;
 }
-
 .grid-char-img {
   width: 100%;
   height: auto;
   image-rendering: pixelated;
 }
-
 .char-num {
   font-size: 0.6rem;
   margin-top: 4px;
   color: #aaa;
 }
-
-/* 선택된 캐릭터 */
 .char-slot.selected {
   border-color: #00e5ff;
   background: rgba(0, 229, 255, 0.2);
@@ -1115,8 +962,6 @@ onMounted(async () => {
 .char-slot.selected .char-num {
   color: #00e5ff;
 }
-
-/* 잠긴 캐릭터 */
 .char-slot.locked {
   border-color: #333;
   opacity: 0.7;
@@ -1125,7 +970,6 @@ onMounted(async () => {
 .char-slot.locked .grid-char-img {
   filter: grayscale(100%) brightness(0.3);
 }
-
 .lock-overlay {
   position: absolute;
   top: 50%;
@@ -1136,7 +980,6 @@ onMounted(async () => {
   text-shadow: 2px 2px 0 #000;
 }
 
-/* 모달 오버레이 */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -1144,13 +987,12 @@ onMounted(async () => {
   width: 100%;
   height: 100%;
   background: rgba(0, 0, 0, 0.85);
-  z-index: 9999; /* 스캔라인(999)보다 위 */
+  z-index: 9999;
   display: flex;
   justify-content: center;
   align-items: center;
   animation: fadeIn 0.2s;
 }
-
 @keyframes fadeIn {
   from {
     opacity: 0;
