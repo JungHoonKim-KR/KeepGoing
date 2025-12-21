@@ -33,7 +33,7 @@ public class Member {
     private int level;          // 현재 레벨
     private int exp;            // 현재 경험치
     private int currentPoints;  // 보유 포인트 (상점용)
-
+    private int profileCharacter;
     private String refreshToken;
 
     // [추가] 리프레쉬 토큰 업데이트 메서드

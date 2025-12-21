@@ -150,14 +150,16 @@
 <script setup>
 import { ref, computed, onMounted, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
+import { useAuthStore } from "@/stores/authStore";
 import { useConfigStore } from "@/stores/configStore";
 import Footer from "../components/utils/Footer.vue";
 
 const router = useRouter();
 const route = useRoute();
 const config = useConfigStore();
+const authStore = useAuthStore();
 
-const MEMBER_ID = config.MEMBER_ID;
+const MEMBER_ID = authStore.memberId;
 const API_ENDPOINT = config.API_ENDPOINT;
 
 // === 🔊 Sound FX ===

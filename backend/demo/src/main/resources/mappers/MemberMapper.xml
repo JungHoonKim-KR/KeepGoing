@@ -77,6 +77,7 @@
             level,
             exp,
             current_points,
+            profile_character,
             refresh_token   FROM member
         WHERE id = #{id}
     </select>
@@ -122,6 +123,7 @@
             target_water,  level,
             exp,
             current_points,
+            profile_character,
             refresh_token
         FROM member
         WHERE email = #{email}
@@ -182,6 +184,13 @@
         SET
             level = #{level},
             exp = #{exp}
+        WHERE id = #{memberId}
+    </update>
+
+    <update id="updateCharacter">
+        UPDATE member
+        SET
+            profile_character = #{characterNumber}
         WHERE id = #{memberId}
     </update>
 </mapper>

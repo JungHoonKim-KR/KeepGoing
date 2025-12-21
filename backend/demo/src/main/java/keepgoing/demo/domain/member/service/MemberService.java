@@ -143,7 +143,7 @@ public class MemberService {
         // DB 업데이트
         memberMapper.update(member);
     }
-    public void updateExp(Long memberId, Integer exp){
+    public LevelUpResponseDto updateExp(Long memberId, Integer exp){
         Member member = memberMapper.findById(memberId).get();
 
         int memberExp = member.getExp() + exp;
@@ -153,6 +153,12 @@ public class MemberService {
             memberLevel += 1;
         }
         memberMapper.updateExp(memberId, memberLevel, memberExp);
+        return new LevelUpResponseDto(memberId, memberLevel, memberExp);
+    }
+
+    public void updateCharacter(Long memberId, Integer characterNumber){
+//        Member member = memberMapper.findById(memberId).get();
+        memberMapper.updateCharacter(memberId, characterNumber);
 
     }
 }

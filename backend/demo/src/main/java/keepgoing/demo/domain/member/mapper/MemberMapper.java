@@ -24,7 +24,7 @@ public interface MemberMapper {
     List<WeightLog> findWeightLogsByMemberId(Long memberId, LocalDate date);
 
     void updateExp(Long memberId,Integer level, Integer exp);
-
+    void updateCharacter(Long memberId,Integer characterNumber);
     Optional<Member> findByEmail(String email);
     void save(Member member);
     void updateRefreshToken(Member member);

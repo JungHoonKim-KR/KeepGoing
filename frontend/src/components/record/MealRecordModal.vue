@@ -165,8 +165,11 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from "vue";
+import { useAuthStore } from "@/stores/authStore";
 import dayjs from "dayjs";
+const authStore = useAuthStore();
 
+const MEMBER_ID = authStore.memberId;
 const emit = defineEmits(["close"]);
 const API_ENDPOINT = "http://localhost:8080";
 const propt = defineProps({
@@ -378,7 +381,7 @@ const removePhoto = () => {
 const saveMeal = async () => {
   playSound("save");
   const mealData = {
-    memberId: 1,
+    memberId: MEMBER_ID,
     mealTime: selectedMealTime.value,
     foods: selectedFoodList.value,
     date : formattedDate.value,

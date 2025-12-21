@@ -72,11 +72,13 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from "vue";
+import { useAuthStore } from "@/stores/authStore";
 import dayjs from "dayjs";
 import { useConfigStore } from "@/stores/configStore"; // Pinia Store 경로를 정확히 확인해주세요.
 const emit = defineEmits(["close", "update-water"]);
 
 // Data
+const authStore = useAuthStore();
 const config = useConfigStore();
 const props = defineProps({
   initialAmount: {
@@ -93,7 +95,7 @@ const props = defineProps({
   },
 });
 const formattedDate = computed(() => ref(props.dateToUse));
-const MEMBER_ID = config.MEMBER_ID;
+const MEMBER_ID = authStore.memberId;
 const API_ENDPOINT = config.API_ENDPOINT;
 
 const todayRecords = ref([]);
