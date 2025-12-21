@@ -1,6 +1,7 @@
 package keepgoing.demo.domain.member.controller;
 
 import keepgoing.demo.domain.member.dto.*;
+import keepgoing.demo.domain.member.entity.Member;
 import keepgoing.demo.domain.member.service.MemberService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -51,9 +52,16 @@ public class MemberController {
     }
 
     @PostMapping("/level")
-    public ResponseEntity<Void> updateLevel(@RequestBody LevelUpRequest request) {
+    public ResponseEntity<LevelUpResponseDto> updateLevel(@RequestBody LevelUpRequest request) {
         // 이제 request.getId()와 request.getScore()로 안전하게 접근 가능합니다.
-        memberService.updateExp(request.getId(), request.getScore());
-        return ResponseEntity.ok().build();
+        LevelUpResponseDto member = memberService.updateExp(request.getId(), request.getScore());
+        return ResponseEntity.ok(member);
+    }
+
+    @PostMapping("/character")
+    public ResponseEntity<?> updateCharacter(@RequestBody CharacterUpdateRequestDto request) {
+        // 세션이나 시큐리티 컨텍스트에서 memberId를 가져온다고 가정
+        memberService.updateCharacter(request.getMemberId(), request.getCharacterNumber());
+        return ResponseEntity.noContent().build(); // 204 No Content 반환
     }
 }

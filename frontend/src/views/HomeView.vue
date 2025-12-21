@@ -4,11 +4,13 @@
 
     <section class="page daily-page">
       <div class="page-content">
+        <div class="section-title-tag">상태</div>
+        
         <div class="retro-header"><span class="blinking-cursor">▶</span> PLAYER_DATE: {{ formattedDate }}</div>
 
         <div class="pixel-box main-stat-box">
           <div class="stat-header">
-            <span class="label">HP (ENERGY)</span>
+            <span class="label">(Kal)</span>
             <span class="val">{{ currentEnergy }} / {{ maxEnergy }}</span>
           </div>
           <div class="retro-progress-container" @click="triggerLevelUp">
@@ -60,11 +62,13 @@
 
     <section class="page meal-page">
       <div class="page-content">
+        <div class="section-title-tag">식단 기록</div>
+
         <div v-if="todayMeals.length === 0" class="pixel-card interactive" @click="handleMealClick">
           <div class="card-inner">
-            <div class="icon-8bit">🍗</div>
             <h2>LOG ITEM</h2>
-            <p class="pixel-text">인벤토리가 비어있습니다.<br />식사를 기록하세요.</p>
+            <div class="icon-8bit">🍗</div>
+            <p class="pixel-text">오늘의 식사를<br />기록하지 않았습니다.</p>
             <button class="retro-btn press-start">INSERT COIN</button>
           </div>
         </div>
@@ -98,10 +102,12 @@
 
     <section class="page water-page">
       <div class="page-content">
+        <div class="section-title-tag">수분 섭취 기록</div>
+
         <div v-if="waterData.water === 0" class="pixel-card interactive blue-theme" @click="handleWaterClick">
           <h1 class="page-title pixel-font">MANA POTION</h1>
           <div class="empty-state-icon">💧</div>
-          <p class="pixel-text-center">마력이 부족합니다.<br />물을 마셔 회복하세요.</p>
+          <p class="pixel-text-center">오늘의 수분량을<br />기록하지 않았습니다.</p>
           <button class="retro-btn blue-btn">RECHARGE MANA</button>
         </div>
 
@@ -135,6 +141,8 @@
 
     <section class="page weight-page">
       <div class="page-content">
+        <div class="section-title-tag">체중 기록</div>
+
         <div v-if="weightData.weight == 0.0" class="pixel-card interactive purple-theme" @click="handleWeightClick">
           <h1 class="page-title pixel-font">HIGH SCORE</h1>
           <div class="empty-state-icon">⚖️</div>
@@ -169,16 +177,12 @@
     <div v-if="showCharModal" class="modal-overlay" @click.self="showCharModal = false">
       <div class="pixel-card char-select-modal" @click.stop>
         <div class="retro-header-sm">SELECT CHARACTER</div>
-
         <div class="char-grid">
           <div
             v-for="char in characterList"
             :key="char.id"
             class="char-slot"
-            :class="{
-              locked: char.isLocked,
-              selected: char.id === selectedCharId,
-            }"
+            :class="{ locked: char.isLocked, selected: char.id === selectedCharId }"
             @click="selectCharacter(char)"
           >
             <div v-if="char.isLocked" class="lock-overlay">🔒</div>
@@ -186,7 +190,6 @@
             <span class="char-num">NO.{{ char.id }}</span>
           </div>
         </div>
-
         <button class="retro-btn" @click="showCharModal = false">CLOSE</button>
       </div>
     </div>
@@ -214,7 +217,7 @@
 <script setup>
 import { ref, computed, onMounted } from "vue";
 import { useConfigStore } from "@/stores/configStore";
-import { useAuthStore } from "@/stores/authStore"; // 1. Auth Store 임포트
+import { useAuthStore } from "@/stores/authStore";
 import { useRoute } from "vue-router";
 import Footer from "@/components/utils/Footer.vue";
 import dayjs from "dayjs";
@@ -224,10 +227,10 @@ import WaterRecordModal from "@/components/record/WaterRecordModal.vue";
 import WeightRecordModal from "@/components/record/WeightRecordModal.vue";
 import MealRecordModal from "@/components/record/MealRecordModal.vue";
 
-const authStore = useAuthStore(); // 2. 스토어 인스턴스 생성
+const authStore = useAuthStore();
 const config = useConfigStore();
 const route = useRoute();
-const MEMBER_ID = config.MEMBER_ID;
+const MEMBER_ID = authStore.memberId;
 const API_ENDPOINT = config.API_ENDPOINT;
 
 const formattedDate = computed(() => {
@@ -235,9 +238,6 @@ const formattedDate = computed(() => {
   return routeDate ? dayjs(routeDate).format("YYYY-MM-DD") : dayjs().format("YYYY-MM-DD");
 });
 
-// =========================
-// 🎮 캐릭터 및 레벨 시스템 (computed로 반응성 확보)
-// =========================
 const currentLevel = computed(() => authStore.level || 1);
 const currentLevelExpPercent = computed(() => authStore.exp || 0);
 const selectedCharId = ref(1);
@@ -260,18 +260,46 @@ const characterList = computed(() => {
   });
 });
 
-const selectCharacter = (char) => {
+const selectCharacter = async (char) => {
   if (char.isLocked) return;
-  selectedCharId.value = char.id;
-  playRetroSound("coin");
-  showCharModal.value = false;
+
+  try {
+    // 1. API 호출 (캐릭터 변경 반영)
+    // URL은 프로젝트 설정에 따라 /api/member/character 등으로 수정될 수 있습니다.
+    const response = await fetch(`${API_ENDPOINT}/api/member/character`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      // Java 컨트롤러에서 @RequestBody Integer로 받으므로 char.id만 보냄
+      body: JSON.stringify({
+        memberId: MEMBER_ID,
+        characterNumber: char.id,
+      }), 
+    });
+
+    if (response.ok) {
+      selectedCharId.value = char.id;
+      
+
+      playRetroSound("coin");
+      showCharModal.value = false;
+      
+      console.log(`Character changed to NO.${char.id}`);
+    } else {
+      console.error("캐릭터 변경 실패:", response.status);
+      alert("캐릭터를 변경할 수 없습니다.");
+    }
+  } catch (error) {
+    console.error("API 호출 중 에러 발생:", error);
+    alert("서버 통신 중 오류가 발생했습니다.");
+  }
 };
 
 const handleScreenClick = () => {
   showCharModal.value = true;
 };
 
-// 식단 데이터
 const todayMealMap = ref({ 아침: null, 점심: null, 저녁: null, 간식: null });
 const todayMeals = computed(() => {
   if (!todayMealMap.value) return [];
@@ -287,22 +315,18 @@ const todayMeals = computed(() => {
     }));
 });
 
-// 물 & 체중 데이터
-const waterData = ref({ water: 1.2, goal: 2.0 });
-const weightData = ref({ weight: 70.5, diff: -0.3 });
+const waterData = ref({ water: 0, goal: 2.0 });
+const weightData = ref({ weight: 0.0, diff: 0.0 });
 
-// 모달 상태
 const showModal = ref(false);
 const showWaterModal = ref(false);
 const showWeightModal = ref(false);
 const showMealModal = ref(false);
 
-// 캐릭터 상태 애니메이션
 const isLevelingUp = ref(false);
 const isBouncing = ref(false);
 const dialogText = ref('"오늘도 힘내보자구!"');
 
-// 스탯 계산
 const maxEnergy = 3000;
 const currentEnergy = computed(() => {
   return Object.values(todayMealMap.value)
@@ -318,13 +342,12 @@ const stats = computed(() => {
   const total = tProtein + tCarb + tFat;
   const getP = (v) => (total > 0 ? ((v / total) * 100).toFixed(0) : 0);
   return [
-    { label: "⚡STR (탄)", class: "carb", percent: `${getP(tCarb)}%`, val: `${tCarb.toFixed(1)}g` },
-    { label: "🛡️DEF (단)", class: "protein", percent: `${getP(tProtein)}%`, val: `${tProtein.toFixed(1)}g` },
-    { label: "🔮INT (지)", class: "fat", percent: `${getP(tFat)}%`, val: `${tFat.toFixed(1)}g` },
+    { label: "⚡탄수화물", class: "carb", percent: `${getP(tCarb)}%`, val: `${tCarb.toFixed(1)}g` },
+    { label: "🛡️단백질", class: "protein", percent: `${getP(tProtein)}%`, val: `${tProtein.toFixed(1)}g` },
+    { label: "🔮지방", class: "fat", percent: `${getP(tFat)}%`, val: `${tFat.toFixed(1)}g` },
   ];
 });
 
-// 효과음 및 애니메이션
 const initAudioContext = () => {};
 const playRetroSound = (type) => {
   if (type === "coin" || type === "jump") {
@@ -343,40 +366,28 @@ const triggerLevelUp = () => {
   }, 3000);
 };
 
-// 이벤트 핸들러
-const handleMealClick = () => {
-  showMealModal.value = true;
-};
+const handleMealClick = () => (showMealModal.value = true);
 const closeMealModal = async () => {
   showMealModal.value = false;
   await fetchDailyDiet();
 };
 const closeWaterModal = () => (showWaterModal.value = false);
 const closeWeightModal = () => (showWeightModal.value = false);
-const handleWaterClick = () => {
-  showWaterModal.value = true;
-};
-const handleWeightClick = () => {
-  showWeightModal.value = true;
-};
-const handleWaterUpdate = async (newAmount) => {
-  waterData.value.water = newAmount;
-};
+const handleWaterClick = () => (showWaterModal.value = true);
+const handleWeightClick = () => (showWeightModal.value = true);
+const handleWaterUpdate = async (newAmount) => (waterData.value.water = newAmount);
 const handleWeightUpdate = async (newWeight) => {
   if (newWeight) weightData.value.weight = newWeight;
   await fetchWeightData();
 };
 const closeModal = () => (showModal.value = false);
 
-// API 호출부
 async function fetchDailyDiet() {
   const url = `${API_ENDPOINT}/diets/meal-daily?memberId=${MEMBER_ID}&date=${formattedDate.value}`;
   try {
     const res = await fetch(url);
     if (res.ok) todayMealMap.value = await res.json();
-  } catch (e) {
-    console.error(e);
-  }
+  } catch (e) { console.error(e); }
 }
 
 async function fetchHydrationData() {
@@ -384,9 +395,7 @@ async function fetchHydrationData() {
   try {
     const res = await fetch(url);
     if (res.ok) waterData.value.water = await res.json();
-  } catch (e) {
-    console.error(e);
-  }
+  } catch (e) { console.error(e); }
 }
 
 async function fetchWeightData() {
@@ -398,9 +407,7 @@ async function fetchWeightData() {
       weightData.value.weight = d.weight;
       weightData.value.diff = d.diff;
     }
-  } catch (e) {
-    console.error(e);
-  }
+  } catch (e) { console.error(e); }
 }
 
 onMounted(async () => {
@@ -427,12 +434,52 @@ onMounted(async () => {
   scroll-snap-type: y mandatory;
 }
 
+.section-title-tag {
+  display: inline-block;
+  background-color: #000;
+  color: #fff;
+  border: 2px solid #fff;
+  padding: 4px 12px;
+  font-size: 0.8rem;
+  margin: 0 auto 0.1rem;
+  width: fit-content;
+  align-self: center;
+  box-shadow: 4px 4px 0px rgba(0,0,0,0.5);
+  letter-spacing: 1px;
+}
+
+.daily-page .section-title-tag { border-color: var(--secondary-color); color: var(--secondary-color); }
+.meal-page .section-title-tag { border-color: #ffd700; color: #ffd700; }
+.water-page .section-title-tag { border-color: #00e5ff; color: #00e5ff; }
+.weight-page .section-title-tag { border-color: #d500f9; color: #d500f9; }
+
+.meal-type-badge {
+  font-size: 0.65rem;
+  background: #ff0055;
+  color: #fff;
+  padding: 2px 6px;
+  border: 1px solid #fff;
+  display: inline-block;
+  line-height: 1;
+  text-shadow: 1px 1px 0 #000;
+}
+
+.slot-top {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.meal-cal {
+  font-size: 0.75rem;
+  color: #00e5ff;
+}
+
 .scanlines {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  top: 0; left: 0; width: 100%; height: 100%;
   pointer-events: none;
   background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
     linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
@@ -447,9 +494,8 @@ onMounted(async () => {
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  padding: 4rem 1rem 6rem 1rem;
+  padding: 2rem 1rem 6rem 1rem;
   box-sizing: border-box;
-  padding-top: 10rem;
 }
 
 .page-content {
@@ -460,8 +506,7 @@ onMounted(async () => {
   gap: 0.8rem;
 }
 
-.pixel-box,
-.pixel-card {
+.pixel-box, .pixel-card {
   border: 4px solid #fff;
   box-shadow: 4px 4px 0px 0px rgba(0, 0, 0, 0.5);
   position: relative;
@@ -469,423 +514,136 @@ onMounted(async () => {
   cursor: pointer;
 }
 
-.pixel-box {
-  background: #2d2d3a;
-  padding: 0.8rem;
-}
-.pixel-card {
-  padding: 1rem;
-  text-align: center;
-  background: #e6dac3;
-  color: #3e2723;
-  border-color: #5d4037;
-}
-.interactive:active {
-  transform: translate(2px, 2px);
-  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.5);
-}
+.pixel-box { background: #2d2d3a; padding: 0.8rem; }
+.pixel-card { padding: 1rem; text-align: center; background: #e6dac3; color: #3e2723; border-color: #5d4037; }
+.interactive:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.5); }
 
-.page.daily-page {
-  background: #222034;
-  padding: 1rem 1rem 6rem 1rem;
-}
-.meal-page {
-  background: #4b692f;
-  padding: 1rem 1rem 6rem 1rem;
-}
-.water-page {
-  background: #000022;
-}
-.weight-page {
-  background: #2a0a29;
-}
+.page.daily-page { background: #222034; }
+.meal-page { background: #4b692f; }
+.water-page { background: #000022; }
+.weight-page { background: #2a0a29; }
 
-.retro-header {
-  text-align: center;
-  color: var(--secondary-color);
-  margin-bottom: 0.2rem;
-  font-size: 1.1rem;
-}
-.blinking-cursor {
-  animation: blink 1s step-end infinite;
-}
+.retro-header { text-align: center; color: var(--secondary-color); margin-bottom: 0.2rem; font-size: 1.1rem; }
+.blinking-cursor { animation: blink 1s step-end infinite; }
+@keyframes blink { 50% { opacity: 0; } }
 
-.retro-progress-container {
-  height: 20px;
-  background: #333;
-  border: 2px solid #fff;
-  padding: 2px;
-  position: relative;
-  margin-top: 5px;
-}
-.retro-progress-bar {
-  height: 100%;
-  background: linear-gradient(90deg, #ff0055, #ff5500);
-  transition: width 0.5s steps(10);
-}
-.click-hint {
-  position: absolute;
-  top: -18px;
-  right: 0;
-  font-size: 0.6rem;
-  color: var(--accent-color);
-  animation: blink 0.5s infinite alternate;
-}
+.retro-progress-container { height: 20px; background: #333; border: 2px solid #fff; padding: 2px; position: relative; margin-top: 5px; }
+.retro-progress-bar { height: 100%; background: linear-gradient(90deg, #ff0055, #ff5500); transition: width 0.5s steps(10); }
+.click-hint { position: absolute; top: -18px; right: 0; font-size: 0.6rem; color: var(--accent-color); animation: blink 0.5s infinite alternate; }
 
-.game-screen-container .pixel-border {
-  border: 6px solid #444;
-  background: #8fb8ca;
-  padding: 0;
-  border-radius: 6px;
-  overflow: hidden;
-}
-
-/* 캐릭터 화면 컨테이너 */
+.game-screen-container .pixel-border { border: 6px solid #444; background: #8fb8ca; border-radius: 6px; overflow: hidden; }
 .screen-bg {
   background: url("https://i.pinimg.com/originals/10/78/3f/10783f947938361b02390a382c44843b.png") repeat-x bottom;
-  background-size: cover;
-  width: 100%;
-  height: 150px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  cursor: pointer;
+  background-size: cover; width: 100%; height: 150px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative;
 }
 
-.edit-hint {
-  position: absolute;
-  top: 5px;
-  right: 5px;
-  font-size: 0.6rem;
-  color: rgba(255, 255, 255, 0.6);
-  text-shadow: 1px 1px 0 #000;
-  animation: blink 2s infinite;
-  pointer-events: none;
-}
+.edit-hint { position: absolute; top: 5px; right: 5px; font-size: 0.6rem; color: rgba(255, 255, 255, 0.6); animation: blink 2s infinite; }
 .character-gif {
-  width: 60%;
-  max-height: 100px;
+  width: auto;       /* 너비를 강제하지 않고 원본 비율에 따름 */
+  max-width: 90%;    /* 혹시 너무 넓은 이미지가 와도 화면을 넘지 않게 제한 */
+  height: 100px;     /* 높이를 고정하여 게임 화면 내에서 일정한 크기 유지 (max-height 대신 height 권장) */
   image-rendering: pixelated;
   margin-bottom: 5px;
+  object-fit: contain; /* 비율을 유지하며 영역 안에 쏙 들어가게 함 (안전장치) */
 }
-.bounce {
-  animation: bounce 0.5s infinite alternate;
-}
-@keyframes bounce {
-  from {
-    transform: translateY(0);
-  }
-  to {
-    transform: translateY(-10px);
-  }
-}
+.bounce { animation: bounce 0.5s infinite alternate; }
+@keyframes bounce { from { transform: translateY(0); } to { transform: translateY(-10px); } }
 
-/* [좌측 상단] 레벨 배지 */
-.level-badge {
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  background: rgba(0, 0, 0, 0.7);
-  color: #fff;
-  padding: 2px 6px;
-  font-size: 0.7rem;
-  border: 2px solid #fff;
-  z-index: 10;
-}
+.level-badge { position: absolute; top: 8px; left: 8px; background: rgba(0, 0, 0, 0.7); color: #fff; padding: 2px 6px; font-size: 0.7rem; border: 2px solid #fff; z-index: 10; }
+.screen-xp-area { position: absolute; bottom: 0; left: 0; width: 100%; display: flex; align-items: center; background: rgba(0, 0, 0, 0.6); padding: 3px 8px; gap: 8px; box-sizing: border-box; }
+.screen-xp-label { font-size: 0.6rem; color: #00e5ff; font-weight: bold; }
+.screen-xp-bar { flex: 1; height: 6px; background: #222; border: 1px solid #777; overflow: hidden; }
+.screen-xp-fill { height: 100%; background: #00e5ff; transition: width 0.5s; box-shadow: 0 0 5px #00e5ff; }
 
-/* [하단 고정] 경험치 바 영역 */
-.screen-xp-area {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  display: flex;
-  align-items: center;
-  background: rgba(0, 0, 0, 0.6);
-  padding: 3px 8px;
-  gap: 8px;
-  box-sizing: border-box;
-  z-index: 10;
-}
-.screen-xp-label {
-  font-size: 0.6rem;
-  color: #00e5ff;
-  font-weight: bold;
-}
-.screen-xp-bar {
-  flex: 1;
-  height: 6px;
-  background: #222;
-  border: 1px solid #777;
-  overflow: hidden;
-}
-.screen-xp-fill {
-  height: 100%;
-  background: #00e5ff;
-  transition: width 0.5s;
-  box-shadow: 0 0 5px #00e5ff;
-}
+.box-title { margin: 0 0 0.5rem 0; font-size: 0.9rem; color: #aaa; }
+.stat-row { display: flex; align-items: center; gap: 8px; margin-bottom: 0.3rem; }
+.stat-icon { width: 70px; font-size: 0.75rem; }
+.stat-bar-group { flex: 1; display: flex; align-items: center; gap: 8px; }
+.retro-bar-bg { flex: 1; height: 10px; background: #111; border: 1px solid #555; }
+.retro-bar-fill { height: 100%; }
+.retro-bar-fill.carb { background: #ffd700; }
+.retro-bar-fill.protein { background: #ff0055; }
+.retro-bar-fill.fat { background: #00e5ff; }
+.stat-val { font-size: 0.75rem; min-width: 35px; text-align: right; }
 
-.box-title {
-  margin: 0 0 0.5rem 0;
-  font-size: 0.9rem;
-  color: #aaa;
-}
-.stat-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 0.3rem;
-}
-.stat-icon {
-  width: 70px;
-  font-size: 0.75rem;
-}
-.stat-bar-group {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.retro-bar-bg {
-  flex: 1;
-  height: 10px;
-  background: #111;
-  border: 1px solid #555;
-}
-.retro-bar-fill {
-  height: 100%;
-}
-.retro-bar-fill.carb {
-  background: #ffd700;
-}
-.retro-bar-fill.protein {
-  background: #ff0055;
-}
-.retro-bar-fill.fat {
-  background: #00e5ff;
-}
-.stat-val {
-  font-size: 0.75rem;
-  min-width: 35px;
-  text-align: right;
-}
+.retro-btn { margin-top: 0.8rem; background: #ff0055; color: #fff; border: 2px solid #fff; padding: 8px 16px; cursor: pointer; box-shadow: 3px 3px 0 #000; font-size: 0.9rem; }
 
-.retro-btn {
-  margin-top: 0.8rem;
-  background: #ff0055;
-  color: #fff;
-  border: 2px solid #fff;
-  padding: 8px 16px;
-  font-family: inherit;
-  cursor: pointer;
-  box-shadow: 3px 3px 0 #000;
-  font-size: 0.9rem;
-}
-.blue-theme {
-  border-color: #00e5ff;
-  color: #00e5ff;
-  background: #000;
-}
-.blue-btn {
-  background: #00e5ff;
-  color: #000;
-}
-.purple-theme {
-  border-color: #d500f9;
-  color: #d500f9;
-  background: #000;
-}
-.purple-btn {
-  background: #d500f9;
-  color: #fff;
-}
-.pixelated {
-  image-rendering: pixelated;
-}
+.blue-theme { border-color: #00e5ff; color: #00e5ff; background: #000; }
+.blue-btn { background: #00e5ff; color: #000; }
+.purple-theme { border-color: #d500f9; color: #d500f9; background: #000; }
+.purple-btn { background: #d500f9; color: #fff; }
 
-.meal-log-container {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-.retro-header-sm {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 2px dashed #fff;
-  padding-bottom: 5px;
-  font-size: 0.85rem;
-  color: #ffd700;
-  text-shadow: 1px 1px 0 #000;
-  margin-bottom: 0.5rem;
-}
-.meal-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  max-height: 55vh;
-  overflow-y: auto;
-  padding-right: 5px;
-}
-.meal-list::-webkit-scrollbar {
-  width: 4px;
-}
-.meal-list::-webkit-scrollbar-thumb {
-  background: #ffd700;
-  border-radius: 2px;
-}
+.meal-log-container { width: 100%; display: flex; flex-direction: column; gap: 0.5rem; }
+.retro-header-sm { display: flex; justify-content: space-between; border-bottom: 2px dashed #fff; padding-bottom: 5px; font-size: 0.85rem; color: #ffd700; }
+.meal-list { display: flex; flex-direction: column; gap: 8px; max-height: 55vh; overflow-y: auto; }
+.meal-slot { display: flex; align-items: center; background: rgba(0, 0, 0, 0.6); border: 2px solid #fff; padding: 8px; gap: 10px; box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.3); }
+.meal-name { font-size: 0.9rem; color: #fff; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
 
-.meal-slot {
-  display: flex;
-  align-items: center;
-  background: rgba(0, 0, 0, 0.6);
-  border: 2px solid #fff;
-  padding: 8px;
-  gap: 10px;
-  cursor: pointer;
-  transition: transform 0.1s, background 0.1s;
-  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.3);
-}
-.meal-slot:active {
-  transform: translate(2px, 2px);
-  box-shadow: 1px 1px 0 rgba(0, 0, 0, 0.3);
-  background: rgba(255, 255, 255, 0.1);
-}
-.slot-icon-box {
-  width: 32px;
-  height: 32px;
-  background: #2d2d3a;
-  border: 2px solid #555;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.2rem;
-}
-.slot-info {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.slot-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.meal-type-badge {
-  font-size: 0.65rem;
-  background: #ff0055;
-  color: #fff;
-  padding: 1px 5px;
-  border: 1px solid #fff;
-}
-.meal-cal {
-  font-size: 0.75rem;
-  color: #00e5ff;
-}
-.meal-name {
-  font-size: 0.9rem;
-  color: #fff;
-  font-weight: bold;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 200px;
-}
+.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); z-index: 9999; display: flex; justify-content: center; align-items: center; }
 
+/* --- [수정 핵심] 캐릭터 모달 최적화 스타일 --- */
 .char-select-modal {
   width: 90%;
   max-width: 400px;
-  background: #2d2d3a;
-  border: 4px solid #ffd700;
-  color: #fff;
-  z-index: 10000;
-  position: relative;
-}
-.char-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 10px;
-  margin: 1rem 0;
-  max-height: 50vh;
-  overflow-y: auto;
-  padding: 5px;
-}
-.char-grid::-webkit-scrollbar {
-  width: 5px;
-}
-.char-grid::-webkit-scrollbar-thumb {
-  background: #ffd700;
-}
-.char-slot {
-  position: relative;
-  background: rgba(0, 0, 0, 0.3);
-  border: 2px solid #555;
-  border-radius: 4px;
-  padding: 5px;
-  cursor: pointer;
+  max-height: 80vh;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.1s;
-}
-.grid-char-img {
-  width: 100%;
-  height: auto;
-  image-rendering: pixelated;
-}
-.char-num {
-  font-size: 0.6rem;
-  margin-top: 4px;
-  color: #aaa;
-}
-.char-slot.selected {
-  border-color: #00e5ff;
-  background: rgba(0, 229, 255, 0.2);
-  box-shadow: 0 0 5px #00e5ff;
-}
-.char-slot.locked {
-  border-color: #333;
-  opacity: 0.7;
-  cursor: not-allowed;
-}
-.char-slot.locked .grid-char-img {
-  filter: grayscale(100%) brightness(0.3);
-}
-.lock-overlay {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 1.5rem;
-  z-index: 10;
-  text-shadow: 2px 2px 0 #000;
+  background: #2d2d3a !important;
+  color: #fff !important;
+  border: 4px solid var(--secondary-color) !important;
+  padding: 1rem;
+  box-sizing: border-box;
 }
 
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.85);
-  z-index: 9999;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  animation: fadeIn 0.2s;
+.char-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr); /* 4열 배치 */
+  gap: 10px;
+  margin: 15px 0;
+  overflow-y: auto;
+  padding-right: 5px;
+  flex: 1;
 }
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+
+.char-grid::-webkit-scrollbar { width: 6px; }
+.char-grid::-webkit-scrollbar-track { background: #1a1a1a; }
+.char-grid::-webkit-scrollbar-thumb { background: var(--secondary-color); }
+
+.char-slot {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  border: 2px solid #555;
+  background: #1a1a1a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  overflow: hidden;
+}
+
+.char-slot.selected {
+  border-color: var(--secondary-color);
+  background: rgba(0, 229, 255, 0.1);
+  box-shadow: inset 0 0 8px var(--secondary-color);
+}
+
+.char-slot.locked { filter: grayscale(1); cursor: not-allowed; opacity: 0.5; }
+
+.grid-char-img { width: 85%; height: 85%; object-fit: contain; image-rendering: pixelated; }
+
+.lock-overlay {
+  position: absolute;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1rem; z-index: 2;
+}
+
+.char-num {
+  position: absolute;
+  bottom: 1px; right: 2px;
+  font-size: 0.5rem; color: #777;
 }
 </style>

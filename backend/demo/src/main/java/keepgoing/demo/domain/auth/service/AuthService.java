@@ -57,7 +57,7 @@ public class AuthService {
         memberMapper.save(member);
     }
 
-    // 2. 로그인 (Access + Refresh 발급)
+    // 2. 로그인 (Access + Refresh + Profile Data 발급)
     @Transactional
     public TokenResponseDto login(AuthRequestDto dto) {
         Member member = memberMapper.findByEmail(dto.email())
@@ -67,7 +67,7 @@ public class AuthService {
             throw new IllegalArgumentException("비밀번호가 일치하지 않습니다.");
         }
 
-        // 토큰 2개 생성
+        // 토큰 생성
         String accessToken = jwtTokenProvider.createToken(member.getId(), member.getEmail());
         String refreshToken = jwtTokenProvider.createRefreshToken(member.getId());
 
@@ -75,7 +75,24 @@ public class AuthService {
         member.updateRefreshToken(refreshToken);
         memberMapper.updateRefreshToken(member);
 
-        return new TokenResponseDto(accessToken, refreshToken, member.getId(), member.getLevel(), member.getExp(), member.getName());
+        // [수정] 모든 정보를 DTO에 담아서 반환한다.
+        return new TokenResponseDto(
+                accessToken,
+                refreshToken,
+                member.getId(),
+                member.getLevel(),
+                member.getExp(),
+                member.getName(),
+                member.getHeight(),
+                member.getWeight(),
+                member.getAge(),
+                member.getGender(),
+                member.getActivity(),
+                member.getGoal(),
+                member.getTargetWeight(),
+                member.getTargetWater(),
+                member.getProfileCharacter()
+        );
     }
 
     // 3. 토큰 재발급

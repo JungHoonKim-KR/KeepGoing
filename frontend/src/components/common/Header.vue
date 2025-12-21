@@ -23,7 +23,7 @@ const goHome = () => {
 
         <div class="btn-container">
           <div id="header-extra-actions"></div>
-        <button class="logout-btn" @click="handleLogout">EXIT</button>
+        <button class="logout-btn" @click="handleLogout">LOGOUT</button>
         </div>
         
       </div>
