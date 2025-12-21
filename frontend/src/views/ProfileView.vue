@@ -2,24 +2,26 @@
 import { ref } from "vue";
 import Footer from "../components/utils/Footer.vue";
 import characterImage from "../assets/images/characters/test.gif";
+import { useAuthStore } from "@/stores/authStore";
+import { useConfigStore } from "@/stores/configStore";
 
+const authStore = useAuthStore();
+const config = useConfigStore();
 // ----------------------------------------------------
 // 1. 상태 관리
 // ----------------------------------------------------
 const profile = ref({
-  name: "Hero_GD",
-  age: 30,
-  gender: "male",
-  height: 175,
-  weight: 70,
-  activityLevel: "moderate",
-  sleepHours: 7,
-  weeklyWorkout: 3,
-  bodyType: "balanced",
-  class: "Adventurer",
-  level: 24,
+  age: authStore.age || 0,
+  gender: authStore.gender || "male",
+  height: authStore.height || 0,
+  weight: authStore.weight || 0,
+  activityLevel: authStore.activityLevel || "moderate",
+  sleepHours: authStore.sleepHours || 0,
+  weeklyWorkout: authStore.weeklyWorkout || 0,
+  bodyType: authStore.bodyType || "balanced",
+  class: "Adventurer", // 직업은 고정 혹은 레벨에 따라 계산
 });
-
+console.log(profile)
 const isEditing = ref(false);
 
 const activityOptions = [
@@ -69,10 +71,27 @@ const startEdit = () => {
   playSound("click");
   isEditing.value = true;
 };
-const saveProfile = () => {
+const saveProfile = async () => {
   playSound("save");
-  console.log("Save:", profile.value);
-  isEditing.value = false;
+  try {
+    const url = `${config.API_ENDPOINT}/api/member/profile/update`;
+    const payload = {
+      memberId: authStore.memberId,
+      ...profile.value
+    };
+    
+    const response = await axios.post(url, payload);
+    
+    if (response.status === 200) {
+      // 서버 저장 성공 시 스토어 동기화
+      authStore.setProfileState(profile.value);
+      alert("데이터 동기화 완료! 능력치가 반영되었습니다.");
+      isEditing.value = false;
+    }
+  } catch (error) {
+    console.error("저장 실패:", error);
+    alert("서버 통신 오류가 발생했습니다.");
+  }
 };
 const cancelEdit = () => {
   playSound("click");

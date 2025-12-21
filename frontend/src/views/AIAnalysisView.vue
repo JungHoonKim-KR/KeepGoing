@@ -5,10 +5,11 @@ import { analyzeDiet } from "../api/diet/dietApi";
 import Footer from "../components/utils/Footer.vue";
 import axios from "axios"; // [추가] axios 임포트
 import { useConfigStore } from "@/stores/configStore"; // [추가] 설정 정보용 (MEMBER_ID 및 API URL)
+import { useAuthStore } from "@/stores/authStore";
 
 const router = useRouter();
 const config = useConfigStore();
-
+const authStore = useAuthStore();
 // ----------------------------------------------------
 // 1. 상태 관리
 // ----------------------------------------------------
@@ -18,7 +19,7 @@ const analysisData = ref(null);
 const bootLogs = ref([]);
 
 // 사용자 정보 (Pinia 스토어에서 가져오거나 기본값 1 사용)
-const MEMBER_ID = config.MEMBER_ID || 1;
+const MEMBER_ID = authStore.memberId;
 const TODAY_DATE = new Date().toISOString().split("T")[0];
 
 // ----------------------------------------------------
@@ -91,8 +92,10 @@ const goToAIDietPlan = async () => {
     };
 
     // axios를 사용한 POST 요청
-    await axios.post(url, payload);
-
+    const response = await axios.post(url, payload);
+    if (response.data) {
+          authStore.updateLevelInfo(response.data);
+        }
     // 성공 시 로직
     alert(
       "✨ 경험치가 성공적으로 반영되었습니다! ✨\n\n" +

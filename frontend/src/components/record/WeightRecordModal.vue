@@ -100,10 +100,12 @@
 
 <script setup>
 import { ref, unref, computed, onMounted, onUnmounted } from "vue";
+import { useAuthStore } from "@/stores/authStore";
 import dayjs from "dayjs";
 import { useConfigStore } from '@/stores/configStore'; // Pinia Store 경로를 정확히 확인해주세요.
 const emit = defineEmits(["close", "update-weight"]);
 const config = useConfigStore();
+const authStore = useAuthStore();
 const props = defineProps({
     dateToUse: {
         type: String,
@@ -111,10 +113,12 @@ const props = defineProps({
     }
 }); 
 // Data
+
+
 const weightInput = ref("60.0");
 const weightSlider = ref(60);
 const memo = ref("");
-const MEMBER_ID = config.MEMBER_ID;
+const MEMBER_ID = authStore.memberId;
 const API_ENDPOINT = config.API_ENDPOINT;
 const formattedDate = computed(() => ref(props.dateToUse));
 // 더미 데이터 (실제 데이터로 교체 가능)
