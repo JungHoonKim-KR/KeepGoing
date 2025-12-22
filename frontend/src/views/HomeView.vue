@@ -4,7 +4,6 @@
 
     <section class="page daily-page">
       <div class="page-content">
-        <div class="section-title-tag">상태</div>
         
         <div class="retro-header"><span class="blinking-cursor">▶</span> PLAYER_DATE: {{ formattedDate }}</div>
 
@@ -62,11 +61,10 @@
 
     <section class="page meal-page">
       <div class="page-content">
-        <div class="section-title-tag">식단 기록</div>
 
         <div v-if="todayMeals.length === 0" class="pixel-card interactive" @click="handleMealClick">
           <div class="card-inner">
-            <h2>LOG ITEM</h2>
+            <h2>식단 기록</h2>
             <div class="icon-8bit">🍗</div>
             <p class="pixel-text">오늘의 식사를<br />기록하지 않았습니다.</p>
             <button class="retro-btn press-start">INSERT COIN</button>
@@ -102,16 +100,17 @@
 
     <section class="page water-page">
       <div class="page-content">
-        <div class="section-title-tag">수분 섭취 기록</div>
 
         <div v-if="waterData.water === 0" class="pixel-card interactive blue-theme" @click="handleWaterClick">
-          <h1 class="page-title pixel-font">MANA POTION</h1>
+          <h1 class="page-title pixel-font">수분 섭취 기록</h1>
           <div class="empty-state-icon">💧</div>
           <p class="pixel-text-center">오늘의 수분량을<br />기록하지 않았습니다.</p>
           <button class="retro-btn blue-btn">RECHARGE MANA</button>
         </div>
 
         <div v-else class="pixel-card interactive blue-theme" @click="handleWaterClick">
+                   <h1 class="page-title pixel-font">수분 섭취 기록</h1>
+
           <div class="hud-top">
             <span class="hud-label">MANA (H2O)</span>
             <span class="hud-val">{{ Math.round((waterData.water / waterData.goal) * 100) }}%</span>
@@ -133,30 +132,24 @@
             </div>
           </div>
 
-          <div class="log-msg">> MP RECOVERING...</div>
           <button class="retro-btn blue-btn sm-btn">DRINK MORE</button>
         </div>
       </div>
-    </section>
-
-    <section class="page weight-page">
       <div class="page-content">
-        <div class="section-title-tag">체중 기록</div>
 
         <div v-if="weightData.weight == 0.0" class="pixel-card interactive purple-theme" @click="handleWeightClick">
-          <h1 class="page-title pixel-font">HIGH SCORE</h1>
+          <h1 class="page-title pixel-font">체중 기록</h1>
           <div class="empty-state-icon">⚖️</div>
           <p class="pixel-text-center">오늘의 스코어(체중)를<br />기록하지 않았습니다.</p>
           <button class="retro-btn purple-btn">NEW RECORD</button>
         </div>
 
         <div v-else class="pixel-card interactive purple-theme" @click="handleWeightClick">
-          <div class="hud-top">
-            <span class="hud-label">CURRENT RANKING</span>
-            <span class="date-badge">TODAY</span>
-          </div>
+          
 
           <div class="weight-dashboard">
+                      <h1 class="page-title pixel-font">체중 기록</h1>
+
             <div class="score-display">
               <span class="score-val">{{ weightData.weight }}</span>
               <span class="score-unit">KG</span>
@@ -173,6 +166,8 @@
         </div>
       </div>
     </section>
+
+    
 
     <div v-if="showCharModal" class="modal-overlay" @click.self="showCharModal = false">
       <div class="pixel-card char-select-modal" @click.stop>
