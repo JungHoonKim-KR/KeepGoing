@@ -241,69 +241,69 @@
   </div>
 </Transition>
 <template>
-<Teleport to="body">
-  <Transition name="modal-fade">
+  <Teleport to="body">
+  <Transition name="retro-modal">
     <div v-if="isResultModalOpen" class="ai-result-overlay" @click.self="closeResultModal">
-      <div class="ai-result-modal">
-        <!-- 헤더 -->
+      <div class="ai-result-modal retro-pixel-border">
+        <div class="scanline"></div>
+        
         <div class="modal-header-section">
-          <div class="header-icon">🤖</div>
-          <h2 class="modal-main-title">AI 분석 완료</h2>
-          <p class="modal-subtitle">{{ analysisResult?.dailyTitle }}</p>
+          <div class="pixel-tag">SYSTEM_REPORT</div>
+          <h2 class="modal-main-title">
+            <span class="glitch" :data-text="analysisResult?.dailyTitle">{{ analysisResult?.dailyTitle }}</span>
+          </h2>
         </div>
 
-        <!-- 랭크 & 점수 카드 -->
-        <div class="score-card">
-          <div class="rank-display">
-            <div class="rank-circle" :class="'rank-' + analysisResult?.rank">
-              {{ analysisResult?.rank }}
-            </div>
-            <div class="rank-label">RANK</div>
-          </div>
-          
-          <div class="score-display">
-            <div class="score-number">{{ analysisResult?.score }}</div>
-            <div class="score-label">SCORE</div>
-          </div>
-        </div>
+        <div class="modal-body-scroll">
+          <div class="score-card-retro premium-border">
+  <div class="rank-aura-container">
+    <div class="rank-aura" :class="'aura-' + analysisResult?.rank"></div>
+    <div class="rank-container">
+      <div class="rank-label">CLASS</div>
+      <div class="rank-visual-mega" :class="'rank-' + analysisResult?.rank">
+        {{ analysisResult?.rank }}
+      </div>
+    </div>
+  </div>
+  
+  <div class="score-container-mega">
+    <div class="score-label-neon">TOTAL GAINED XP</div>
+    <div class="score-number-glitch" :data-text="analysisResult?.score">
+      {{ analysisResult?.score }}
+    </div>
+    <div class="xp-bar-mini">
+      <div class="xp-bar-fill"></div>
+    </div>
+  </div>
+</div>
 
-        <!-- 인사이트 리스트 -->
-        <div class="insights-section">
-          <h3 class="section-title">📊 상세 분석</h3>
-          <div class="insight-list">
-            <div 
-              v-for="(item, idx) in analysisResult?.insights" 
-              :key="idx" 
-              class="insight-card"
-              :class="item.type"
-            >
-              <div class="insight-header">
-                <span class="insight-emoji">
-                  <template v-if="item.iconType === 'muscle'">💪</template>
-                  <template v-else-if="item.iconType === 'warning'">⚠️</template>
-                  <template v-else>✅</template>
-                </span>
-                <h4 class="insight-title">{{ item.title }}</h4>
+          <div class="insights-section">
+            <h3 class="section-title-retro">▶ ANALYSIS_LOG</h3>
+            <div class="insight-list-retro">
+              <div v-for="(item, idx) in analysisResult?.insights" :key="idx" class="insight-card-retro" :class="item.type">
+                <div class="insight-header">
+                  <span class="status-dot"></span>
+                  <h4 class="insight-title">[{{ item.title }}]</h4>
+                </div>
+                <p class="insight-description">{{ item.description }}</p>
               </div>
-              <p class="insight-description">{{ item.description }}</p>
             </div>
+          </div>
+
+          <div class="summary-box-retro">
+            <div class="npc-thumb">🤖</div>
+            <p class="summary-text">{{ analysisResult?.oneLineSummary }}</p>
           </div>
         </div>
 
-        <!-- 한줄 요약 -->
-        <div class="summary-section">
-          <div class="summary-icon">💬</div>
-          <p class="summary-text">{{ analysisResult?.oneLineSummary }}</p>
-        </div>
-
-        <!-- 닫기 버튼 -->
-        <button class="close-button" @click="closeResultModal">
-          확인
+        <button class="retro-confirm-btn" @click="closeResultModal">
+          RETURN TO MENU (A)
         </button>
       </div>
     </div>
   </Transition>
 </Teleport>
+
 </template>
     <Footer></Footer>
   </div>
@@ -1332,364 +1332,406 @@ onMounted(async () => {
   100% { transform: scale(1); opacity: 1; }
 }
 
+/* --- 모바일 최적화 수정 버전 --- */
+
 .ai-result-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
+  top: 0; left: 0;
+  width: 100%;
+  /* dvh는 모바일 브라우저 UI를 제외한 실제 가시 영역 높이를 잡습니다 */
+  height: 100dvh; 
   background: rgba(0, 0, 0, 0.85);
-  backdrop-filter: blur(8px);
+  backdrop-filter: blur(5px);
   z-index: 99999;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px;
-  overflow-y: auto;
+  padding: 16px; /* 모바일 여백 */
 }
 
-/* 모달 컨테이너 */
 .ai-result-modal {
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-  border-radius: 20px;
+  background: #1a1a1a;
+  border: 4px solid #fff;
   width: 100%;
   max-width: 420px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  /* 화면 높이에 맞춰 최대 높이 설정 */
+  max-height: 90dvh; 
+  position: relative;
+  display: flex;
+  flex-direction: column; /* 세로 배치 */
   overflow: hidden;
-  animation: slideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-shadow: 8px 8px 0px 0px rgba(0, 0, 0, 0.5);
 }
 
-@keyframes slideUp {
-  0% {
-    transform: translateY(50px);
-    opacity: 0;
+/* 내부 스크롤 영역 */
+.modal-body-scroll {
+  flex: 1; /* 남은 공간 모두 차지 */
+  overflow-y: auto; /* 내용이 많으면 스크롤 생성 */
+  padding: 10px 15px;
+  
+  /* 레트로 스타일 스크롤바 */
+  scrollbar-width: thin;
+  scrollbar-color: #ff0055 #222;
+}
+
+/* 크롬, 사파리용 스크롤바 디자인 */
+.modal-body-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.modal-body-scroll::-webkit-scrollbar-track {
+  background: #222;
+}
+.modal-body-scroll::-webkit-scrollbar-thumb {
+  background: #ff0055;
+  border: 1px solid #fff;
+}
+
+/* 헤더 & 버튼 고정 스타일링 */
+.modal-header-section {
+  padding: 15px 15px 10px;
+  border-bottom: 2px dashed #444;
+  flex-shrink: 0; /* 높이 고정 */
+}
+
+.retro-confirm-btn {
+  margin: 10px 15px 15px; /* 하단 고정 버튼 여백 */
+  flex-shrink: 0; /* 높이 고정 */
+  padding: 12px;
+  font-size: 0.9rem;
+}
+
+/* 모바일 텍스트 크기 미세 조정 */
+@media (max-height: 700px) {
+  .rank-visual {
+    font-size: 2.5rem;
   }
-  100% {
-    transform: translateY(0);
-    opacity: 1;
+  .score-number-retro {
+    font-size: 1.8rem;
   }
+  .modal-main-title {
+    font-size: 1rem;
+  }
+}
+
+/* 픽셀 느낌을 위한 테두리 효과 추가 */
+.retro-pixel-border {
+  image-rendering: pixelated;
+  position: relative;
+}
+
+/* CRT 스캔라인 효과 */
+.scanline {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: linear-gradient(
+    rgba(18, 16, 16, 0) 50%, 
+    rgba(0, 0, 0, 0.1) 50%
+  ), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+  background-size: 100% 3px, 3px 100%;
+  pointer-events: none;
+  z-index: 10;
 }
 
 /* 헤더 섹션 */
 .modal-header-section {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 30px 20px;
   text-align: center;
-  position: relative;
-  overflow: hidden;
+  margin-bottom: 20px;
+  border-bottom: 2px dashed #444;
+  padding-bottom: 15px;
 }
 
-.modal-header-section::before {
-  content: '';
-  position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
-  animation: rotate 20s linear infinite;
-}
-
-@keyframes rotate {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-.header-icon {
-  font-size: 3rem;
+.pixel-tag {
+  display: inline-block;
+  background: #ff0055;
+  color: #fff;
+  font-size: 0.7rem;
+  padding: 2px 8px;
   margin-bottom: 10px;
-  animation: bounce 2s ease-in-out infinite;
-  position: relative;
-  z-index: 1;
-}
-
-@keyframes bounce {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
 }
 
 .modal-main-title {
-  font-size: 1.5rem;
-  font-weight: bold;
-  color: #fff;
-  margin: 0 0 8px 0;
-  position: relative;
-  z-index: 1;
+  font-size: 1.2rem;
+  color: #00e5ff;
+  text-shadow: 2px 2px 0 #000;
 }
 
-.modal-subtitle {
-  font-size: 1rem;
-  color: rgba(255, 255, 255, 0.9);
-  margin: 0;
-  position: relative;
-  z-index: 1;
-}
-
-/* 점수 카드 */
-.score-card {
+/* 랭크 & 점수 카드 */
+.score-card-retro {
   display: flex;
   justify-content: space-around;
-  padding: 25px 20px;
-  background: rgba(255, 255, 255, 0.05);
-  margin: 20px;
-  border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.rank-display,
-.score-display {
-  display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 8px;
+  background: #000;
+  border: 2px solid #333;
+  padding: 15px;
+  margin-bottom: 20px;
 }
 
-.rank-circle {
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 2.5rem;
+.rank-visual {
+  font-size: 3.5rem;
   font-weight: 900;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
-  position: relative;
-  animation: popIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-.rank-circle::before {
-  content: '';
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  right: 8px;
-  bottom: 50%;
-  border-radius: 50%;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.4), transparent);
-}
-
-@keyframes popIn {
-  0% {
-    transform: scale(0) rotate(-180deg);
-    opacity: 0;
-  }
-  60% {
-    transform: scale(1.1) rotate(10deg);
-  }
-  100% {
-    transform: scale(1) rotate(0deg);
-    opacity: 1;
-  }
-}
-
-/* 랭크별 색상 */
-.rank-S {
-  background: linear-gradient(135deg, #ffd700, #ffed4e);
-  color: #8b6914;
-  border: 3px solid #fff5cc;
-  box-shadow: 0 0 30px rgba(255, 215, 0, 0.6);
-}
-
-.rank-A {
-  background: linear-gradient(135deg, #ff1744, #ff4569);
-  color: #fff;
-  border: 3px solid #ff94ab;
-  box-shadow: 0 0 30px rgba(255, 23, 68, 0.5);
-}
-
-.rank-B {
-  background: linear-gradient(135deg, #7c4dff, #9575ff);
-  color: #fff;
-  border: 3px solid #b8a4ff;
-  box-shadow: 0 0 30px rgba(124, 77, 255, 0.4);
-}
-
-.rank-C {
-  background: linear-gradient(135deg, #2979ff, #5393ff);
-  color: #fff;
-  border: 3px solid #80b3ff;
-  box-shadow: 0 0 20px rgba(41, 121, 255, 0.3);
-}
-
-.rank-F {
-  background: linear-gradient(135deg, #616161, #757575);
-  color: #e0e0e0;
-  border: 3px solid #9e9e9e;
-}
-
-.rank-label,
-.score-label {
-  font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.6);
-  text-transform: uppercase;
-  letter-spacing: 2px;
-}
-
-.score-number {
-  font-size: 3rem;
-  font-weight: 900;
-  color: #fff;
   line-height: 1;
-  text-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  margin-top: 5px;
+  animation: rankPop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-/* 인사이트 섹션 */
-.insights-section {
-  padding: 0 20px 20px;
-}
+.rank-S { color: #ffcc00; text-shadow: 0 0 15px #ffcc00; }
+.rank-A { color: #ff0055; text-shadow: 0 0 15px #ff0055; }
+.rank-B { color: #00e5ff; text-shadow: 0 0 15px #00e5ff; }
 
-.section-title {
-  font-size: 1.1rem;
+.score-number-retro {
+  font-size: 2.5rem;
   color: #fff;
-  margin: 0 0 15px 0;
-  font-weight: bold;
+  text-shadow: 2px 2px 0 #444;
 }
 
-.insight-list {
+/* 인사이트 로그 스타일 */
+.section-title-retro {
+  font-size: 0.8rem;
+  color: #888;
+  margin-bottom: 10px;
+}
+
+.insight-list-retro {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-}
-
-.insight-card {
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 12px;
-  padding: 16px;
-  border-left: 4px solid #00e5ff;
-  transition: all 0.2s;
-}
-
-.insight-card:active {
-  transform: translateX(4px);
-  background: rgba(255, 255, 255, 0.08);
-}
-
-.insight-card.good {
-  border-left-color: #00ff88;
-  background: rgba(0, 255, 136, 0.08);
-}
-
-.insight-card.warning {
-  border-left-color: #ffaa00;
-  background: rgba(255, 170, 0, 0.08);
-}
-
-.insight-header {
-  display: flex;
-  align-items: center;
   gap: 10px;
-  margin-bottom: 8px;
+  margin-bottom: 20px;
 }
 
-.insight-emoji {
-  font-size: 1.5rem;
+.insight-card-retro {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid #333;
+  padding: 10px;
+  position: relative;
+}
+
+.insight-card-retro.good { border-left: 4px solid #00ff88; }
+.insight-card-retro.warning { border-left: 4px solid #ffaa00; }
+
+.status-dot {
+  display: inline-block;
+  width: 6px; height: 6px;
+  background: currentColor;
+  margin-right: 8px;
+  vertical-align: middle;
 }
 
 .insight-title {
-  font-size: 1rem;
-  font-weight: bold;
-  color: #fff;
-  margin: 0;
+  font-size: 0.9rem;
+  display: inline-block;
+  color: #eee;
 }
 
 .insight-description {
-  font-size: 0.9rem;
-  color: rgba(255, 255, 255, 0.8);
-  line-height: 1.5;
-  margin: 0;
-  padding-left: 34px;
+  font-size: 0.8rem;
+  color: #aaa;
+  margin-top: 5px;
+  line-height: 1.4;
 }
 
-/* 요약 섹션 */
-.summary-section {
-  background: linear-gradient(135deg, rgba(102, 126, 234, 0.2), rgba(118, 75, 162, 0.2));
-  margin: 0 20px 20px;
-  padding: 20px;
-  border-radius: 12px;
+/* 요약 박스 (NPC 대화 스타일) */
+.summary-box-retro {
+  background: #222;
+  border: 2px solid #444;
+  padding: 12px;
   display: flex;
-  gap: 15px;
-  align-items: flex-start;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  gap: 12px;
+  align-items: center;
 }
 
-.summary-icon {
-  font-size: 1.8rem;
-  flex-shrink: 0;
+.npc-thumb {
+  font-size: 1.5rem;
+  background: #333;
+  padding: 5px;
+  border: 1px solid #555;
 }
 
 .summary-text {
-  font-size: 1rem;
-  color: rgba(255, 255, 255, 0.95);
-  line-height: 1.6;
-  margin: 0;
+  font-size: 0.85rem;
+  color: #00ff88;
+  line-height: 1.4;
 }
 
-/* 닫기 버튼 */
-.close-button {
-  width: calc(100% - 40px);
-  margin: 0 20px 20px;
-  padding: 16px;
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  border: none;
-  border-radius: 12px;
+/* 확인 버튼 */
+.retro-confirm-btn {
+  margin-top: 20px;
+  background: #ff0055;
   color: #fff;
-  font-size: 1.1rem;
-  font-weight: bold;
+  border: none;
+  padding: 15px;
+  font-family: "NeoDunggeunmo";
+  font-size: 1rem;
   cursor: pointer;
-  transition: all 0.3s;
-  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 4px 0 #990033;
+  transition: all 0.1s;
 }
 
-.close-button:active {
+.retro-confirm-btn:active {
   transform: translateY(2px);
-  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 2px 0 #990033;
 }
 
-/* 모달 페이드 애니메이션 */
-.modal-fade-enter-active,
-.modal-fade-leave-active {
-  transition: opacity 0.3s;
+/* 애니메이션 정의 */
+@keyframes rankPop {
+  0% { transform: scale(0); opacity: 0; }
+  80% { transform: scale(1.2); }
+  100% { transform: scale(1); opacity: 1; }
 }
 
-.modal-fade-enter-from,
-.modal-fade-leave-to {
-  opacity: 0;
+/* 모달 등장 애니메이션 */
+.retro-modal-enter-active {
+  animation: modalSlideIn 0.3s steps(5);
+}
+.retro-modal-leave-active {
+  animation: modalSlideIn 0.2s steps(5) reverse;
 }
 
-/* 모바일 최적화 */
-@media (max-width: 380px) {
-  .rank-circle {
-    width: 70px;
-    height: 70px;
-    font-size: 2rem;
+@keyframes modalSlideIn {
+  from { transform: translateY(30px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* 모바일 대응 */
+@media (max-width: 400px) {
+  .ai-result-modal {
+    padding: 15px;
   }
-  
-  .score-number {
-    font-size: 2.5rem;
-  }
-  
-  .modal-header-section {
-    padding: 25px 15px;
-  }
-  
-  .score-card {
-    margin: 15px;
-    padding: 20px 15px;
-  }
+  .rank-visual { font-size: 2.8rem; }
+  .score-number-retro { font-size: 2rem; }
+}
+/* --- 점수 & 랭크 강조 스타일 --- */
+
+.score-card-retro.premium-border {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  background: linear-gradient(135deg, #000 0%, #1a1a1a 100%);
+  border: 3px solid #ffd700; /* 황금색 테두리 */
+  padding: 25px 15px;
+  margin-bottom: 25px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: inset 0 0 15px rgba(255, 215, 0, 0.2);
 }
 
-/* 스크롤바 스타일 */
-.ai-result-overlay::-webkit-scrollbar {
-  width: 6px;
+/* 랭크 뒤에서 회전하는 후광(Aura) 효과 */
+.rank-aura-container {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1;
 }
 
-.ai-result-overlay::-webkit-scrollbar-thumb {
-  background: rgba(102, 126, 234, 0.5);
-  border-radius: 3px;
+.rank-aura {
+  position: absolute;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  filter: blur(20px);
+  opacity: 0.6;
+  animation: rotateAura 4s linear infinite;
 }
 
-.ai-result-overlay::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.2);
+/* 등급별 아우라 색상 */
+.aura-S { background: conic-gradient(#ff0055, #ffd700, #ff0055); }
+.aura-A { background: conic-gradient(#00e5ff, #764ba2, #00e5ff); }
+.aura-B { background: conic-gradient(#00ff88, #0085ff, #00ff88); }
+
+@keyframes rotateAura {
+  from { transform: rotate(0deg) scale(1); }
+  50% { transform: rotate(180deg) scale(1.2); }
+  to { transform: rotate(360deg) scale(1); }
+}
+
+/* 랭크 글자 효과: 금속 느낌 그라데이션 + 강한 글로우 */
+.rank-visual-mega {
+  font-size: 4.5rem;
+  font-weight: 900;
+  line-height: 1;
+  position: relative;
+  z-index: 2;
+  font-family: 'Arial Black', sans-serif; /* 더 두꺼운 폰트 추천 */
+  animation: rankPulse 1.5s ease-in-out infinite;
+}
+
+.rank-S {
+  background: linear-gradient(to bottom, #fff 20%, #ffd700 50%, #b8860b 80%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 15px rgba(255, 215, 0, 0.8));
+}
+
+.rank-A {
+  background: linear-gradient(to bottom, #fff 20%, #ff0055 50%, #8b0000 80%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 0 15px rgba(255, 0, 85, 0.8));
+}
+
+/* 점수 숫자 효과: 네온 사인 느낌 */
+.score-container-mega {
+  text-align: right;
+  z-index: 2;
+}
+
+.score-label-neon {
+  font-size: 0.7rem;
+  color: #ffd700;
+  letter-spacing: 2px;
+  margin-bottom: 5px;
+  text-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
+}
+
+.score-number-glitch {
+  font-size: 3rem;
+  color: #fff;
+  font-weight: bold;
+  text-shadow: 
+    3px 3px 0px #ff0055,
+    -3px -3px 0px #00e5ff;
+  animation: scoreFloat 3s ease-in-out infinite;
+}
+
+/* XP 바 애니메이션 (게이미피케이션 요소) */
+.xp-bar-mini {
+  width: 100%;
+  height: 4px;
+  background: #333;
+  margin-top: 10px;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.xp-bar-fill {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, #ffd700, #fff, #ffd700);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite linear;
+}
+
+/* 신규 애니메이션들 */
+@keyframes rankPulse {
+  0%, 100% { transform: scale(1); filter: brightness(1) drop-shadow(0 0 15px currentColor); }
+  50% { transform: scale(1.1); filter: brightness(1.3) drop-shadow(0 0 25px currentColor); }
+}
+
+@keyframes scoreFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* 모바일 텍스트 크기 최적화 */
+@media (max-width: 400px) {
+  .rank-visual-mega { font-size: 3.5rem; }
+  .score-number-glitch { font-size: 2.2rem; }
+  .rank-aura { width: 90px; height: 90px; }
 }
 </style>
