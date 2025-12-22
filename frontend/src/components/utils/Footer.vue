@@ -12,7 +12,7 @@
           :class="['retro-btn', { active: currentPath === '/' }]"
         >
           <div class="btn-face">
-            <span class="nav-icon">🏰</span><span class="nav-label">BASE</span>
+            <span class="nav-icon">🏰</span><span class="nav-label">HOME</span>
           </div>
           <div class="led-light"></div>
         </button>
@@ -22,7 +22,7 @@
           :class="['retro-btn', { active: currentPath === '/calendar' }]"
         >
           <div class="btn-face">
-            <span class="nav-icon">📜</span><span class="nav-label">LOGS</span>
+            <span class="nav-icon">📜</span><span class="nav-label">CALENDAR</span>
           </div>
           <div class="led-light"></div>
         </button>
@@ -43,7 +43,7 @@
           ]"
         >
           <div class="btn-face">
-            <span class="nav-icon">👾</span><span class="nav-label">NPC</span>
+            <span class="nav-icon">👾</span><span class="nav-label">AI</span>
           </div>
           <div class="led-light"></div>
         </button>
@@ -53,7 +53,7 @@
           :class="['retro-btn', { active: currentPath === '/profile' }]"
         >
           <div class="btn-face">
-            <span class="nav-icon">🧙‍♂️</span><span class="nav-label">HERO</span>
+            <span class="nav-icon">🧙‍♂️</span><span class="nav-label">PROFILE</span>
           </div>
           <div class="led-light"></div>
         </button>
