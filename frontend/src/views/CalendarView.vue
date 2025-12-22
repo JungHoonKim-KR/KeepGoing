@@ -11,14 +11,11 @@
         <button @click="changeMonth(1)" class="pixel-arrow">▶</button>
       </div>
 
-      <div class="category-tabs">
-        <button class="tab-btn active">DAILY RANKING</button>
-      </div>
+ 
     </header>
 
     <div class="content">
       <div class="legend-box">
-        <div class="pixel-label-sm">RANK GUIDE</div>
         <div class="tracking-states">
           <div v-for="grade in grades" :key="grade.key" class="state-chip" :class="grade.key">
             <span class="rank-char">{{ grade.key }}</span>
