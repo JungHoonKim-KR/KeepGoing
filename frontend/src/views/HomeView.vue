@@ -102,22 +102,24 @@
     :disabled="!isAllMealsRecorded"
     @click="startAIAnalysis"
   >
-    <span v-if="isAllMealsRecorded">🤖 AI 식단 분석 시작하기</span>
-    <span v-else>🔒 4끼를 모두 기록하면 열려요 ({{ recordedCount }}/4)</span>
+    <div class="btn-shimmer" v-if="isAllMealsRecorded"></div>
+    
+    <div class="btn-content">
+      <span class="btn-icon">
+        <template v-if="isAllMealsRecorded">⚡</template>
+        <template v-else>🔒</template>
+      </span>
+      <span class="btn-text">
+        {{ isAllMealsRecorded ? 'AI STRATEGY ANALYSIS' : `LOCKED (${recordedCount}/4)` }}
+      </span>
+    </div>
+    
+    <div class="corner-line top-left"></div>
+    <div class="corner-line bottom-right"></div>
   </button>
 </div>
 
-<Transition name="fade">
-  <div v-if="isAiLoading" class="loading-overlay">
-    <div class="loading-content">
-      <div class="loading-icon">🤖</div>
-      <div class="loading-bar-container">
-        <div class="loading-bar"></div>
-      </div>
-      <p class="loading-text">{{ loadingText }}</p>
-    </div>
-  </div>
-</Transition>
+
       </div>
     </section>
 
@@ -223,6 +225,66 @@
       @update-weight="handleWeightUpdate"
       :date-to-use="formattedDate"
     />
+    <Transition name="fade">
+  <div v-if="isAiLoading" class="loading-overlay">
+    <div class="loading-content">
+      <div class="loading-icon">🤖</div>
+      <div class="loading-status-bar">
+        <div class="status-fill"></div>
+      </div>
+      <p class="loading-text">{{ loadingText }}</p>
+    </div>
+  </div>
+</Transition>
+
+<Transition name="modal-bounce">
+  <div v-if="isResultModalOpen" class="result-modal-overlay" @click.self="closeResultModal">
+    </div>
+</Transition>
+    <Transition name="modal-bounce">
+      
+      <div v-if="isResultModalOpen" class="result-modal-overlay" @click.self="closeResultModal">
+        <div class="result-modal-content">
+          <div class="result-header">
+            <span class="report-title">DIET ANALYSIS REPORT</span>
+            <div class="header-line"></div>
+          </div>
+
+          <div class="result-main">
+            <div class="rank-badge" :class="'rank-' + analysisResult?.rank">{{ analysisResult?.rank }}</div>
+            <div class="score-container">
+              <div class="score-label">TOTAL PERFORMANCE</div>
+              <div class="score-value">{{ analysisResult?.score }}<span class="small-pt">pt</span></div>
+            </div>
+          </div>
+
+          <div class="result-stats">
+            <div v-for="stat in analysisResult?.stats" :key="stat.label" class="stat-item">
+              <div class="stat-info">
+                <span>{{ stat.label }}</span>
+                <span>{{ stat.value }}%</span>
+              </div>
+              <div class="stat-bar-bg">
+                <div class="stat-bar-fill" :style="{ width: stat.value + '%', backgroundColor: stat.color }"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="result-comment">
+            <div class="comment-label">🤖 AI ADVISOR</div>
+            <p class="comment-text">{{ analysisResult?.summary }}</p>
+            <p class="advice-text">"{{ analysisResult?.advice }}"</p>
+          </div>
+
+          <button class="result-close-btn" @click="closeResultModal">MISSION COMPLETE</button>
+          
+          <div class="modal-corner tl"></div>
+          <div class="modal-corner tr"></div>
+          <div class="modal-corner bl"></div>
+          <div class="modal-corner br"></div>
+        </div>
+      </div>
+    </Transition>
     <Footer></Footer>
   </div>
 </template>
@@ -264,13 +326,20 @@ const recordedCount = computed(() => {
   return todayMeals.value ? todayMeals.value.length : 0;
 });
 
-// 3. AI 분석 시작 및 로딩 애니메이션
+/* --- 기존 ref 선언부에 추가 --- */
+const isResultModalOpen = ref(false);
+const analysisResult = ref(null);
+
+const closeResultModal = () => {
+  isResultModalOpen.value = false;
+};
+
+/* --- startAIAnalysis 함수 내부 수정 --- */
 const startAIAnalysis = async () => {
   if (!isAllMealsRecorded.value) return;
 
   isAiLoading.value = true;
   
-  // 재미있는 로딩 멘트 배열
   const messages = [
     "🍎 음식 데이터 스캔 중...",
     "🥩 단백질 함량 분석 중...",
@@ -282,7 +351,6 @@ const startAIAnalysis = async () => {
   let msgIndex = 0;
   loadingText.value = messages[0];
 
-  // 0.8초마다 멘트 변경
   const interval = setInterval(() => {
     msgIndex++;
     if (msgIndex < messages.length) {
@@ -291,13 +359,27 @@ const startAIAnalysis = async () => {
   }, 800);
 
   try {
-    // 여기에 실제 AI 분석 API 호출 코드를 넣으세요
-    // await fetchAiAnalysis(); 
+    // (테스트용) 실제 데이터 기반의 분석 결과 생성
+    await new Promise(resolve => setTimeout(resolve, 3500));
     
-    // (테스트용) 4초 뒤에 로딩 끝
-    await new Promise(resolve => setTimeout(resolve, 4000));
-    
-    alert("AI 분석이 완료되었습니다! (결과 모달 띄우기)");
+    // 현재 스탯 데이터를 활용한 결과 시뮬레이션
+    const tProtein = Object.values(todayMealMap.value).reduce((acc, meal) => acc + (meal ? meal.protein : 0), 0);
+    const score = Math.min(70 + Math.round(tProtein / 2), 99); // 단백질이 많을수록 고득점 예시
+    const rank = score >= 90 ? 'S' : score >= 80 ? 'A' : score >= 70 ? 'B' : 'C';
+
+    analysisResult.value = {
+      score: score,
+      rank: rank,
+      summary: "오늘의 영양 전략 분석이 완료되었습니다. 단백질 섭취가 매우 효율적입니다.",
+      stats: [
+        { label: '탄수화물', value: 65, color: '#ff3366' },
+        { label: '단백질', value: 88, color: '#00ff99' },
+        { label: '지방', value: 42, color: '#ffcc00' }
+      ],
+      advice: "오후 운동 후에 닭가슴살 쉐이크를 한 번 더 추가하면 완벽한 'S' 랭크가 가능합니다!"
+    };
+
+    isResultModalOpen.value = true; // 모달 열기
   } catch (e) {
     console.error(e);
     alert("분석 중 오류가 발생했습니다.");
@@ -306,7 +388,6 @@ const startAIAnalysis = async () => {
     isAiLoading.value = false;
   }
 };
-
 const authStore = useAuthStore();
 const config = useConfigStore();
 const route = useRoute();
@@ -942,118 +1023,275 @@ onMounted(async () => {
   50% { opacity: 0.7; }
   100% { opacity: 1; }
 }
-
-/* --- AI 분석 버튼 스타일 --- */
+/* --- 세련된 사이버 펑크 AI 버튼 --- */
 .ai-btn-container {
   width: 100%;
-  padding: 10px 20px;
-  box-sizing: border-box;
-  margin-top: 10px;
-  margin-bottom: 20px; /* 푸터와 간격 */
+  padding: 30px 20px;
+  display: flex;
+  justify-content: center;
+  background: transparent;
 }
 
 .ai-analyze-btn {
+  position: relative;
   width: 100%;
-  padding: 15px;
-  border: 2px solid #555;
-  background: #333;
-  color: #888;
-  font-family: "NeoDunggeunmo", monospace;
-  font-size: 1rem;
+  max-width: 360px;
+  height: 60px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px; /* 너무 둥글지 않게 하여 날카로운 느낌 강조 */
+  overflow: hidden;
   cursor: not-allowed;
-  transition: all 0.3s ease;
-  border-radius: 8px;
+  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.btn-content {
+  position: relative;
+  z-index: 2;
   display: flex;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: #666;
+  font-family: 'Orbitron', sans-serif; /* 게이밍 폰트가 없다면 기본 고딕 */
+  letter-spacing: 2px;
+  font-size: 0.9rem;
+  font-weight: 800;
 }
 
-/* 활성화 상태 (4끼 모두 기록 시) */
+/* 활성화 상태 (Active) */
 .ai-analyze-btn.active {
-  background: linear-gradient(90deg, #6a11cb 0%, #2575fc 100%);
-  border-color: #fff;
-  color: #fff;
   cursor: pointer;
-  box-shadow: 0 0 15px rgba(37, 117, 252, 0.5);
-  animation: pulse-btn 2s infinite;
+  background: rgba(110, 69, 226, 0.1);
+  border: 1px solid rgba(0, 229, 255, 0.5);
+  box-shadow: 0 0 20px rgba(0, 229, 255, 0.2);
 }
 
+.ai-analyze-btn.active .btn-content {
+  color: #00e5ff;
+  text-shadow: 0 0 8px rgba(0, 229, 255, 0.8);
+}
+
+/* 내부 빛 흐름 효과 (Shimmer) */
+.btn-shimmer {
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    120deg,
+    transparent,
+    rgba(0, 229, 255, 0.2),
+    transparent
+  );
+  transition: all 0.6s;
+  animation: shimmer 3s infinite;
+}
+
+@keyframes shimmer {
+  0% { left: -100%; }
+  30% { left: 100%; }
+  100% { left: 100%; }
+}
+
+/* 코너 장식 라인 */
+.corner-line {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border: 2px solid transparent;
+  transition: all 0.3s;
+}
+.top-left { top: 0; left: 0; border-top-color: #444; border-left-color: #444; }
+.bottom-right { bottom: 0; right: 0; border-bottom-color: #444; border-right-color: #444; }
+
+.ai-analyze-btn.active .top-left { border-top-color: #00e5ff; border-left-color: #00e5ff; }
+.ai-analyze-btn.active .bottom-right { border-bottom-color: #00e5ff; border-right-color: #00e5ff; }
+
+/* 호버 시 반응 */
 .ai-analyze-btn.active:hover {
-  transform: scale(1.02);
-  box-shadow: 0 0 25px rgba(37, 117, 252, 0.8);
+  transform: translateY(-2px);
+  background: rgba(0, 229, 255, 0.15);
+  box-shadow: 0 0 30px rgba(0, 229, 255, 0.4);
 }
 
-@keyframes pulse-btn {
-  0% { box-shadow: 0 0 10px rgba(37, 117, 252, 0.5); }
-  50% { box-shadow: 0 0 20px rgba(37, 117, 252, 0.9); }
-  100% { box-shadow: 0 0 10px rgba(37, 117, 252, 0.5); }
+.ai-analyze-btn.active:active {
+  transform: scale(0.97);
 }
-
-
-/* --- 재미있는 로딩 화면 (레트로 스타일) --- */
+/* --- 로딩 오버레이 스타일 (추가) --- */
 .loading-overlay {
   position: fixed;
   top: 0; left: 0; width: 100%; height: 100%;
-  background: rgba(0, 0, 30, 0.95);
-  z-index: 10000;
+  background: rgba(0, 0, 20, 0.95);
+  z-index: 15000; /* 모달보다 높게 설정 */
   display: flex;
   justify-content: center;
   align-items: center;
-  flex-direction: column;
+  backdrop-filter: blur(5px);
 }
 
 .loading-content {
   text-align: center;
-  color: #00e5ff;
 }
 
 .loading-icon {
-  font-size: 4rem;
+  font-size: 3rem;
   margin-bottom: 20px;
-  animation: bounce 1s infinite alternate;
+  animation: pulse 1s infinite;
 }
 
-.loading-text {
-  font-family: "NeoDunggeunmo", monospace;
-  font-size: 1.2rem;
-  margin-top: 15px;
-  color: #fff;
-  min-width: 250px; /* 글자 바뀔 때 흔들림 방지 */
-}
-
-.loading-bar-container {
+.loading-status-bar {
   width: 200px;
-  height: 10px;
-  border: 2px solid #fff;
-  margin: 0 auto;
-  padding: 2px;
+  height: 4px;
+  background: #333;
+  margin: 15px auto;
+  position: relative;
+  overflow: hidden;
+}
+
+.status-fill {
+  width: 100%;
+  height: 100%;
+  background: #00e5ff;
+  animation: loading-scan 1.5s infinite;
+}
+
+@keyframes loading-scan {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* --- 결과 모달 상하 잘림 해결 스타일 (수정) --- */
+.result-modal-overlay {
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0, 0, 15, 0.9);
+  backdrop-filter: blur(10px);
+  z-index: 12000;
+  display: flex;
+  justify-content: center;
+  align-items: center; 
+  padding: 20px;
+  box-sizing: border-box;
+  overflow-y: auto; /* 화면보다 크면 스크롤 가능하게 함 */
+}
+
+.result-modal-content {
+  position: relative;
+  width: 100%;
+  max-width: 380px;
+  margin: auto; /* 내용이 길 때 상단이 잘리지 않도록 중앙 배치 */
+  background: #1a1a24;
+  border: 1px solid rgba(0, 229, 255, 0.3);
+  padding: 25px;
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.5);
+  color: #fff;
+  
+  /* 모달 높이 제한 및 내부 스크롤 추가 */
+  max-height: 90vh; 
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #00e5ff #1a1a24;
+}
+
+/* 크롬/사파리용 스크롤바 디자인 (선택) */
+.result-modal-content::-webkit-scrollbar {
+  width: 4px;
+}
+.result-modal-content::-webkit-scrollbar-thumb {
+  background: #00e5ff;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.1); opacity: 0.7; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* 페이드 애니메이션 */
+.fade-enter-active, .fade-leave-active { transition: opacity 0.5s; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
+
+.report-title {
+  font-size: 0.75rem;
+  color: #00e5ff;
+  letter-spacing: 2px;
+  font-weight: bold;
+}
+
+.header-line {
+  height: 2px;
+  background: linear-gradient(90deg, #00e5ff, transparent);
+  margin-top: 5px;
+  margin-bottom: 20px;
+}
+
+.result-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  margin-bottom: 30px;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 20px;
   border-radius: 4px;
 }
 
-.loading-bar {
-  height: 100%;
-  background: #00e5ff;
-  width: 0%;
-  animation: loading-progress 4s linear infinite; /* 4초 동안 참 */
+.rank-badge {
+  font-size: 4.5rem;
+  font-weight: 900;
+  text-shadow: 0 0 20px currentColor;
 }
+.rank-S { color: #ffcc00; }
+.rank-A { color: #00e5ff; }
+.rank-B { color: #00ff99; }
 
-@keyframes bounce {
-  from { transform: translateY(0); }
-  to { transform: translateY(-20px); }
-}
+.score-label { font-size: 0.6rem; color: #888; margin-bottom: 5px; }
+.score-value { font-size: 2.5rem; font-weight: 800; color: #fff; }
+.small-pt { font-size: 1rem; margin-left: 4px; color: #00e5ff; }
 
-@keyframes loading-progress {
-  0% { width: 0%; }
-  50% { width: 70%; }
-  80% { width: 90%; }
-  100% { width: 100%; }
-}
+.result-stats { margin-bottom: 25px; }
+.stat-item { margin-bottom: 12px; }
+.stat-info { display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 6px; color: #aaa; }
+.stat-bar-bg { width: 100%; height: 4px; background: #333; }
+.stat-bar-fill { height: 100%; box-shadow: 0 0 10px currentColor; transition: width 1.5s ease-out; }
 
-/* Vue 트랜지션 */
-.fade-enter-active, .fade-leave-active {
-  transition: opacity 0.3s;
+.result-comment {
+  background: rgba(0, 229, 255, 0.05);
+  border-left: 3px solid #00e5ff;
+  padding: 15px;
+  margin-bottom: 30px;
+  text-align: left;
 }
-.fade-enter-from, .fade-leave-to {
-  opacity: 0;
+.comment-label { color: #00e5ff; font-size: 0.65rem; font-weight: bold; margin-bottom: 10px; }
+.comment-text { font-size: 0.9rem; line-height: 1.5; margin-bottom: 10px; color: #eee; }
+.advice-text { font-size: 0.85rem; color: #00ff99; font-style: italic; opacity: 0.9; }
+
+.result-close-btn {
+  width: 100%;
+  padding: 16px;
+  background: transparent;
+  border: 1px solid #00e5ff;
+  color: #00e5ff;
+  font-family: "NeoDunggeunmo";
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+.result-close-btn:hover { background: #00e5ff; color: #1a1a24; box-shadow: 0 0 20px rgba(0, 229, 255, 0.4); }
+
+/* 장식용 코너 */
+.modal-corner { position: absolute; width: 12px; height: 12px; border: 2px solid #00e5ff; }
+.tl { top: -2px; left: -2px; border-right: none; border-bottom: none; }
+.tr { top: -2px; right: -2px; border-left: none; border-bottom: none; }
+.bl { bottom: -2px; left: -2px; border-right: none; border-top: none; }
+.br { bottom: -2px; right: -2px; border-left: none; border-top: none; }
+
+/* 모달 애니메이션 */
+.modal-bounce-enter-active { animation: modal-bounce-in 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55); }
+.modal-bounce-leave-active { animation: modal-bounce-in 0.3s reverse ease-in; }
+@keyframes modal-bounce-in {
+  0% { transform: scale(0.5); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
 }
 </style>
