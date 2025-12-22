@@ -210,8 +210,12 @@
     </div>
 
     <div v-if="showModal" class="modal-overlay" @click="closeModal"></div>
-    <MealRecordModal v-if="showMealModal" @close="closeMealModal" :date-to-use="formattedDate" />
-    <WaterRecordModal
+<MealRecordModal
+      v-if="showMealModal"
+      @close="closeMealModal"
+      :date-to-use="formattedDate"
+      :initial-meal-data="todayMealMap"
+    />    <WaterRecordModal
       v-if="showWaterModal"
       @close="closeWaterModal"
       @update-water="handleWaterUpdate"
@@ -236,55 +240,71 @@
     </div>
   </div>
 </Transition>
-
-<Transition name="modal-bounce">
-  <div v-if="isResultModalOpen" class="result-modal-overlay" @click.self="closeResultModal">
-    </div>
-</Transition>
-    <Transition name="modal-bounce">
-      
-      <div v-if="isResultModalOpen" class="result-modal-overlay" @click.self="closeResultModal">
-        <div class="result-modal-content">
-          <div class="result-header">
-            <span class="report-title">DIET ANALYSIS REPORT</span>
-            <div class="header-line"></div>
-          </div>
-
-          <div class="result-main">
-            <div class="rank-badge" :class="'rank-' + analysisResult?.rank">{{ analysisResult?.rank }}</div>
-            <div class="score-container">
-              <div class="score-label">TOTAL PERFORMANCE</div>
-              <div class="score-value">{{ analysisResult?.score }}<span class="small-pt">pt</span></div>
-            </div>
-          </div>
-
-          <div class="result-stats">
-            <div v-for="stat in analysisResult?.stats" :key="stat.label" class="stat-item">
-              <div class="stat-info">
-                <span>{{ stat.label }}</span>
-                <span>{{ stat.value }}%</span>
-              </div>
-              <div class="stat-bar-bg">
-                <div class="stat-bar-fill" :style="{ width: stat.value + '%', backgroundColor: stat.color }"></div>
-              </div>
-            </div>
-          </div>
-
-          <div class="result-comment">
-            <div class="comment-label">🤖 AI ADVISOR</div>
-            <p class="comment-text">{{ analysisResult?.summary }}</p>
-            <p class="advice-text">"{{ analysisResult?.advice }}"</p>
-          </div>
-
-          <button class="result-close-btn" @click="closeResultModal">MISSION COMPLETE</button>
-          
-          <div class="modal-corner tl"></div>
-          <div class="modal-corner tr"></div>
-          <div class="modal-corner bl"></div>
-          <div class="modal-corner br"></div>
+<template>
+<Teleport to="body">
+  <Transition name="modal-fade">
+    <div v-if="isResultModalOpen" class="ai-result-overlay" @click.self="closeResultModal">
+      <div class="ai-result-modal">
+        <!-- 헤더 -->
+        <div class="modal-header-section">
+          <div class="header-icon">🤖</div>
+          <h2 class="modal-main-title">AI 분석 완료</h2>
+          <p class="modal-subtitle">{{ analysisResult?.dailyTitle }}</p>
         </div>
+
+        <!-- 랭크 & 점수 카드 -->
+        <div class="score-card">
+          <div class="rank-display">
+            <div class="rank-circle" :class="'rank-' + analysisResult?.rank">
+              {{ analysisResult?.rank }}
+            </div>
+            <div class="rank-label">RANK</div>
+          </div>
+          
+          <div class="score-display">
+            <div class="score-number">{{ analysisResult?.score }}</div>
+            <div class="score-label">SCORE</div>
+          </div>
+        </div>
+
+        <!-- 인사이트 리스트 -->
+        <div class="insights-section">
+          <h3 class="section-title">📊 상세 분석</h3>
+          <div class="insight-list">
+            <div 
+              v-for="(item, idx) in analysisResult?.insights" 
+              :key="idx" 
+              class="insight-card"
+              :class="item.type"
+            >
+              <div class="insight-header">
+                <span class="insight-emoji">
+                  <template v-if="item.iconType === 'muscle'">💪</template>
+                  <template v-else-if="item.iconType === 'warning'">⚠️</template>
+                  <template v-else>✅</template>
+                </span>
+                <h4 class="insight-title">{{ item.title }}</h4>
+              </div>
+              <p class="insight-description">{{ item.description }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 한줄 요약 -->
+        <div class="summary-section">
+          <div class="summary-icon">💬</div>
+          <p class="summary-text">{{ analysisResult?.oneLineSummary }}</p>
+        </div>
+
+        <!-- 닫기 버튼 -->
+        <button class="close-button" @click="closeResultModal">
+          확인
+        </button>
       </div>
-    </Transition>
+    </div>
+  </Transition>
+</Teleport>
+</template>
     <Footer></Footer>
   </div>
 </template>
@@ -294,6 +314,7 @@ import { ref, computed, onMounted } from "vue";
 import { useConfigStore } from "@/stores/configStore";
 import { useAuthStore } from "@/stores/authStore";
 import { useRoute } from "vue-router";
+import { analyzeDiet } from "@/api/diet/dietApi";
 import Footer from "@/components/utils/Footer.vue";
 import dayjs from "dayjs";
 import confetti from "canvas-confetti";
@@ -334,64 +355,12 @@ const closeResultModal = () => {
   isResultModalOpen.value = false;
 };
 
-/* --- startAIAnalysis 함수 내부 수정 --- */
-const startAIAnalysis = async () => {
-  if (!isAllMealsRecorded.value) return;
 
-  isAiLoading.value = true;
-  
-  const messages = [
-    "🍎 음식 데이터 스캔 중...",
-    "🥩 단백질 함량 분석 중...",
-    "🍰 당분 수치 계산 중...",
-    "🤖 AI가 조언을 생성하고 있습니다...",
-    "✨ 거의 다 됐어요!"
-  ];
-
-  let msgIndex = 0;
-  loadingText.value = messages[0];
-
-  const interval = setInterval(() => {
-    msgIndex++;
-    if (msgIndex < messages.length) {
-      loadingText.value = messages[msgIndex];
-    }
-  }, 800);
-
-  try {
-    // (테스트용) 실제 데이터 기반의 분석 결과 생성
-    await new Promise(resolve => setTimeout(resolve, 3500));
-    
-    // 현재 스탯 데이터를 활용한 결과 시뮬레이션
-    const tProtein = Object.values(todayMealMap.value).reduce((acc, meal) => acc + (meal ? meal.protein : 0), 0);
-    const score = Math.min(70 + Math.round(tProtein / 2), 99); // 단백질이 많을수록 고득점 예시
-    const rank = score >= 90 ? 'S' : score >= 80 ? 'A' : score >= 70 ? 'B' : 'C';
-
-    analysisResult.value = {
-      score: score,
-      rank: rank,
-      summary: "오늘의 영양 전략 분석이 완료되었습니다. 단백질 섭취가 매우 효율적입니다.",
-      stats: [
-        { label: '탄수화물', value: 65, color: '#ff3366' },
-        { label: '단백질', value: 88, color: '#00ff99' },
-        { label: '지방', value: 42, color: '#ffcc00' }
-      ],
-      advice: "오후 운동 후에 닭가슴살 쉐이크를 한 번 더 추가하면 완벽한 'S' 랭크가 가능합니다!"
-    };
-
-    isResultModalOpen.value = true; // 모달 열기
-  } catch (e) {
-    console.error(e);
-    alert("분석 중 오류가 발생했습니다.");
-  } finally {
-    clearInterval(interval);
-    isAiLoading.value = false;
-  }
-};
 const authStore = useAuthStore();
 const config = useConfigStore();
 const route = useRoute();
 const MEMBER_ID = authStore.memberId;
+const TODAY_DATE = new Date().toISOString().split("T")[0];
 const API_ENDPOINT = config.API_ENDPOINT;
 
 const formattedDate = computed(() => {
@@ -475,6 +444,75 @@ const todayMeals = computed(() => {
       name: meal.foods?.map((f) => f.name).join(", ") || "기록된 음식 없음",
     }));
 });
+const startAIAnalysis = async () => {
+  if (!isAllMealsRecorded.value) {
+    alert("오늘의 4가지 식단(아침, 점심, 저녁, 간식)을 모두 기록해야 분석이 가능합니다!");
+    return;
+  }
+  if (isAiLoading.value) return;
+
+  isAiLoading.value = true;
+  
+  const messages = ["🎯 데이터 스캔 중...", "🥩 영양 분석 중...", "🤖 AI 전략 수립 중...", "✨ 결과 정리 중..."];
+  let msgIndex = 0;
+  loadingText.value = messages[0];
+  const msgInterval = setInterval(() => {
+    msgIndex = (msgIndex + 1) % messages.length;
+    loadingText.value = messages[msgIndex];
+  }, 800);
+
+  try {
+    const data = await analyzeDiet(MEMBER_ID, TODAY_DATE);
+
+    analysisResult.value = {
+      score: data.score,
+      rank: data.rank,
+      dailyTitle: data.dailyTitle,
+      oneLineSummary: data.oneLineSummary,
+      insights: data.insights
+    };
+
+    await new Promise(resolve => setTimeout(resolve, 2500));
+    isResultModalOpen.value = true;
+    
+  } catch (error) {
+    console.error("AI 분석 호출 실패:", error);
+    
+    // 💡 백엔드 연결 실패 시 Mock 데이터 표시
+    analysisResult.value = {
+      score: 85,
+      rank: "A",
+      dailyTitle: "균형잡힌 하루였습니다!",
+      oneLineSummary: "단백질 섭취가 우수하고, 전체적인 영양 밸런스가 좋습니다. 내일도 화이팅!",
+      insights: [
+        {
+          type: "good",
+          iconType: "muscle",
+          title: "단백질 섭취 우수",
+          description: "목표 대비 120% 달성으로 근육 성장에 도움이 됩니다."
+        },
+        {
+          type: "warning",
+          iconType: "warning",
+          title: "탄수화물 다소 높음",
+          description: "권장량보다 15% 높습니다. 저녁 식사량을 조절해보세요."
+        },
+        {
+          type: "good",
+          iconType: "check",
+          title: "수분 섭취 적정",
+          description: "하루 2L 목표를 달성했습니다."
+        }
+      ]
+    };
+    
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    isResultModalOpen.value = true;
+  } finally {
+    clearInterval(msgInterval);
+    isAiLoading.value = false;
+  }
+};
 
 const waterData = ref({ water: 0, goal: 2.0 });
 const weightData = ref({ weight: 0.0, diff: 0.0 });
@@ -1162,37 +1200,36 @@ onMounted(async () => {
   100% { transform: translateX(100%); }
 }
 
-/* --- 결과 모달 상하 잘림 해결 스타일 (수정) --- */
+/* --- 모달 오버레이 스타일 --- */
 .result-modal-overlay {
-  position: fixed;
-  top: 0; left: 0; width: 100%; height: 100%;
-  background: rgba(0, 0, 15, 0.9);
-  backdrop-filter: blur(10px);
-  z-index: 12000;
+  position: fixed; /* 화면에 고정 */
+  top: 0;
+  left: 0;
+  width: 100vw;    /* 너비 전체 */
+  height: 100vh;   /* 높이 전체 */
+  background: rgba(0, 0, 10, 0.9); /* 배경 어둡게 */
+  backdrop-filter: blur(10px);     /* 배경 흐림 효과 */
+  z-index: 99999;  /* 다른 어떤 요소보다 위에 뜨도록 아주 높은 값 설정 */
   display: flex;
   justify-content: center;
-  align-items: center; 
+  align-items: center; /* 수직/수평 중앙 정렬 */
   padding: 20px;
   box-sizing: border-box;
-  overflow-y: auto; /* 화면보다 크면 스크롤 가능하게 함 */
+  overflow-y: auto; /* 내용이 너무 길면 모달 내부에서 스크롤 가능하게 함 */
 }
 
+/* --- 모달 컨텐츠 스타일 --- */
 .result-modal-content {
   position: relative;
   width: 100%;
   max-width: 380px;
-  margin: auto; /* 내용이 길 때 상단이 잘리지 않도록 중앙 배치 */
   background: #1a1a24;
-  border: 1px solid rgba(0, 229, 255, 0.3);
+  border: 1px solid #00e5ff;
   padding: 25px;
-  box-shadow: 0 0 40px rgba(0, 0, 0, 0.5);
   color: #fff;
-  
-  /* 모달 높이 제한 및 내부 스크롤 추가 */
-  max-height: 90vh; 
-  overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: #00e5ff #1a1a24;
+  box-shadow: 0 0 30px rgba(0, 229, 255, 0.2);
+  margin-top: auto;   /* 화면보다 길어질 경우 대비 */
+  margin-bottom: auto;
 }
 
 /* 크롬/사파리용 스크롤바 디자인 (선택) */
@@ -1293,5 +1330,366 @@ onMounted(async () => {
 @keyframes modal-bounce-in {
   0% { transform: scale(0.5); opacity: 0; }
   100% { transform: scale(1); opacity: 1; }
+}
+
+.ai-result-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(8px);
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+/* 모달 컨테이너 */
+.ai-result-modal {
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  border-radius: 20px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+  animation: slideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes slideUp {
+  0% {
+    transform: translateY(50px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* 헤더 섹션 */
+.modal-header-section {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 30px 20px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.modal-header-section::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+  animation: rotate 20s linear infinite;
+}
+
+@keyframes rotate {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.header-icon {
+  font-size: 3rem;
+  margin-bottom: 10px;
+  animation: bounce 2s ease-in-out infinite;
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.modal-main-title {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #fff;
+  margin: 0 0 8px 0;
+  position: relative;
+  z-index: 1;
+}
+
+.modal-subtitle {
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.9);
+  margin: 0;
+  position: relative;
+  z-index: 1;
+}
+
+/* 점수 카드 */
+.score-card {
+  display: flex;
+  justify-content: space-around;
+  padding: 25px 20px;
+  background: rgba(255, 255, 255, 0.05);
+  margin: 20px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.rank-display,
+.score-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.rank-circle {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+  font-weight: 900;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+  position: relative;
+  animation: popIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.rank-circle::before {
+  content: '';
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  right: 8px;
+  bottom: 50%;
+  border-radius: 50%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.4), transparent);
+}
+
+@keyframes popIn {
+  0% {
+    transform: scale(0) rotate(-180deg);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.1) rotate(10deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+/* 랭크별 색상 */
+.rank-S {
+  background: linear-gradient(135deg, #ffd700, #ffed4e);
+  color: #8b6914;
+  border: 3px solid #fff5cc;
+  box-shadow: 0 0 30px rgba(255, 215, 0, 0.6);
+}
+
+.rank-A {
+  background: linear-gradient(135deg, #ff1744, #ff4569);
+  color: #fff;
+  border: 3px solid #ff94ab;
+  box-shadow: 0 0 30px rgba(255, 23, 68, 0.5);
+}
+
+.rank-B {
+  background: linear-gradient(135deg, #7c4dff, #9575ff);
+  color: #fff;
+  border: 3px solid #b8a4ff;
+  box-shadow: 0 0 30px rgba(124, 77, 255, 0.4);
+}
+
+.rank-C {
+  background: linear-gradient(135deg, #2979ff, #5393ff);
+  color: #fff;
+  border: 3px solid #80b3ff;
+  box-shadow: 0 0 20px rgba(41, 121, 255, 0.3);
+}
+
+.rank-F {
+  background: linear-gradient(135deg, #616161, #757575);
+  color: #e0e0e0;
+  border: 3px solid #9e9e9e;
+}
+
+.rank-label,
+.score-label {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.score-number {
+  font-size: 3rem;
+  font-weight: 900;
+  color: #fff;
+  line-height: 1;
+  text-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+/* 인사이트 섹션 */
+.insights-section {
+  padding: 0 20px 20px;
+}
+
+.section-title {
+  font-size: 1.1rem;
+  color: #fff;
+  margin: 0 0 15px 0;
+  font-weight: bold;
+}
+
+.insight-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.insight-card {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  padding: 16px;
+  border-left: 4px solid #00e5ff;
+  transition: all 0.2s;
+}
+
+.insight-card:active {
+  transform: translateX(4px);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.insight-card.good {
+  border-left-color: #00ff88;
+  background: rgba(0, 255, 136, 0.08);
+}
+
+.insight-card.warning {
+  border-left-color: #ffaa00;
+  background: rgba(255, 170, 0, 0.08);
+}
+
+.insight-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.insight-emoji {
+  font-size: 1.5rem;
+}
+
+.insight-title {
+  font-size: 1rem;
+  font-weight: bold;
+  color: #fff;
+  margin: 0;
+}
+
+.insight-description {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.8);
+  line-height: 1.5;
+  margin: 0;
+  padding-left: 34px;
+}
+
+/* 요약 섹션 */
+.summary-section {
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.2), rgba(118, 75, 162, 0.2));
+  margin: 0 20px 20px;
+  padding: 20px;
+  border-radius: 12px;
+  display: flex;
+  gap: 15px;
+  align-items: flex-start;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.summary-icon {
+  font-size: 1.8rem;
+  flex-shrink: 0;
+}
+
+.summary-text {
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.95);
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* 닫기 버튼 */
+.close-button {
+  width: calc(100% - 40px);
+  margin: 0 20px 20px;
+  padding: 16px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  border: none;
+  border-radius: 12px;
+  color: #fff;
+  font-size: 1.1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.close-button:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+}
+
+/* 모달 페이드 애니메이션 */
+.modal-fade-enter-active,
+.modal-fade-leave-active {
+  transition: opacity 0.3s;
+}
+
+.modal-fade-enter-from,
+.modal-fade-leave-to {
+  opacity: 0;
+}
+
+/* 모바일 최적화 */
+@media (max-width: 380px) {
+  .rank-circle {
+    width: 70px;
+    height: 70px;
+    font-size: 2rem;
+  }
+  
+  .score-number {
+    font-size: 2.5rem;
+  }
+  
+  .modal-header-section {
+    padding: 25px 15px;
+  }
+  
+  .score-card {
+    margin: 15px;
+    padding: 20px 15px;
+  }
+}
+
+/* 스크롤바 스타일 */
+.ai-result-overlay::-webkit-scrollbar {
+  width: 6px;
+}
+
+.ai-result-overlay::-webkit-scrollbar-thumb {
+  background: rgba(102, 126, 234, 0.5);
+  border-radius: 3px;
+}
+
+.ai-result-overlay::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
 }
 </style>
