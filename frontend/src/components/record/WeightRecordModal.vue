@@ -11,7 +11,7 @@
         <div class="weight-visual-section">
           <div class="body-container">
             <div class="body-outline" :class="{ 'over-target': isOverTarget }">
-              <div class="body-fill" :class="{ 'danger': isOverTarget }" :style="{ height: bodyFillPercentage + '%' }">
+              <div class="body-fill" :class="{ danger: isOverTarget }" :style="{ height: bodyFillPercentage + '%' }">
                 <div class="body-surface"></div>
                 <div class="weight-bubbles">
                   <span></span>
@@ -21,28 +21,18 @@
               </div>
             </div>
           </div>
-          
+
           <div class="weight-display">
-            <input
-              v-model="weightInput"
-              type="number"
-              step="0.1"
-              class="weight-input"
-              
-              @input="updateSlider"
-            />
+            <input v-model="weightInput" type="number" step="0.1" class="weight-input" @input="updateSlider" />
             <span class="unit">kg</span>
           </div>
           <div class="weight-info">
-  <span 
-    class="weight-percentage" 
-    :class="{ 'warning-text': bodyFillPercentage > 100 }"
-  >
-    {{ bodyFillPercentage }}%
-  </span>
-  
-  <span class="target-weight">목표: {{ targetWeight }}kg</span>
-</div>
+            <span class="weight-percentage" :class="{ 'warning-text': bodyFillPercentage > 100 }">
+              {{ bodyFillPercentage }}%
+            </span>
+
+            <span class="target-weight">목표: {{ targetWeight }}kg</span>
+          </div>
           <div v-if="isOverTarget" class="warning-message">⚠️ 목표 체중 초과</div>
         </div>
 
@@ -90,7 +80,7 @@
 <script setup>
 import { ref, unref, computed, onMounted, onUnmounted } from "vue";
 import { useAuthStore } from "@/stores/authStore";
-import { useConfigStore } from '@/stores/configStore';
+import { useConfigStore } from "@/stores/configStore";
 
 const emit = defineEmits(["close", "update-weight"]);
 const config = useConfigStore();
@@ -98,13 +88,17 @@ const authStore = useAuthStore();
 const props = defineProps({
   dateToUse: {
     type: String,
-    required: true
-  }
-}); 
+    required: true,
+  },
+});
 
 const weightInput = ref(authStore.weight);
 const weightSlider = ref(authStore.weight);
+<<<<<<< HEAD
 const targetWeight = ref(authStore.targetWeight); // 목표 체중 (API에서 가져올 예정)
+=======
+const targetWeight = ref(authStore.weight); // 목표 체중 (API에서 가져올 예정)
+>>>>>>> ef69063 (목표 체중)
 const MEMBER_ID = authStore.memberId;
 const API_ENDPOINT = config.API_ENDPOINT;
 const formattedDate = computed(() => ref(props.dateToUse));
@@ -124,9 +118,9 @@ const isOverTarget = computed(() => {
 const bodyFillPercentage = computed(() => {
   const weight = parseFloat(weightInput.value) || 30;
   const target = targetWeight.value;
-  
+
   // 목표 체중이 기본값(30kg)보다 작거나 같을 경우 예외 처리
-  if (target <= 30) return 100; 
+  if (target <= 30) return 100;
 
   // 비율 계산: (현재 - 30) / (목표 - 30)
   const percentage = ((weight - 30) / (target - 30)) * 100;
@@ -192,7 +186,7 @@ const saveWeight = async () => {
   playSound("save");
 
   const weightData = {
-    memberId: unref(MEMBER_ID), 
+    memberId: unref(MEMBER_ID),
     weight: parseFloat(weightInput.value),
     date: unref(formattedDate.value),
     memo: "",
@@ -209,10 +203,29 @@ const saveWeight = async () => {
   } catch (error) {
     console.error("Save Failed:", error);
   }
-  
+
   setTimeout(() => closeModal(), 300);
 };
 
+<<<<<<< HEAD
+=======
+// 목표 체중 가져오기
+async function fetchTargetWeight() {
+  try {
+    const response = await fetch(`${API_ENDPOINT}/api/member?memberId=${MEMBER_ID}`);
+    if (!response.ok) throw new Error("Failed to fetch target weight");
+
+    const data = await response.json();
+    if (data && data.targetWeight) {
+      targetWeight.value = data.targetWeight;
+    }
+  } catch (error) {
+    console.error("Error fetching target weight:", error);
+    // 기본값 70kg 유지
+  }
+}
+
+>>>>>>> ef69063 (목표 체중)
 async function fetchWeightLogs() {
   const baseURL = `${API_ENDPOINT}/api/member/weight/logs`;
   const params = new URLSearchParams({
@@ -220,25 +233,25 @@ async function fetchWeightLogs() {
     date: unref(formattedDate.value),
   });
   const url = `${baseURL}?${params.toString()}`;
-  
+
   try {
     const response = await fetch(url);
     if (!response.ok) throw new Error("Network response was not ok");
-    
+
     const data = await response.json();
-    
+
     if (data && Array.isArray(data.memberWeightResponseDtos) && data.memberWeightResponseDtos.length > 0) {
-      recentRecords.value = data.memberWeightResponseDtos.map(item => ({
+      recentRecords.value = data.memberWeightResponseDtos.map((item) => ({
         date: item.date,
         weight: item.weight,
-        diff: item.diff
+        diff: item.diff,
       }));
 
       const latestRecord = recentRecords.value[0];
       weightInput.value = latestRecord.weight.toFixed(1);
       weightSlider.value = latestRecord.weight;
     } else {
-      weightInput.value = "60.0"; 
+      weightInput.value = "60.0";
       weightSlider.value = 60;
     }
   } catch (error) {
@@ -349,7 +362,52 @@ onUnmounted(() => (document.body.style.overflow = ""));
   background: rgba(255, 255, 255, 0.3);
   overflow: hidden;
   transition: border-color 0.3s;
-  clip-path: polygon(/* 머리 */ 40% 0%, 60% 0%, 65% 5%, 65% 12%, /* 오른쪽 어깨 */ 75% 15%, 85% 20%, 90% 25%, 90% 35%, /* 오른쪽 팔 */ 95% 38%, 95% 50%, 90% 52%, 85% 50%, /* 오른쪽 몸통 */ 80% 48%, 78% 60%, 75% 75%, 72% 85%, /* 오른쪽 다리 */ 70% 90%, 65% 100%, 62% 100%, 58% 95%, 55% 85%, 52% 75%, /* 중앙 하체 */ 50% 70%, 48% 75%, 45% 85%, 42% 95%, 38% 100%, 35% 100%, /* 왼쪽 다리 */ 30% 90%, 28% 85%, 25% 75%, 22% 60%, /* 왼쪽 몸통 */ 20% 48%, 15% 50%, 10% 52%, 5% 50%, /* 왼쪽 팔 */ 5% 38%, 10% 35%, 10% 25%, 15% 20%, /* 왼쪽 어깨 */ 25% 15%, 35% 12%, 35% 5%, 40% 0%);
+  clip-path: polygon(
+    /* 머리 */ 40% 0%,
+    60% 0%,
+    65% 5%,
+    65% 12%,
+    /* 오른쪽 어깨 */ 75% 15%,
+    85% 20%,
+    90% 25%,
+    90% 35%,
+    /* 오른쪽 팔 */ 95% 38%,
+    95% 50%,
+    90% 52%,
+    85% 50%,
+    /* 오른쪽 몸통 */ 80% 48%,
+    78% 60%,
+    75% 75%,
+    72% 85%,
+    /* 오른쪽 다리 */ 70% 90%,
+    65% 100%,
+    62% 100%,
+    58% 95%,
+    55% 85%,
+    52% 75%,
+    /* 중앙 하체 */ 50% 70%,
+    48% 75%,
+    45% 85%,
+    42% 95%,
+    38% 100%,
+    35% 100%,
+    /* 왼쪽 다리 */ 30% 90%,
+    28% 85%,
+    25% 75%,
+    22% 60%,
+    /* 왼쪽 몸통 */ 20% 48%,
+    15% 50%,
+    10% 52%,
+    5% 50%,
+    /* 왼쪽 팔 */ 5% 38%,
+    10% 35%,
+    10% 25%,
+    15% 20%,
+    /* 왼쪽 어깨 */ 25% 15%,
+    35% 12%,
+    35% 5%,
+    40% 0%
+  );
 }
 
 .body-outline.over-target {
@@ -358,7 +416,8 @@ onUnmounted(() => (document.body.style.overflow = ""));
 }
 
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     border-color: #ff0055;
     box-shadow: 0 0 10px rgba(255, 0, 85, 0.5);
   }
@@ -496,8 +555,13 @@ onUnmounted(() => (document.body.style.overflow = ""));
 }
 
 @keyframes blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
 }
 
 /* 간단한 조정 버튼 */
