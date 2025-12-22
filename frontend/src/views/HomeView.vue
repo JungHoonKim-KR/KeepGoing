@@ -1,6 +1,5 @@
 <template>
   <div class="home-view retro-theme" @click="initAudioContext">
-    <div class="scanlines"></div>
 
     <section class="page daily-page">
       <div class="page-content">
@@ -467,7 +466,7 @@ onMounted(async () => {
   color: #00e5ff;
 }
 
-.scanlines {
+/* .scanlines {
   position: fixed;
   top: 0; left: 0; width: 100%; height: 100%;
   pointer-events: none;
@@ -475,7 +474,7 @@ onMounted(async () => {
     linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
   background-size: 100% 4px, 6px 100%;
   z-index: 999;
-}
+} */
 
 .page {
   min-height: 100vh;

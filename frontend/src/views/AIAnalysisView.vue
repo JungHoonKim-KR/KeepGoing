@@ -176,7 +176,6 @@ const initAudioContext = () => {};
 
 <template>
   <div class="ai-view retro-theme" @click="initAudioContext">
-    <div class="scanlines"></div>
 
     <div class="content-wrapper">
       <div class="retro-header">
@@ -332,12 +331,7 @@ const initAudioContext = () => {};
   background-color: #050510; color: #e0e0e0; font-family: "NeoDunggeunmo", monospace;
   padding-bottom: 100px; overflow-x: hidden;
 }
-.scanlines {
-  position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;
-  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
-    linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
-  background-size: 100% 4px, 6px 100%; z-index: 99;
-}
+
 .content-wrapper { max-width: 480px; margin: 0 auto; padding: 1rem; position: relative; z-index: 100; }
 .retro-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; border-bottom: 2px solid #333; padding-bottom: 0.5rem; }
 .system-status { font-size: 0.7rem; color: #00ff00; display: flex; align-items: center; gap: 5px; }
