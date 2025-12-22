@@ -77,16 +77,13 @@
             f.sugars             AS food_sugars,
             f.sodium             AS food_sodium
 
-        FROM
-            diet d
-                LEFT JOIN
-            diet_food_mapping dfm ON d.id = dfm.diet_id
-                LEFT JOIN
-            food f ON dfm.food_code = f.code
-        WHERE
-            d.member_id = #{memberId}
-          AND
-            d.date = #{date}
+        FROM diet d
+                 LEFT JOIN
+             diet_food_mapping dfm ON d.id = dfm.diet_id
+                 LEFT JOIN
+             food f ON dfm.food_code = f.code
+        WHERE d.member_id = #{memberId}
+          AND d.date = #{date}
         ORDER BY
             -- 식사 시간 순서로 정렬
             CASE d.meal_time
@@ -101,24 +98,13 @@
     <select id="selectDiet" resultType="keepgoing.demo.domain.diet.entity.Diet">
         SELECT *
         FROM diet
-        WHERE
-            member_id = #{memberId} AND
-            date = #{date} AND
+        WHERE member_id = #{memberId}
+          AND
+            date = #{date}
+          AND
             meal_time= #{mealTime}
     </select>
 
-    <update id="updateDietNutrients">
-        UPDATE diet
-        SET energy = energy + #{diet.energy},
-            water = water + #{diet.water},
-            protein = protein + #{diet.protein},
-            fat = fat + #{diet.fat},
-            carbohydrate = carbohydrate + #{diet.carbohydrate},
-            sugars = sugars + #{diet.sugars},
-            sodium = sodium + #{diet.sodium}
-
-        WHERE id = #{dietId}
-    </update>
 
     <insert id="insertDiet" useGeneratedKeys="true" keyProperty="diet.id">
         INSERT INTO diet (member_id,
@@ -146,39 +132,39 @@
     <select id="selectHydration">
         SELECT water_amount
         FROM hydration_record
-        WHERE member_id = #{memberId} AND
-              date = #{date}
+        WHERE member_id = #{memberId}
+          AND
+            date = #{date}
     </select>
 
     <insert id="insertHydration">
         INSERT INTO hydration_record(member_id,
                                      water_amount,
                                      date)
-        VALUES (#{hydrationRecord.memberId}, #{hydrationRecord.waterAmount}, #{hydrationRecord.date})
-            ON DUPLICATE KEY
+        VALUES (#{hydrationRecord.memberId}, #{hydrationRecord.waterAmount}, #{hydrationRecord.date}) ON DUPLICATE KEY
         UPDATE
             water_amount = #{hydrationRecord.waterAmount}
 
     </insert>
 
     <insert id="saveAiReport" parameterType="keepgoing.demo.domain.diet.entity.AiReport">
-        INSERT INTO ai_report (
-        member_id,
-        date,
-        score,
-        feedback_text,
-        recommend_json
-        ) VALUES (
-        #{memberId},
-        #{date},
-        #{score},
-        #{feedbackText},
-        #{recommendJson}
-        )
-        ON DUPLICATE KEY UPDATE
-        score = #{score},
-        feedback_text = #{feedbackText},
-        recommend_json = #{recommendJson}
+        INSERT INTO ai_report (member_id,
+                               date,
+                               score,
+                               `rank`,
+                               feedback_text,
+                               recommend_json)
+        VALUES (#{memberId},
+                #{date},
+                #{score},
+                #{rank},
+                #{feedbackText},
+                #{recommendJson}) ON DUPLICATE KEY
+        UPDATE
+            score = #{score},
+            `rank` = #{rank},
+            feedback_text = #{feedbackText},
+            recommend_json = #{recommendJson}
     </insert>
 
     <insert id="insertFoodMappings" parameterType="java.util.List">
@@ -190,34 +176,37 @@
             (
             #{dietId},
             #{food.code},
-             #{food.servings})
+            #{food.servings})
         </foreach>
     </insert>
 
     <select id="selectEvaluationsByMonth" resultType="keepgoing.demo.domain.diet.dto.DailyEvaluationDto">
-        SELECT
-            member_id AS memberId,
-            date,
-            category,
-            evaluation
+        SELECT member_id AS memberId, date, `rank`
         FROM daily_evaluation
         WHERE member_id = #{memberId}
-          AND DATE_FORMAT(date, '%Y') = #{year}
-          AND DATE_FORMAT(date, '%m') = #{month}
+          AND DATE_FORMAT(date
+            , '%Y') = #{year}
+          AND DATE_FORMAT(date
+            , '%m') = #{month}
     </select>
 
-    <insert id="upsertEvaluation" parameterType="keepgoing.demo.domain.diet.dto.DailyEvaluationDto">
-        INSERT INTO daily_evaluation (member_id, date, category, evaluation)
-        VALUES (#{memberId}, #{date}, #{category}, #{evaluation})
-            ON DUPLICATE KEY UPDATE
-                                 evaluation = #{evaluation}
-    </insert>
+    <update id="updateDietNutrients">
+        UPDATE diet
+        SET energy       = #{diet.energy},
+            water        = #{diet.water},
+            protein      = #{diet.protein},
+            fat          = #{diet.fat},
+            carbohydrate = #{diet.carbohydrate},
+            sugars       = #{diet.sugars},
+            sodium       = #{diet.sodium}
+        WHERE id = #{dietId}
+    </update>
 
-    <delete id="deleteEvaluation">
-        DELETE FROM daily_evaluation
-        WHERE member_id = #{memberId}
-          AND date = #{date}
-          AND category = #{category}
+    <delete id="deleteFoodMappings">
+        DELETE
+        FROM diet_food_mapping
+        WHERE diet_id = #{dietId}
     </delete>
+
 
 </mapper>

@@ -4,35 +4,23 @@
 
     <div class="retro-modal" @click.stop>
       <div class="modal-header">
-        <div class="header-title">
-          <span class="icon">💾</span> DATE: {{ formattedDate }}
-        </div>
+        <div class="header-title"><span class="icon">💾</span> DATE: {{ formattedDate }}</div>
         <button @click="closeModal" class="pixel-close-btn">X</button>
       </div>
 
       <div class="modal-body">
-        
-
         <div class="section-container">
           <div class="pixel-label">1. SELECT MISSION</div>
           <div class="mission-grid">
             <button
               v-for="time in mealTimes"
               :key="time.id"
-              :class="[
-                'mission-card',
-                { active: selectedMealTime === time.name },
-              ]"
+              :class="['mission-card', { active: selectedMealTime === time.name }]"
               @click="selectMealTime(time.name)"
             >
               <div class="mission-icon">{{ getPixelIcon(time.id) }}</div>
               <div class="mission-name">{{ time.name }}</div>
-              <div
-                class="selection-indicator"
-                v-if="selectedMealTime === time.name"
-              >
-                ◀
-              </div>
+              <div class="selection-indicator" v-if="selectedMealTime === time.name">◀</div>
             </button>
           </div>
         </div>
@@ -53,7 +41,6 @@
             />
 
             <div v-if="isLoading" class="loading-status">[PROCESSING...]</div>
-
             <button @click="manualAdd" class="retro-btn-sm">ADD</button>
 
             <ul v-if="suggestions.length > 0" class="retro-dropdown">
@@ -62,10 +49,7 @@
                 :key="index"
                 @click="selectFood(suggestion)"
                 @mouseover="selectedFoodIndex = index"
-                :class="[
-                  'dropdown-item',
-                  { active: index === selectedFoodIndex },
-                ]"
+                :class="['dropdown-item', { active: index === selectedFoodIndex }]"
               >
                 {{ suggestion.name }}
               </li>
@@ -74,43 +58,29 @@
 
           <div class="inventory-box">
             <div class="inventory-header">=== CURRENT INVENTORY ===</div>
-            <div v-if="selectedFoodList.length === 0" class="empty-msg">
-              NO ITEMS DETECTED.
-            </div>
+
+            <div v-if="selectedFoodList.length === 0" class="empty-msg">NO ITEMS DETECTED.</div>
+
             <div v-else class="inventory-list">
-              <div
-                v-for="(foodItem, index) in selectedFoodList"
-                :key="index"
-                class="inventory-slot"
-              >
+              <div v-for="(foodItem, index) in selectedFoodList" :key="index" class="inventory-slot">
                 <div class="slot-info">
                   <span class="slot-icon">🍖</span>
                   <span class="slot-name">{{ foodItem.name }}</span>
                 </div>
+
                 <div class="slot-controls">
-                  <button
-                    @click="changeFoodCount(index, -1)"
-                    :disabled="foodItem.servings <= 1"
-                    class="qty-btn"
-                  >
+                  <button @click="changeFoodCount(index, -1)" :disabled="foodItem.servings <= 1" class="qty-btn">
                     -
                   </button>
                   <span class="slot-qty">x{{ foodItem.servings }}</span>
-                  <button @click="changeFoodCount(index, 1)" class="qty-btn">
-                    +
-                  </button>
-                  <button @click="removeFood(index)" class="trash-btn">
-                    🗑
-                  </button>
+                  <button @click="changeFoodCount(index, 1)" class="qty-btn">+</button>
+
+                  <button @click="removeFood(index)" class="trash-btn">X</button>
                 </div>
               </div>
             </div>
           </div>
         </div>
-
-        
-
-        
 
         <div class="footer-actions">
           <button @click="saveMeal" class="retro-btn-lg">
@@ -123,97 +93,32 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from "vue";
+import { ref, computed, onMounted, onUnmounted, watch } from "vue";
 import { useAuthStore } from "@/stores/authStore";
-import dayjs from "dayjs";
-const authStore = useAuthStore();
 
+const authStore = useAuthStore();
 const MEMBER_ID = authStore.memberId;
 const emit = defineEmits(["close"]);
 const API_ENDPOINT = "http://localhost:8080";
-const propt = defineProps({
+
+const props = defineProps({
   dateToUse: {
-        type: String,
-        required: true
-    }
-})
-const formattedDate = computed(() => propt.dateToUse);
-// === 🔊 8-bit Sound FX ===
-const playSound = (type) => {
-  const AudioContext = window.AudioContext || window.webkitAudioContext;
-  if (!AudioContext) return;
-  const ctx = new AudioContext();
-  const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
-  osc.connect(gain);
-  gain.connect(ctx.destination);
-  const now = ctx.currentTime;
+    type: String,
+    required: true,
+  },
+  // 🌟 [추가] 부모(HomeView)로부터 받은 전체 식사 데이터 (Map 형태)
+  initialMealData: {
+    type: Object,
+    default: () => ({}),
+  },
+});
 
-  if (type === "type") {
-    // 타이핑 소리
-    osc.type = "square";
-    osc.frequency.setValueAtTime(800, now);
-    gain.gain.setValueAtTime(0.02, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
-    osc.start(now);
-    osc.stop(now + 0.05);
-  } else if (type === "blip") {
-    // 선택/클릭
-    osc.type = "square";
-    osc.frequency.setValueAtTime(440, now);
-    gain.gain.setValueAtTime(0.05, now);
-    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
-    osc.start(now);
-    osc.stop(now + 0.1);
-  } else if (type === "coin") {
-    // 아이템 추가
-    osc.type = "triangle";
-    osc.frequency.setValueAtTime(900, now);
-    osc.frequency.linearRampToValueAtTime(1200, now + 0.1);
-    gain.gain.setValueAtTime(0.05, now);
-    gain.gain.linearRampToValueAtTime(0, now + 0.2);
-    osc.start(now);
-    osc.stop(now + 0.2);
-  } else if (type === "save") {
-    // 저장 성공
-    osc.type = "square";
-    osc.frequency.setValueAtTime(440, now);
-    osc.frequency.setValueAtTime(554, now + 0.1);
-    osc.frequency.setValueAtTime(659, now + 0.2);
-    gain.gain.setValueAtTime(0.05, now);
-    gain.gain.linearRampToValueAtTime(0, now + 0.4);
-    osc.start(now);
-    osc.stop(now + 0.4);
-  }
-};
-
-// === Icons ===
-const getPixelIcon = (id) => {
-  const icons = {
-    breakfast: "⚡", // Energy
-    lunch: "🔋", // Battery
-    dinner: "🌙", // Moon
-    snack: "💊", // Pill/Potion
-  };
-  return icons[id] || "❓";
-};
-
-// === Utils ===
-const debounce = (func, delay) => {
-  let timeoutId;
-  return function (...args) {
-    clearTimeout(timeoutId);
-    timeoutId = setTimeout(() => func.apply(this, args), delay);
-  };
-};
+const formattedDate = computed(() => props.dateToUse);
 
 // === Data ===
 const selectedMealTime = ref("아침");
 const foodName = ref("");
 const selectedFoodList = ref([]);
-const memo = ref("");
-const photoPreview = ref(null);
-const fileInput = ref(null);
 const suggestions = ref([]);
 const isLoading = ref(false);
 const selectedFoodIndex = ref(0);
@@ -226,7 +131,81 @@ const mealTimes = [
   { id: "snack", name: "간식" },
 ];
 
-// === API Logic ===
+// === Sound FX (동일) ===
+const playSound = (type) => {
+  const AudioContext = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContext) return;
+  const ctx = new AudioContext();
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  const now = ctx.currentTime;
+
+  if (type === "type") {
+    osc.type = "square";
+    osc.frequency.setValueAtTime(800, now);
+    gain.gain.setValueAtTime(0.02, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+    osc.start(now);
+    osc.stop(now + 0.05);
+  } else if (type === "blip") {
+    osc.type = "square";
+    osc.frequency.setValueAtTime(440, now);
+    gain.gain.setValueAtTime(0.05, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+    osc.start(now);
+    osc.stop(now + 0.1);
+  } else if (type === "coin") {
+    osc.type = "triangle";
+    osc.frequency.setValueAtTime(900, now);
+    osc.frequency.linearRampToValueAtTime(1200, now + 0.1);
+    gain.gain.setValueAtTime(0.05, now);
+    gain.gain.linearRampToValueAtTime(0, now + 0.2);
+    osc.start(now);
+    osc.stop(now + 0.2);
+  } else if (type === "save") {
+    osc.type = "square";
+    osc.frequency.setValueAtTime(440, now);
+    osc.frequency.setValueAtTime(554, now + 0.1);
+    osc.frequency.setValueAtTime(659, now + 0.2);
+    gain.gain.setValueAtTime(0.05, now);
+    gain.gain.linearRampToValueAtTime(0, now + 0.4);
+    osc.start(now);
+    osc.stop(now + 0.4);
+  }
+};
+
+const getPixelIcon = (id) => {
+  const icons = { breakfast: "⚡", lunch: "🔋", dinner: "🌙", snack: "💊" };
+  return icons[id] || "❓";
+};
+
+const debounce = (func, delay) => {
+  let timeoutId;
+  return function (...args) {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => func.apply(this, args), delay);
+  };
+};
+
+// === [핵심] 식사 데이터 로드 로직 수정 ===
+// Props로 받은 데이터에서 현재 선택된 시간(아침/점심...)의 음식 리스트를 가져와 세팅
+function loadMealDataFromProps() {
+  const currentMeal = props.initialMealData[selectedMealTime.value];
+
+  if (currentMeal && currentMeal.foods) {
+    // 깊은 복사로 가져와야 수정 시 부모 데이터에 즉시 영향주지 않음
+    selectedFoodList.value = JSON.parse(JSON.stringify(currentMeal.foods)).map((f) => ({
+      ...f,
+      servings: f.servings || 1, // servings 누락 대비
+    }));
+  } else {
+    selectedFoodList.value = []; // 해당 시간에 기록된 게 없으면 빈 리스트
+  }
+}
+
+// 2. 음식 검색
 async function fetchSuggestions(query) {
   isLoading.value = true;
   let suggestionsList = [];
@@ -238,10 +217,7 @@ async function fetchSuggestions(query) {
     if (Array.isArray(data)) {
       suggestionsList = data
         .filter((food) => food && food.name && food.name.includes(query.trim()))
-        .filter(
-          (food, index, self) =>
-            food.name && self.findIndex((f) => f.name === food.name) === index
-        );
+        .filter((food, index, self) => food.name && self.findIndex((f) => f.name === food.name) === index);
     }
   } catch (error) {
     console.error("Scan Failed:", error);
@@ -271,8 +247,12 @@ const handleInput = (event) => {
 
 // === Logic ===
 const selectMealTime = (name) => {
+  if (selectedMealTime.value === name) return;
   playSound("blip");
   selectedMealTime.value = name;
+
+  // 🌟 [수정] 탭 변경 시 Props 데이터에서 다시 로드
+  loadMealDataFromProps();
 };
 
 const addFood = (food) => {
@@ -307,55 +287,36 @@ const removeFood = (index) => {
 function selectFood(food) {
   isSelectingFood.value = true;
   addFood(food);
-  //드롭다운 없애기 위해 값 비우기
   suggestions.value = [];
-  foodName.value="";
-  // 시간 너무 짧게 주면 값이 안비워짐
+  foodName.value = "";
   setTimeout(() => {
     isSelectingFood.value = false;
   }, 300);
 }
 
-const triggerFileInput = () => {
-  playSound("blip");
-  fileInput.value?.click();
-};
-const handleFileUpload = (event) => {
-  const file = event.target.files?.[0];
-  if (file) {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      playSound("coin");
-      photoPreview.value = e.target?.result;
-    };
-    reader.readAsDataURL(file);
-  }
-};
-const removePhoto = () => {
-  playSound("blip");
-  photoPreview.value = null;
-  if (fileInput.value) fileInput.value.value = "";
-};
-
+// === Save Logic (Bulk Update) ===
 const saveMeal = async () => {
   playSound("save");
+
   const mealData = {
     memberId: MEMBER_ID,
     mealTime: selectedMealTime.value,
-    foods: selectedFoodList.value,
-    date : formattedDate.value,
+    foods: selectedFoodList.value, // 최종 리스트 (추가/삭제 반영됨)
+    date: formattedDate.value,
   };
+
   try {
     const response = await fetch(`${API_ENDPOINT}/diets/meal`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(mealData),
     });
+
     if (!response.ok) throw new Error("Save Failed");
     setTimeout(() => closeModal(), 500);
   } catch (error) {
     console.error("Critical Failure:", error);
-    closeModal();
+    alert("저장에 실패했습니다.");
   }
 };
 
@@ -384,16 +345,18 @@ const handleOverlayClick = (e) => {
   if (e.target === e.currentTarget) closeModal();
 };
 
+// === Lifecycle ===
 onMounted(() => {
   document.body.style.overflow = "hidden";
+  loadMealDataFromProps(); // 🌟 초기 로드: 현재 선택된 시간(아침)의 데이터 불러오기
 });
+
 onUnmounted(() => {
   document.body.style.overflow = "";
 });
 </script>
 
 <style scoped>
-/* 레트로 폰트 */
 @import url("https://cdn.jsdelivr.net/gh/neodgm/neodgm-webfont@latest/neodgm/style.css");
 
 .modal-overlay {
@@ -408,22 +371,16 @@ onUnmounted(() => {
   justify-content: center;
   z-index: 9999;
   font-family: "NeoDunggeunmo", monospace;
-  color: #00ff00; /* Terminal Green */
+  color: #00ff00;
 }
 
-/* Scanlines */
 .scanlines {
   position: absolute;
   width: 100%;
   height: 100%;
   pointer-events: none;
   background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
-    linear-gradient(
-      90deg,
-      rgba(255, 0, 0, 0.06),
-      rgba(0, 255, 0, 0.02),
-      rgba(0, 0, 255, 0.06)
-    );
+    linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
   background-size: 100% 4px, 6px 100%;
   z-index: 1;
 }
@@ -452,7 +409,6 @@ onUnmounted(() => {
   }
 }
 
-/* Header */
 .modal-header {
   background: #161b22;
   border-bottom: 2px solid #30363d;
@@ -490,16 +446,7 @@ onUnmounted(() => {
   flex-direction: column;
   gap: 20px;
 }
-.terminal-text {
-  font-size: 0.8rem;
-  color: #58a6ff;
-  margin-bottom: 5px;
-  line-height: 1.4;
-  border-bottom: 1px dashed #30363d;
-  padding-bottom: 10px;
-}
 
-/* Sections */
 .section-container {
   display: flex;
   flex-direction: column;
@@ -511,7 +458,6 @@ onUnmounted(() => {
   text-shadow: 1px 1px 0 #000;
 }
 
-/* 1. Mission Grid (Meal Time) */
 .mission-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -557,7 +503,6 @@ onUnmounted(() => {
   }
 }
 
-/* 2. Input Box */
 .terminal-input-box {
   display: flex;
   align-items: center;
@@ -596,7 +541,6 @@ onUnmounted(() => {
   animation: blink 0.5s infinite;
 }
 
-/* Dropdown */
 .retro-dropdown {
   position: absolute;
   top: 100%;
@@ -622,7 +566,6 @@ onUnmounted(() => {
   color: #fff;
 }
 
-/* Inventory */
 .inventory-box {
   border: 2px solid #30363d;
   background: #161b22;
@@ -689,117 +632,9 @@ onUnmounted(() => {
   font-size: 1rem;
   cursor: pointer;
   margin-left: 5px;
+  color: #ff3838;
 }
 
-/* 3. Evidence (Photo) */
-.evidence-box {
-  border: 2px dashed #30363d;
-  background: #0d1117;
-  padding: 15px;
-  text-align: center;
-  cursor: pointer;
-  position: relative;
-}
-.evidence-box:hover {
-  border-color: #58a6ff;
-  background: #161b22;
-}
-.placeholder-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  color: #8b949e;
-  gap: 5px;
-  font-size: 0.8rem;
-}
-.scan-icon {
-  font-size: 1.5rem;
-  color: #58a6ff;
-}
-
-.preview-content img {
-  width: 100%;
-  max-height: 200px;
-  object-fit: contain;
-  border: 1px solid #30363d;
-}
-.scan-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  padding: 10px;
-  box-sizing: border-box;
-}
-.corner {
-  position: absolute;
-  width: 15px;
-  height: 15px;
-  border-color: #ff0055;
-  border-style: solid;
-}
-.tl {
-  top: 10px;
-  left: 10px;
-  border-width: 2px 0 0 2px;
-}
-.tr {
-  top: 10px;
-  right: 10px;
-  border-width: 2px 2px 0 0;
-}
-.bl {
-  bottom: 10px;
-  left: 10px;
-  border-width: 0 0 2px 2px;
-}
-.br {
-  bottom: 10px;
-  right: 10px;
-  border-width: 0 2px 2px 0;
-}
-.rec-badge {
-  position: absolute;
-  top: 15px;
-  left: 15px;
-  color: #ff0055;
-  font-size: 0.7rem;
-  animation: blink 1s infinite;
-  background: rgba(0, 0, 0, 0.5);
-  padding: 2px 5px;
-}
-.delete-evidence-btn {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  background: #ff0055;
-  color: #fff;
-  border: 1px solid #fff;
-  font-family: inherit;
-  font-size: 0.7rem;
-  padding: 4px 8px;
-  cursor: pointer;
-}
-
-/* 4. Memo */
-.retro-textarea {
-  width: 100%;
-  background: #0d1117;
-  border: 2px solid #30363d;
-  color: #fff;
-  padding: 10px;
-  font-family: inherit;
-  font-size: 0.9rem;
-  outline: none;
-  box-sizing: border-box;
-}
-.retro-textarea:focus {
-  border-color: #58a6ff;
-}
-
-/* Footer */
 .footer-actions {
   margin-top: 10px;
   text-align: center;
@@ -826,7 +661,6 @@ onUnmounted(() => {
   letter-spacing: 1px;
 }
 
-/* Mobile Optimization */
 @media (max-width: 390px) {
   .mission-grid {
     grid-template-columns: repeat(2, 1fr);

@@ -36,14 +36,9 @@ public interface DietMapper {
     );
 
     // 평가 저장 (Upsert: 있으면 수정, 없으면 입력)
-    void upsertEvaluation(DailyEvaluationDto dto);
-    // 평가 삭제 (토글 기능을 위해 필요)
-    void deleteEvaluation(
-            @Param("memberId") Long memberId,
-            @Param("date") LocalDate date,
-            @Param("category") String category
-    );
-
+    void upsertEvaluation(@Param("memberId") Long memberId, @Param("date")LocalDate date, @Param("rank")String rank);
+    // Mapper Interface에 메서드 추가 필요
+    void deleteFoodMappings(@Param("dietId") Long dietId);
 
 
     // [유지] 2. AI 결과 저장 (이건 내 담당)
