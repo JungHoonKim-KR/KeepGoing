@@ -18,5 +18,8 @@ public record TokenResponseDto(
         String goal,
         Double targetWeight,
         Double targetWater,
+        String healthCondition,
+        String allergies,
+        String dislikedFood,
         Integer profileCharacter
 ) {}

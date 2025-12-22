@@ -42,12 +42,32 @@ public class Member {
     }
 
     // 회원 정보 수정을 위한 비즈니스 메서드
-    public void updateProfile(Double height, Double weight, String activity, String goal, Double targetWeight) {
+    public void updateProfile(
+            String name,
+            String gender,
+            Integer age,
+            Double height,
+            Double weight,
+            Double targetWeight,
+            Double targetWater,
+            String activity,
+            String goal,
+            String healthCondition,
+            String allergies,
+            String dislikedFood
+    ) {
+        this.name = name;
+        this.gender = gender;
+        this.age = age;
         this.height = height;
         this.weight = weight;
+        this.targetWeight = targetWeight;
+        this.targetWater = targetWater;
         this.activity = activity;
         this.goal = goal;
-        this.targetWeight = targetWeight;
+        this.healthCondition = healthCondition;
+        this.allergies = allergies;
+        this.dislikedFood = dislikedFood;
     }
 
     // (참고) 레벨업 로직 등을 위해 Setter 대신 비즈니스 메서드 추가 추천

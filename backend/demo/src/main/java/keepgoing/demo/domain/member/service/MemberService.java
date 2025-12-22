@@ -11,7 +11,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -127,20 +126,28 @@ public class MemberService {
 
     }
     // 회원 정보 수정
-    public void updateMemberProfile(Long memberId, MemberUpdateDto dto) {
-        Member member = memberMapper.findById(memberId)
+    public void updateMemberProfile(MemberUpdateDto dto) {
+        Member member = memberMapper.findById(dto.memberId())
                 .orElseThrow(() -> new IllegalArgumentException("회원 없음"));
 
-        // 엔티티 수정
+
+        // 2. 나머지 프로필 정보 전체 업데이트
         member.updateProfile(
+                dto.name(),
+                dto.gender(),
+                dto.age(),
                 dto.height(),
                 dto.weight(),
+                dto.targetWeight(),
+                dto.targetWater(),
                 dto.activity(),
                 dto.goal(),
-                dto.targetWeight()
+                dto.healthCondition(),
+                dto.allergies(),
+                dto.dislikedFood()
         );
 
-        // DB 업데이트
+        // 3. DB 업데이트
         memberMapper.update(member);
     }
     public LevelUpResponseDto updateExp(Long memberId, Integer exp){

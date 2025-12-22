@@ -84,11 +84,20 @@
 
     <update id="update" parameterType="keepgoing.demo.domain.member.entity.Member">
         UPDATE member
-        SET height = #{height},
+        SET
+            name = #{name},
+            password = #{password},
+            gender = #{gender},
+            age = #{age},
+            height = #{height},
             weight = #{weight},
+            target_weight = #{targetWeight},
+            target_water = #{targetWater},
             activity = #{activity},
             goal = #{goal},
-            target_weight = #{targetWeight}
+            health_condition = #{healthCondition},
+            allergies = #{allergies},
+            disliked_food = #{dislikedFood}
         WHERE id = #{id}
     </update>
 

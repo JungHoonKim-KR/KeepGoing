@@ -24,12 +24,11 @@ public class MemberController {
     }
 
     // 2. 내 정보 수정 (설정 페이지에서 호출)
-    @PutMapping("/{memberId}")
+    @PutMapping()
     public ResponseEntity<Void> updateMyProfile(
-            @PathVariable Long memberId,
             @RequestBody MemberUpdateDto dto) {
 
-        memberService.updateMemberProfile(memberId, dto);
+        memberService.updateMemberProfile(dto);
         return ResponseEntity.ok().build();
     }
 
@@ -64,4 +63,5 @@ public class MemberController {
         memberService.updateCharacter(request.getMemberId(), request.getCharacterNumber());
         return ResponseEntity.noContent().build(); // 204 No Content 반환
     }
+
 }

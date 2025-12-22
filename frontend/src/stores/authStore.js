@@ -21,6 +21,9 @@ state: () => ({
   goal: null,
   targetWeight: null,
   targetWater: null,
+  healthCondition : null,
+  allergies: null,
+  dislikedFoods: null,
   profileCharacter: null,
 
   // 상태 관리 플래그

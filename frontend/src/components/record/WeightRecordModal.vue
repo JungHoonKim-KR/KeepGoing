@@ -213,22 +213,6 @@ const saveWeight = async () => {
   setTimeout(() => closeModal(), 300);
 };
 
-// 목표 체중 가져오기
-async function fetchTargetWeight() {
-  try {
-    const response = await fetch(`${API_ENDPOINT}/api/member?memberId=${MEMBER_ID}`);
-    if (!response.ok) throw new Error("Failed to fetch target weight");
-    
-    const data = await response.json();
-    if (data && data.targetWeight) {
-      targetWeight.value = data.targetWeight;
-    }
-  } catch (error) {
-    console.error("Error fetching target weight:", error);
-    // 기본값 70kg 유지
-  }
-}
-
 async function fetchWeightLogs() {
   const baseURL = `${API_ENDPOINT}/api/member/weight/logs`;
   const params = new URLSearchParams({
@@ -266,7 +250,6 @@ async function fetchWeightLogs() {
 
 onMounted(async () => {
   document.body.style.overflow = "hidden";
-  await fetchTargetWeight(); // 목표 체중 먼저 가져오기
   await fetchWeightLogs();
 });
 

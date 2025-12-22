@@ -4,36 +4,53 @@ import Footer from "../components/utils/Footer.vue";
 import characterImage from "../assets/images/characters/test.gif";
 import { useAuthStore } from "@/stores/authStore";
 import { useConfigStore } from "@/stores/configStore";
+import axios from "axios";
 
 const authStore = useAuthStore();
 const config = useConfigStore();
+
 // ----------------------------------------------------
 // 1. 상태 관리
 // ----------------------------------------------------
+// 회원가입 데이터 구조와 동일하게 매핑
 const profile = ref({
+  email: authStore.email || "", // 수정 불가 (ID)
+  name: authStore.name || "",
+  password: "", // 비밀번호 변경은 별도 로직이 일반적이나, 요청대로 필드는 포함
+  confirmPassword: "",
+  
+  gender: authStore.gender || "M",
   age: authStore.age || 0,
-  gender: authStore.gender || "male",
   height: authStore.height || 0,
   weight: authStore.weight || 0,
-  activityLevel: authStore.activityLevel || "moderate",
-  sleepHours: authStore.sleepHours || 0,
-  weeklyWorkout: authStore.weeklyWorkout || 0,
-  bodyType: authStore.bodyType || "balanced",
-  class: "Adventurer", // 직업은 고정 혹은 레벨에 따라 계산
+  
+  // 추가된 항목들
+  target_weight: authStore.targetWeight || 0,
+  target_water: authStore.targetWater || 2.0,
+  
+  activity: authStore.activity || "MODERATE",
+  goal: authStore.goal || "DIET",
+  
+  health_condition: authStore.healthCondition || "",
+  allergies: authStore.allergies || "",
+  disliked_food: authStore.dislikedFood || "",
+  
+  class: "Adventurer", // 표시용
 });
-console.log(profile)
+
 const isEditing = ref(false);
 
+// 옵션 데이터 (회원가입과 동일)
 const activityOptions = [
-  { value: "low", label: "LOW (휴식)", icon: "💤" },
-  { value: "moderate", label: "NORMAL (활동)", icon: "🚶" },
-  { value: "high", label: "HIGH (운동)", icon: "🔥" },
+  { value: "LOW", label: "LOW (앉아있는 시간 많음)", icon: "💤" },
+  { value: "MODERATE", label: "NORMAL (규칙적인 활동)", icon: "🚶" },
+  { value: "HIGH", label: "HIGH (육체 노동/운동 선수)", icon: "🔥" },
 ];
 
-const bodyTypeOptions = [
-  { value: "lower", label: "SPEED (하체)", icon: "🦵" },
-  { value: "upper", label: "POWER (상체)", icon: "💪" },
-  { value: "balanced", label: "BALANCE (균형)", icon: "⚖️" },
+const goalOptions = [
+  { value: "DIET", label: "WEIGHT LOSS (다이어트)", icon: "📉" },
+  { value: "MUSCLE", label: "MUSCLE UP (근력 증가)", icon: "💪" },
+  { value: "MAINTAIN", label: "MAINTENANCE (유지)", icon: "⚖️" },
 ];
 
 // ----------------------------------------------------
@@ -71,31 +88,73 @@ const startEdit = () => {
   playSound("click");
   isEditing.value = true;
 };
+
+const cancelEdit = () => {
+  playSound("click");
+  isEditing.value = false;
+};
+
 const saveProfile = async () => {
   playSound("save");
+  
+  // 비밀번호 변경 시도 시 확인
+  if (profile.value.password && profile.value.password !== profile.value.confirmPassword) {
+    alert("비밀번호가 일치하지 않습니다.");
+    return;
+  }
+
   try {
-    const url = `${config.API_ENDPOINT}/api/member/profile/update`;
+    const url = `${config.API_ENDPOINT}/api/member`;
+    // 백엔드 DTO 매핑
     const payload = {
-      memberId: authStore.memberId,
-      ...profile.value
-    };
+        memberId: authStore.memberId,
+        name: profile.value.name,
+        gender: profile.value.gender,
+        age: profile.value.age,
+        height: profile.value.height,
+        weight: profile.value.weight,
+        
+        // [수정] 스네이크 케이스(_글자) -> 카멜 케이스(대문자)
+        targetWeight: profile.value.target_weight,   // target_weight 값을 targetWeight 키에 담음
+        targetWater: profile.value.target_water,     // target_water 값을 targetWater 키에 담음
+        
+        activity: profile.value.activity,
+        goal: profile.value.goal,
+        
+        // [수정]
+        healthCondition: profile.value.health_condition, 
+        
+        allergies: profile.value.allergies,
+        
+        // [수정] 스토어 state 이름(dislikedFoods)과 통일 권장
+        dislikedFoods: profile.value.disliked_food 
+      };
+     const response = await axios.put(url, payload);
     
-    const response = await axios.post(url, payload);
-    
+ 
+    console.log("Saved:", payload);
+
+    authStore.$patch({
+            name: payload.name,
+            age: payload.age,
+            height: payload.height,
+            weight: payload.weight,
+            targetWeight: payload.targetWeight,
+            targetWater: payload.targetWater,
+            activity: payload.activity,
+            goal: payload.goal,
+            healthCondition: payload.healthCondition,
+            allergies: payload.allergies,
+            dislikedFoods: payload.dislikedFoods
+          });
     if (response.status === 200) {
-      // 서버 저장 성공 시 스토어 동기화
-      authStore.setProfileState(profile.value);
-      alert("데이터 동기화 완료! 능력치가 반영되었습니다.");
+      alert("프로필이 업데이트되었습니다.");
       isEditing.value = false;
     }
   } catch (error) {
     console.error("저장 실패:", error);
-    alert("서버 통신 오류가 발생했습니다.");
+    alert("오류 발생");
   }
-};
-const cancelEdit = () => {
-  playSound("click");
-  isEditing.value = false;
 };
 </script>
 
@@ -104,32 +163,20 @@ const cancelEdit = () => {
     <div class="scanlines"></div>
 
     <Teleport to="#header-extra-actions">
-        <button
-          v-if="!isEditing"
-          @click="startEdit"
-          class="retro-header-btn edit"
-        >
-          EDIT
-        </button>
-        <button
-          v-if="isEditing"
-          @click="cancelEdit"
-          class="retro-header-btn cancel"
-        >
-          CANCEL
-        </button>
+        <button v-if="!isEditing" @click="startEdit" class="retro-header-btn edit">EDIT</button>
+        <button v-if="isEditing" @click="cancelEdit" class="retro-header-btn cancel">CANCEL</button>
     </Teleport>
 
     <div class="content">
-      
-
       <div class="character-showcase">
         <div class="holo-pad"></div>
         <img :src="characterImage" alt="Avatar" class="character-sprite" />
         <div class="class-label">{{ profile.class }}</div>
+        <div class="player-name-display">{{ profile.name }}</div>
       </div>
 
       <div class="stats-container">
+        
         <template v-if="!isEditing">
           <div class="section-title pixel-font">PLAYER STATS</div>
 
@@ -140,108 +187,94 @@ const cancelEdit = () => {
             </div>
             <div class="stat-box">
               <span class="label">SEX</span>
-              <span class="val">{{
-                profile.gender === "male" ? "M" : "F"
-              }}</span>
+              <span class="val">{{ profile.gender === "M" ? "MALE" : "FEMALE" }}</span>
             </div>
             <div class="stat-box">
-              <span class="label">HGT</span>
+              <span class="label">HEIGHT</span>
               <span class="val">{{ profile.height }}<small>cm</small></span>
             </div>
             <div class="stat-box">
-              <span class="label">WGT</span>
+              <span class="label">WEIGHT</span>
               <span class="val">{{ profile.weight }}<small>kg</small></span>
+            </div>
+             <div class="stat-box ">
+              <span class="label">TARGET W.</span>
+              <span class="val">{{ profile.target_weight }}<small>kg</small></span>
+            </div>
+            <div class="stat-box ">
+              <span class="label">WATER</span>
+              <span class="val">{{ profile.target_water }}<small>L</small></span>
             </div>
           </div>
 
-          <div class="section-title pixel-font">TRAITS</div>
+          <div class="section-title pixel-font">PLAY STYLE & TRAITS</div>
 
           <div class="traits-list">
             <div class="trait-row">
               <div class="trait-icon">⚡</div>
               <div class="trait-info">
-                <div class="trait-label">ACTIVITY LEVEL</div>
+                <div class="trait-label">ACTIVITY</div>
                 <div class="trait-val">
-                  {{
-                    activityOptions.find(
-                      (o) => o.value === profile.activityLevel
-                    )?.label
-                  }}
+                  {{ activityOptions.find(o => o.value === profile.activity)?.label }}
                 </div>
               </div>
             </div>
             <div class="trait-row">
-              <div class="trait-icon">💤</div>
+              <div class="trait-icon">🏆</div>
               <div class="trait-info">
-                <div class="trait-label">SLEEP RECOVERY</div>
+                <div class="trait-label">GOAL</div>
                 <div class="trait-val">
-                  {{ profile.sleepHours }} HOURS / DAY
+                  {{ goalOptions.find(o => o.value === profile.goal)?.label }}
                 </div>
               </div>
             </div>
-            <div class="trait-row">
-              <div class="trait-icon">⚔️</div>
-              <div class="trait-info">
-                <div class="trait-label">TRAINING FREQ</div>
-                <div class="trait-val">
-                  {{ profile.weeklyWorkout }} TIMES / WEEK
+            
+            <div class="trait-text-group">
+                <div class="text-block">
+                    <span class="sub-label">HEALTH CONDITION</span>
+                    <p>{{ profile.health_condition || "NONE" }}</p>
                 </div>
-              </div>
-            </div>
-            <div class="trait-row">
-              <div class="trait-icon">🧬</div>
-              <div class="trait-info">
-                <div class="trait-label">BODY TYPE</div>
-                <div class="trait-val">
-                  {{
-                    bodyTypeOptions.find((o) => o.value === profile.bodyType)
-                      ?.label
-                  }}
+                <div class="text-block">
+                    <span class="sub-label">ALLERGIES</span>
+                    <p>{{ profile.allergies || "NONE" }}</p>
                 </div>
-              </div>
+                <div class="text-block">
+                    <span class="sub-label">BANNED FOOD</span>
+                    <p>{{ profile.disliked_food || "NONE" }}</p>
+                </div>
             </div>
           </div>
         </template>
 
         <template v-else>
-          <div class="section-title pixel-font blink">MODIFY DATA...</div>
+          <div class="section-title pixel-font blink">UPDATE PROFILE...</div>
 
           <div class="edit-form">
+            <div class="form-group">
+                <label>EMAIL (ID)</label>
+                <input type="text" v-model="profile.email" class="retro-input disabled" disabled />
+            </div>
+            <div class="form-group">
+                <label>CHARACTER NAME</label>
+                <input type="text" v-model="profile.name" class="retro-input" />
+            </div>
+            
+
+            <div class="separator"></div>
+
             <div class="form-row">
               <div class="form-group">
                 <label>AGE</label>
-                <input
-                  type="number"
-                  v-model.number="profile.age"
-                  class="retro-input"
-                />
+                <input type="number" v-model.number="profile.age" class="retro-input" />
               </div>
               <div class="form-group">
                 <label>SEX</label>
                 <div class="radio-pill-group">
-                  <label
-                    class="pill"
-                    :class="{ active: profile.gender === 'male' }"
-                  >
-                    <input
-                      type="radio"
-                      value="male"
-                      v-model="profile.gender"
-                      hidden
-                    />
-                    M
+                  <label class="pill" :class="{ active: profile.gender === 'M' }">
+                    <input type="radio" value="M" v-model="profile.gender" hidden /> M
                   </label>
-                  <label
-                    class="pill"
-                    :class="{ active: profile.gender === 'female' }"
-                  >
-                    <input
-                      type="radio"
-                      value="female"
-                      v-model="profile.gender"
-                      hidden
-                    />
-                    F
+                  <label class="pill" :class="{ active: profile.gender === 'F' }">
+                    <input type="radio" value="F" v-model="profile.gender" hidden /> F
                   </label>
                 </div>
               </div>
@@ -250,77 +283,60 @@ const cancelEdit = () => {
             <div class="form-row">
               <div class="form-group">
                 <label>HEIGHT (cm)</label>
-                <input
-                  type="number"
-                  v-model.number="profile.height"
-                  class="retro-input"
-                />
+                <input type="number" v-model.number="profile.height" class="retro-input" />
               </div>
               <div class="form-group">
                 <label>WEIGHT (kg)</label>
-                <input
-                  type="number"
-                  v-model.number="profile.weight"
-                  class="retro-input"
-                />
+                <input type="number" v-model.number="profile.weight" class="retro-input" />
               </div>
             </div>
 
+            <div class="form-row">
+              <div class="form-group">
+                <label class="highlight">TARGET WEIGHT</label>
+                <input type="number" v-model.number="profile.target_weight" class="retro-input highlight-input" />
+              </div>
+              <div class="form-group">
+                <label class="highlight">WATER GOAL (L)</label>
+                <input type="number" step="0.1" v-model.number="profile.target_water" class="retro-input highlight-input" />
+              </div>
+            </div>
+
+            <div class="separator"></div>
+
             <div class="form-group">
               <label>ACTIVITY LEVEL</label>
-              <select v-model="profile.activityLevel" class="retro-select">
-                <option
-                  v-for="opt in activityOptions"
-                  :key="opt.value"
-                  :value="opt.value"
-                >
+              <select v-model="profile.activity" class="retro-select">
+                <option v-for="opt in activityOptions" :key="opt.value" :value="opt.value">
+                  {{ opt.icon }} {{ opt.label }}
+                </option>
+              </select>
+            </div>
+            
+            <div class="form-group">
+              <label>MAIN GOAL</label>
+              <select v-model="profile.goal" class="retro-select">
+                <option v-for="opt in goalOptions" :key="opt.value" :value="opt.value">
                   {{ opt.icon }} {{ opt.label }}
                 </option>
               </select>
             </div>
 
-            <div class="form-row">
-              <div class="form-group">
-                <label>SLEEP (H)</label>
-                <input
-                  type="number"
-                  v-model.number="profile.sleepHours"
-                  class="retro-input"
-                />
-              </div>
-              <div class="form-group">
-                <label>WORKOUT/WK</label>
-                <input
-                  type="number"
-                  v-model.number="profile.weeklyWorkout"
-                  class="retro-input"
-                />
-              </div>
-            </div>
-
             <div class="form-group">
-              <label>BODY TYPE</label>
-              <div class="body-type-grid">
-                <label
-                  v-for="opt in bodyTypeOptions"
-                  :key="opt.value"
-                  class="type-card"
-                  :class="{ active: profile.bodyType === opt.value }"
-                >
-                  <input
-                    type="radio"
-                    :value="opt.value"
-                    v-model="profile.bodyType"
-                    hidden
-                  />
-                  <div class="type-icon">{{ opt.icon }}</div>
-                  <div class="type-name">{{ opt.label }}</div>
-                </label>
-              </div>
+              <label>HEALTH CONDITION</label>
+              <textarea v-model="profile.health_condition" class="retro-textarea"></textarea>
+            </div>
+            <div class="form-group">
+              <label>ALLERGIES</label>
+              <textarea v-model="profile.allergies" class="retro-textarea"></textarea>
+            </div>
+            <div class="form-group">
+              <label>BANNED FOOD</label>
+              <textarea v-model="profile.disliked_food" class="retro-textarea"></textarea>
             </div>
 
             <button @click="saveProfile" class="retro-btn full-btn">
-              SAVE CHANGES
+              변경하기
             </button>
           </div>
         </template>
@@ -332,7 +348,6 @@ const cancelEdit = () => {
 </template>
 
 <style scoped>
-/* 레트로 폰트 */
 @import url("https://cdn.jsdelivr.net/gh/neodgm/neodgm-webfont@latest/neodgm/style.css");
 
 :root {
@@ -343,424 +358,148 @@ const cancelEdit = () => {
   --card-bg: #1a1a24;
 }
 
-/* === 전체 컨테이너 === */
-/* 배경색을 강제로 지정하여 흰색 배경 방지 */
+/* === 레이아웃 === */
 .profile-view.retro-theme {
   min-height: 100vh;
-  background-color: #101018 !important; /* 강제 적용 */
+  background-color: #101018 !important;
   font-family: "NeoDunggeunmo", monospace;
   color: #e0e0e0;
-  padding-bottom: 120px; /* 푸터 공간 확보 */
+  padding-bottom: 120px;
   position: relative;
   overflow-x: hidden;
   box-sizing: border-box;
 }
 
-/* 스캔라인 효과 (가독성을 위해 투명도 낮춤) */
 .scanlines {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
   pointer-events: none;
   background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%),
-    linear-gradient(
-      90deg,
-      rgba(255, 0, 0, 0.03),
-      rgba(0, 255, 0, 0.01),
-      rgba(0, 0, 255, 0.03)
-    );
+    linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
   background-size: 100% 4px, 6px 100%;
   z-index: 1;
 }
 
 .content {
-  padding: 1rem;
-  position: relative;
-  z-index: 2;
-  width: 100%;
-  max-width: 500px; /* 태블릿/데스크탑 대응 */
-  margin: 0 auto;
-  box-sizing: border-box;
+  padding: 1rem; position: relative; z-index: 2;
+  width: 100%; max-width: 500px; margin: 0 auto; box-sizing: border-box;
 }
 
-/* === 헤더 === */
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  /* margin-bottom: 2rem; */
-  border-bottom: 2px solid #333;
-  padding-bottom: 1rem;
-}
-.player-info {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.name-group {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.player-badge {
-  background: var(--neon-blue);
-  color: #000;
-  padding: 2px 6px;
-  font-weight: bold;
-  font-size: 0.7rem;
-}
-.player-name {
-  font-size: 1.1rem;
-  color: #fff;
-  text-shadow: 0 0 5px var(--neon-blue);
-}
-.level-badge {
-  color: var(--neon-green);
-  font-size: 0.8rem;
-  border: 1px solid var(--neon-green);
-  padding: 2px 4px;
-  border-radius: 4px;
-  display: inline-block;
-  width: fit-content;
-}
-
-/* 버튼 스타일 */
-.retro-btn {
-  background: transparent;
-  border: 2px solid #fff;
-  color: #fff;
-  padding: 8px 12px;
-  font-family: inherit;
-  cursor: pointer;
-  box-shadow: 2px 2px 0 #000;
-  transition: all 0.1s;
-  font-size: 0.9rem;
-}
-.retro-btn:active {
-  transform: translate(2px, 2px);
-  box-shadow: none;
-}
-.sm-btn {
-  font-size: 0.8rem;
-  padding: 6px 10px;
-}
-.sm-btn.cancel {
-  border-color: var(--neon-pink);
-  color: var(--neon-pink);
-}
-.full-btn {
-  width: 100%;
-  background: var(--neon-green);
-  color: #000;
-  font-weight: bold;
-  border: none;
-  padding: 15px;
-  font-size: 1.1rem;
-  margin-top: 1rem;
-}
-
-/* === 캐릭터 아바타 === */
+/* === 캐릭터 === */
 .character-showcase {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  /* margin-bottom: 2rem; */
-  position: relative;
-  height: 160px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  position: relative; height: 180px; /* 이름 추가로 높이 약간 증가 */
 }
 .character-sprite {
-  width: 100px;
-  height: 100px;
-  object-fit: contain;
-  image-rendering: pixelated;
-  z-index: 2;
+  width: 100px; height: 100px; object-fit: contain;
+  image-rendering: pixelated; z-index: 2;
   animation: float 3s infinite ease-in-out;
 }
-@keyframes float {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-10px);
-  }
-}
-
+@keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
 .holo-pad {
-  position: absolute;
-  bottom: 20px;
-  width: 120px;
-  height: 30px;
-  border: 2px solid var(--neon-blue);
-  border-radius: 50%;
-  background: rgba(0, 229, 255, 0.1);
-  transform: rotateX(60deg);
-  box-shadow: 0 0 20px var(--neon-blue);
-  z-index: 1;
+  position: absolute; bottom: 40px; width: 120px; height: 30px;
+  border: 2px solid var(--neon-blue); border-radius: 50%;
+  background: rgba(0, 229, 255, 0.1); transform: rotateX(60deg);
+  box-shadow: 0 0 20px var(--neon-blue); z-index: 1;
   animation: pulsePad 2s infinite;
 }
-@keyframes pulsePad {
-  0%,
-  100% {
-    opacity: 0.5;
-  }
-  50% {
-    opacity: 1;
-  }
-}
-
+@keyframes pulsePad { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
 .class-label {
-  margin-top: 10px;
-  font-size: 0.9rem;
-  color: var(--neon-pink);
+  margin-top: 5px; font-size: 0.8rem; color: var(--neon-pink);
   letter-spacing: 2px;
-  border-bottom: 1px solid var(--neon-pink);
-  padding-bottom: 2px;
+}
+.player-name-display {
+  font-size: 1.2rem; color: #fff; margin-top: 5px; text-shadow: 0 0 5px var(--neon-blue);
 }
 
-/* === STATS 컨테이너 === */
+/* === STATS 박스 === */
 .stats-container {
-  background: #1a1a24; /* 명시적 배경색 */
-  border: 2px solid #333;
-  padding: 1.25rem;
-  position: relative;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-  border-radius: 4px;
+  background: #1a1a24; border: 2px solid #333; padding: 1.25rem;
+  position: relative; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); border-radius: 4px;
 }
 .section-title {
-  font-size: 0.9rem;
-  color: var(--neon-green);
-  margin-bottom: 1rem;
-  border-left: 4px solid var(--neon-green);
-  padding-left: 10px;
+  font-size: 0.9rem; color: var(--neon-green); margin-bottom: 1rem; margin-top: 1.5rem;
+  border-left: 4px solid var(--neon-green); padding-left: 10px;
 }
-.blink {
-  animation: blink 1s infinite;
-}
-@keyframes blink {
-  50% {
-    opacity: 0;
-  }
-}
+.section-title:first-child { margin-top: 0; }
 
-/* 그리드 (읽기 모드) */
 .stats-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
-  margin-bottom: 2rem;
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 1rem;
 }
 .stat-box {
-  background: #222;
-  padding: 12px;
-  border: 1px solid #444;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  background: #222; padding: 12px; border: 1px solid #444;
+  display: flex; justify-content: space-between; align-items: center;
 }
-.stat-box .label {
-  color: #888;
-  font-size: 0.7rem;
+.stat-box.highlight-box {
+    border-color: var(--neon-pink);
 }
-.stat-box .val {
-  color: #fff;
-  font-size: 1rem;
-  font-weight: bold;
-}
-.stat-box .val small {
-  font-size: 0.7rem;
-  color: #aaa;
-  margin-left: 2px;
-  font-weight: normal;
-}
+.stat-box.highlight-box .label { color: var(--neon-pink); }
 
-.traits-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
+.stat-box .label { color: #888; font-size: 0.7rem; }
+.stat-box .val { color: #fff; font-size: 1rem; font-weight: bold; }
+.stat-box .val small { font-size: 0.7rem; color: #aaa; margin-left: 2px; font-weight: normal; }
+
+/* === TRAITS 리스트 (뷰 모드) === */
+.traits-list { display: flex; flex-direction: column; gap: 12px; }
 .trait-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  border-bottom: 1px dashed #333;
-  padding-bottom: 8px;
+  display: flex; align-items: center; gap: 12px;
+  border-bottom: 1px dashed #333; padding-bottom: 8px;
 }
-.trait-icon {
-  font-size: 1.4rem;
-  width: 30px;
-  text-align: center;
-}
-.trait-info {
-  flex: 1;
-}
-.trait-label {
-  font-size: 0.65rem;
-  color: #888;
-  margin-bottom: 3px;
-  display: block;
-}
-.trait-val {
-  font-size: 0.9rem;
-  color: var(--neon-blue);
-  line-height: 1.2;
-}
+.trait-icon { font-size: 1.4rem; width: 30px; text-align: center; }
+.trait-info { flex: 1; }
+.trait-label { font-size: 0.65rem; color: #888; margin-bottom: 3px; display: block; }
+.trait-val { font-size: 0.9rem; color: var(--neon-blue); line-height: 1.2; }
 
-/* === 수정 모드 (Edit Form) === */
-.edit-form {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
+/* 텍스트 그룹 (기저질환 등) */
+.trait-text-group { margin-top: 10px; display: flex; flex-direction: column; gap: 10px; }
+.text-block { background: #222; padding: 10px; border-left: 2px solid #555; }
+.sub-label { font-size: 0.7rem; color: #aaa; display: block; margin-bottom: 4px; }
+.text-block p { font-size: 0.9rem; color: #fff; margin: 0; white-space: pre-wrap; }
 
-/* 모바일 대응: 기본적으로 flex-wrap을 허용하여 좁을 땐 떨어지게 함 */
-.form-row {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-.form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  flex: 1;
-  min-width: 140px; /* 너무 좁아지지 않게 */
-}
-.form-group label {
-  font-size: 0.75rem;
-  color: #aaa;
-}
+/* === 수정 폼 === */
+.edit-form { display: flex; flex-direction: column; gap: 1rem; }
+.form-row { display: flex; gap: 10px; flex-wrap: wrap; }
+.form-group { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 140px; }
+.form-group label { font-size: 0.75rem; color: #aaa; }
+.form-group label.highlight { color: var(--neon-pink); }
 
-/* 입력창 스타일 강화 (흰색 방지) */
-.retro-input,
-.retro-select {
-  background-color: #000 !important; /* 배경 검정 강제 */
-  border: 2px solid #555;
-  color: #fff !important; /* 글씨 흰색 강제 */
-  padding: 12px;
-  font-family: inherit;
-  font-size: 1rem;
-  outline: none;
-  border-radius: 0;
-  width: 100%;
-  box-sizing: border-box;
-  -webkit-appearance: none; /* 아이폰 기본 스타일 제거 */
+/* Input 스타일 */
+.retro-input, .retro-select, .retro-textarea {
+  background-color: #000 !important; border: 2px solid #555; color: #fff !important;
+  padding: 12px; font-family: inherit; font-size: 1rem; outline: none; width: 100%;
+  box-sizing: border-box; border-radius: 0;
 }
-.retro-input:focus,
-.retro-select:focus {
-  border-color: var(--neon-blue);
-}
+.retro-input:focus, .retro-select:focus, .retro-textarea:focus { border-color: var(--neon-blue); }
+.highlight-input:focus { border-color: var(--neon-pink); }
+.retro-input.disabled { background: #222 !important; color: #777 !important; border-style: dashed; }
+.retro-textarea { height: 80px; resize: none; }
 
-/* 라디오 버튼 (알약 형태) */
-.radio-pill-group {
-  display: flex;
-  gap: 8px;
-  height: 48px;
-}
+/* Radio Pill */
+.radio-pill-group { display: flex; gap: 8px; height: 48px; }
 .pill {
-  flex: 1;
-  border: 2px solid #555;
-  color: #888;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-weight: bold;
-  background: #222;
-  transition: all 0.2s;
+  flex: 1; border: 2px solid #555; color: #888; display: flex; align-items: center;
+  justify-content: center; cursor: pointer; font-weight: bold; background: #222;
 }
-.pill.active {
-  border-color: var(--neon-blue);
-  background: rgba(0, 229, 255, 0.2);
-  color: #fff;
-}
+.pill.active { border-color: var(--neon-blue); background: rgba(0, 229, 255, 0.2); color: #fff; }
 
-/* 체형 그리드 (모바일 1단 -> 큰화면 3단) */
-.body-type-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-}
-.type-card {
-  background: #222;
-  border: 2px solid #444;
-  padding: 12px 5px;
-  text-align: center;
-  cursor: pointer;
-  opacity: 0.6;
-  transition: all 0.2s;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
-.type-card.active {
-  border-color: var(--neon-green);
-  opacity: 1;
-  transform: scale(1.02);
-  background: #000;
-}
-.type-icon {
-  font-size: 1.5rem;
-  margin-bottom: 5px;
-}
-.type-name {
-  font-size: 0.7rem;
-  color: #fff;
-}
+.separator { height: 1px; background: #333; margin: 5px 0; border-bottom: 1px dashed #444; }
 
-/* 모바일 미디어 쿼리 (매우 작은 화면용) */
-@media (max-width: 380px) {
-  .stats-grid {
-    grid-template-columns: 1fr;
-  } /* 스탯 한 줄로 */
-  .body-type-grid {
-    grid-template-columns: 1fr;
-  } /* 체형 선택 한 줄로 */
-  .form-row {
-    flex-direction: column;
-    gap: 15px;
-  } /* 입력창 세로 배치 */
+.full-btn {
+  width: 100%; background: var(--neon-green); color: white; font-weight: bold;
+  border: none; padding: 15px; font-size: 1.1rem; margin-top: 1rem; cursor: pointer;
+  box-shadow: 4px 4px 0 #000; transition: all 0.1s;
 }
+.full-btn:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 #000; }
 
-/* EXIT 버튼 스타일(.logout-btn)을 기반으로 작성 */
+.blink { animation: blink 1s infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+
+/* 헤더 버튼 */
 .retro-header-btn {
-  background: transparent;
-  padding: 5px 12px;
-  font-family: "NeoDunggeunmo", monospace; /* 폰트 강제 지정 */
-  cursor: pointer;
-  font-size: 0.8rem;
-  transition: all 0.2s;
-  border: 1px solid; /* 테두리 두께 */
-  /* 마진을 주어 EXIT 버튼과 너무 딱 붙지 않게 합니다 */
-  margin-left: 10px;
+  background: transparent; padding: 5px 12px; font-family: "NeoDunggeunmo", monospace;
+  cursor: pointer; font-size: 0.8rem; border: 1px solid; margin-left: 10px; transition: all 0.2s;
 }
-
-/* EDIT 버튼 스타일 (네온 블루/화이트 계열) */
-.retro-header-btn.edit {
-  border-color: #00e5ff; /* 네온 사이안 색상 */
-  color: #00e5ff;
-}
-
-.retro-header-btn.edit:hover {
-  background: #00e5ff;
-  color: #000; /* 배경이 밝아지므로 글자는 검정 */
-  box-shadow: 0 0 10px #00e5ff;
-}
-
-/* CANCEL 버튼 스타일 (EXIT 버튼과 동일한 붉은 계열) */
-.retro-header-btn.cancel {
-  border-color: #ff0055; /* 네온 핑크/레드 색상 */
-  color: #ff0055;
-}
-
-.retro-header-btn.cancel:hover {
-  background: #ff0055;
-  color: #fff;
-  box-shadow: 0 0 10px #ff0055;
-}
+.retro-header-btn.edit { border-color: #00e5ff; color: #00e5ff; }
+.retro-header-btn.edit:hover { background: #00e5ff; color: #000; box-shadow: 0 0 10px #00e5ff; }
+.retro-header-btn.cancel { border-color: #ff0055; color: #ff0055; }
+.retro-header-btn.cancel:hover { background: #ff0055; color: #fff; box-shadow: 0 0 10px #ff0055; }
 </style>

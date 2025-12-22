@@ -91,6 +91,9 @@ public class AuthService {
                 member.getGoal(),
                 member.getTargetWeight(),
                 member.getTargetWater(),
+                member.getHealthCondition(),
+                member.getAllergies(),
+                member.getDislikedFood(),
                 member.getProfileCharacter()
         );
     }
