@@ -71,24 +71,6 @@ public class DietController {
         return ResponseEntity.ok(dietService.getMonthlyEvaluations(memberId, year, month));
     }
 
-    // 2. 평가 저장 (Upsert)
-    // POST /api/calendar/evaluation
-    @PostMapping("/evaluation")
-    public ResponseEntity<String> saveEvaluation(@RequestBody DailyEvaluationDto dto) {
-        dietService.saveEvaluation(dto);
-        return ResponseEntity.ok("Saved");
-    }
-
-    // 3. 평가 삭제 (토글 해제용)
-    // DELETE /api/calendar/evaluation?memberId=1&date=2025-12-01
-    @DeleteMapping("/evaluation")
-    public ResponseEntity<String> deleteEvaluation(
-            @RequestParam Long memberId,
-            @RequestParam("date") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
-            @RequestParam String category) {
-        dietService.removeEvaluation(memberId, date, category);
-        return ResponseEntity.ok("Deleted");
-    }
 
 
 }

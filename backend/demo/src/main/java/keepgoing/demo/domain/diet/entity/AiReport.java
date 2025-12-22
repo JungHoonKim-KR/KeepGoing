@@ -11,6 +11,7 @@ public class AiReport {
     private Long memberId;
     private LocalDate date;
     private int score;
+    private String rank;
     private String feedbackText;
     private String recommendJson; // 추천 식단 JSON 문자열
 }

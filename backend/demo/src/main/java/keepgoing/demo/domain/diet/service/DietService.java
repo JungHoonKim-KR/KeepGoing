@@ -48,6 +48,8 @@ public class DietService {
         for (Diet d : dietList) {
             String foodNames = d.getFoods().stream()
                     .map(Food::getName).collect(Collectors.joining(", "));
+
+            System.out.println(foodNames);
             summary.append(String.format("[%s] %s (탄:%.0f, 단:%.0f, 지:%.0f) / ",
                     d.getMealTime(), foodNames, d.getCarbohydrate(), d.getProtein(), d.getFat()));
         }
@@ -89,14 +91,16 @@ public class DietService {
             // .score(), .oneLineSummary() 바로 접근
             // .recommendations() 리스트를 JSON으로 변환
             String recommendJson = objectMapper.writeValueAsString(result.recommendations());
-
             dietMapper.saveAiReport(AiReport.builder()
                     .memberId(memberId)
                     .date(date)
                     .score(result.score())               // 수정됨
+                    .rank(result.rank())
                     .feedbackText(result.oneLineSummary()) // 수정됨
                     .recommendJson(recommendJson)
                     .build());
+            dietMapper.upsertEvaluation(memberId,date, result.rank());
+
         } catch (Exception e) {
             e.printStackTrace(); // (가급적 log.error 사용 권장)
             throw new RuntimeException("결과 저장 실패", e); // 트랜잭션 롤백을 위해 예외 던지기
@@ -113,17 +117,6 @@ public class DietService {
         return dietMapper.selectEvaluationsByMonth(memberId, strYear, strMonth);
     }
 
-    // 평가 저장/수정
-    @Transactional
-    public void saveEvaluation(DailyEvaluationDto dto) {
-        dietMapper.upsertEvaluation(dto);
-    }
-
-    // 평가 삭제
-    @Transactional
-    public void removeEvaluation(Long memberId, LocalDate date, String category) {
-        dietMapper.deleteEvaluation(memberId, date, category);
-    }
 
     public Map<String, Diet> selectDailyDiet(Long memberId, LocalDate date) {
 
@@ -171,21 +164,37 @@ public class DietService {
 
     @Transactional
     public int addDiet(DietInsertRequestDTO dto) {
+        // 1. 프론트에서 온 최종 음식 리스트로 영양소 총합 계산 (newDiet에 담김)
         Diet newDiet = buildDiet(dto);
-        Diet findDiet = dietMapper.selectDiet(dto.getMemberId(), newDiet.getDate(),dto.getMealTime());
+
+        // 2. 해당 날짜/식사시간에 이미 기록된 식단이 있는지 확인
+        Diet findDiet = dietMapper.selectDiet(dto.getMemberId(), newDiet.getDate(), dto.getMealTime());
+
         Long dietId;
-        if(findDiet == null){
+
+        if (findDiet == null) {
+            // [신규] 식단 테이블 생성
             dietMapper.insertDiet(dto.getMemberId(), newDiet);
             dietId = newDiet.getId();
-        }
-        else{
-            dietMapper.updateDietNutrients(findDiet.getId(), newDiet);
+        } else {
+            // [수정] 기존 식단 ID 확보
             dietId = findDiet.getId();
-        }
-        dietMapper.insertFoodMappings(dto.getFoods(), dietId);
-        return 1;// 임시
-    }
 
+            // (중요 1) 영양소 정보를 '누적(+)'하지 말고 '최신값(=)'으로 덮어씌움
+            dietMapper.updateDietNutrients(dietId, newDiet);
+
+            // (중요 2) 기존에 연결된 음식 매핑 정보를 모두 삭제 (초기화)
+            dietMapper.deleteFoodMappings(dietId);
+        }
+
+        // 3. (중요 3) 프론트에서 받은 최종 리스트를 새로 저장
+        // 신규일 땐 그냥 저장되고, 수정일 땐 삭제 후 저장되므로 결과적으로 '교체'됨
+        if (dto.getFoods() != null && !dto.getFoods().isEmpty()) {
+            dietMapper.insertFoodMappings(dto.getFoods(), dietId);
+        }
+
+        return 1;
+    }
 
     private Diet buildDiet(DietInsertRequestDTO dto) {
         NutritionTotalsDTO nutritionTotalsDTO = calculateNutritionTotals(dto.getFoods());
