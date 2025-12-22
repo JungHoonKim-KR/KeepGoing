@@ -5,16 +5,13 @@
     <div class="retro-modal" @click.stop>
       <div class="modal-header">
         <div class="header-title">
-          <span class="icon">💾</span> SYSTEM: MEAL_LOG.EXE
+          <span class="icon">💾</span> DATE: {{ formattedDate }}
         </div>
         <button @click="closeModal" class="pixel-close-btn">X</button>
       </div>
 
       <div class="modal-body">
-        <div class="terminal-text">
-          > CONNECTED TO SERVER...<br />
-          > DATE: {{ formattedDate }}
-        </div>
+        
 
         <div class="section-container">
           <div class="pixel-label">1. SELECT MISSION</div>
@@ -111,47 +108,9 @@
           </div>
         </div>
 
-        <div class="section-container">
-          <div class="pixel-label">3. UPLOAD EVIDENCE</div>
-          <div class="evidence-box" @click="triggerFileInput">
-            <input
-              ref="fileInput"
-              type="file"
-              accept="image/*"
-              style="display: none"
-              @change="handleFileUpload"
-            />
+        
 
-            <div v-if="!photoPreview" class="placeholder-content">
-              <div class="scan-icon">[ + ]</div>
-              <span>CLICK TO SCAN IMAGE</span>
-            </div>
-
-            <div v-else class="preview-content">
-              <img :src="photoPreview" alt="Evidence" />
-              <div class="scan-overlay">
-                <div class="corner tl"></div>
-                <div class="corner tr"></div>
-                <div class="corner bl"></div>
-                <div class="corner br"></div>
-                <div class="rec-badge">REC ●</div>
-              </div>
-              <button @click.stop="removePhoto" class="delete-evidence-btn">
-                DISCARD
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <div class="section-container">
-          <div class="pixel-label">4. DATA LOG</div>
-          <textarea
-            v-model="memo"
-            class="retro-textarea"
-            placeholder="Additional notes..."
-            rows="2"
-          ></textarea>
-        </div>
+        
 
         <div class="footer-actions">
           <button @click="saveMeal" class="retro-btn-lg">

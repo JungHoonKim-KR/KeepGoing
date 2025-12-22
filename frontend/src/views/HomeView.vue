@@ -114,10 +114,7 @@
 
           <template v-else>
             <h1 class="page-title pixel-font">수분 섭취</h1>
-            <div class="hud-top">
-              <span class="hud-label">MP (WATER)</span>
-              <span class="hud-val blink-text">{{ Math.round((waterData.water / waterData.goal) * 100) }}%</span>
-            </div>
+            
 
             <div class="mana-bar-container">
               <div
@@ -134,15 +131,15 @@
           </template>
         </div>
 
-        <div 
-          class="pixel-card interactive purple-theme half-card" 
+       <div 
+          class="pixel-card interactive green-theme half-card" 
           @click="handleWeightClick"
         >
           <template v-if="weightData.weight == 0.0">
             <h1 class="page-title pixel-font">체중 기록</h1>
             <div class="empty-state-icon">⚖️</div>
             <p class="pixel-text-center">기록이 없습니다.</p>
-            <button class="retro-btn purple-btn sm-btn">RECORD</button>
+            <button class="retro-btn green-btn sm-btn">RECORD</button>
           </template>
 
           <template v-else>
@@ -151,14 +148,14 @@
               <div class="score-display">
                 <span class="score-val">{{ weightData.weight }}</span>
                 <span class="score-unit">KG</span>
-              </div>
-              <div class="score-change" :class="weightData.diff > 0 ? 'bad' : 'good'">
-                <span class="change-icon">{{ weightData.diff > 0 ? "▲" : "▼" }}</span>
-                {{ Math.abs(weightData.diff) }}kg
-                <span class="change-text">{{ weightData.diff > 0 ? "(WARN)" : "(GOOD)" }}</span>
+                <div class="score-change" :class="weightData.diff > 0 ? 'bad' : 'good'">
+                  <span class="change-icon">{{ weightData.diff > 0 ? "▲" : "▼" }}</span>
+                  {{ Math.abs(weightData.diff) }}kg
+                  <span class="change-text">{{ weightData.diff > 0 ? "(WARN)" : "(GOOD)" }}</span>
+                </div>
               </div>
             </div>
-            <button class="retro-btn purple-btn sm-btn" style="margin-top:auto;">UPDATE</button>
+            <button class="retro-btn green-btn sm-btn" style="margin-top:auto;">UPDATE</button>
           </template>
         </div>
 
@@ -534,6 +531,7 @@ onMounted(async () => {
 
 /* 체중 대시보드 스타일 미세 조정 */
 .weight-dashboard {
+  font-size: 2rem;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -546,6 +544,62 @@ onMounted(async () => {
   padding: 5px 15px;
   border-radius: 4px;
   margin: 5px 0;
+}
+.score-val {
+  font-size: 2.8rem;
+  color: #fff;
+  font-weight: bold;
+  line-height: 1;
+  text-shadow: 2px 2px 0 #000; /* 글자 입체감 */
+  letter-spacing: 2px;
+}
+
+/* 단위 (KG) */
+.score-unit {
+  font-size: 1rem;
+  color: #888;
+  margin-top: 2px;
+  margin-bottom: 10px;
+  font-family: monospace;
+}
+
+/* 증감 표시 박스 (가장 아래 배치) */
+.score-change {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid transparent;
+  width: 100%; /* 박스 꽉 채우기 */
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+/* 체중 감소 (좋음 - 파란색/민트색 계열) */
+.score-change.good {
+  color: #00e5ff;
+  border-color: #00e5ff;
+  background: rgba(0, 229, 255, 0.1);
+}
+
+/* 체중 증가 (나쁨 - 붉은색 계열) */
+.score-change.bad {
+  color: #ff0055;
+  border-color: #ff0055;
+  background: rgba(255, 0, 85, 0.1);
+}
+
+.change-icon {
+  font-size: 0.7rem;
+}
+
+.change-text {
+  font-size: 0.7rem;
+  opacity: 0.8;
+  margin-left: auto; /* 텍스트를 오른쪽 끝으로 밀어줌 (선택사항) */
 }
 
 /* 반응형: 화면이 너무 작으면 갭을 줄임 */
@@ -575,7 +629,7 @@ onMounted(async () => {
 
 .page.daily-page { background: #222034; }
 .meal-page { background: #4b692f; }
-.water-page { background: #000022; }
+.water-page { background: #1a1a24; }
 .weight-page { background: #2a0a29; }
 
 .retro-header { text-align: center; color: var(--secondary-color); margin-bottom: 0.2rem; font-size: 1.1rem; }
@@ -624,11 +678,42 @@ onMounted(async () => {
 
 .retro-btn { margin-top: 0.8rem; background: #ff0055; color: #fff; border: 2px solid #fff; padding: 8px 16px; cursor: pointer; box-shadow: 3px 3px 0 #000; font-size: 0.9rem; }
 
-.blue-theme { border-color: #00e5ff; color: #00e5ff; background: #000; }
-.blue-btn { background: #00e5ff; color: #000; }
+.blue-theme { 
+  border-color: #00ffff; 
+  color: #00ffff; 
+  background: rgba(0, 20, 40, 0.6); /* 투명도 살짝 줌 */
+}
+.blue-btn { 
+  background: #00ffff; 
+  color: #000; 
+  box-shadow: 3px 3px 0 rgba(0, 255, 255, 0.4);
+}
 .purple-theme { border-color: #d500f9; color: #d500f9; background: #000; }
 .purple-btn { background: #d500f9; color: #fff; }
+.green-theme { 
+  border-color: #39ff14; /* 네온 라임 */
+  color: #39ff14; 
+  background: rgba(10, 30, 10, 0.6); 
+}
 
+.green-btn { 
+  background: #39ff14; 
+  color: #000;
+  box-shadow: 3px 3px 0 rgba(57, 255, 20, 0.4);
+}
+.green-theme .score-display {
+  border-color: #39ff14; /* 박스 테두리도 초록색으로 통일 */
+  box-shadow: inset 0 0 10px rgba(57, 255, 20, 0.1);
+}
+
+.green-theme .score-val {
+  color: #fff;
+  text-shadow: 0 0 5px rgba(57, 255, 20, 0.5); /* 초록색 글로우 효과 */
+}
+
+.green-theme .score-unit {
+  color: #8fbc8f; /* 약간 채도 낮춘 초록색 */
+}
 .meal-log-container { width: 100%; display: flex; flex-direction: column; gap: 0.5rem; }
 .retro-header-sm { display: flex; justify-content: space-between; border-bottom: 2px dashed #fff; padding-bottom: 5px; font-size: 0.85rem; color: #ffd700; }
 .meal-list { display: flex; flex-direction: column; gap: 8px; max-height: 55vh; overflow-y: auto; }
