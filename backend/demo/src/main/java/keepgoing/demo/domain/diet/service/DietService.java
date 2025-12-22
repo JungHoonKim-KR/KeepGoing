@@ -1,8 +1,9 @@
 package keepgoing.demo.domain.diet.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import keepgoing.demo.domain.ai.dto.AiAnalyzeDto;
+import keepgoing.demo.domain.ai.dto.AiRecommendDto;
 import keepgoing.demo.domain.ai.dto.AiRequestDto;
-import keepgoing.demo.domain.ai.dto.AiResponseDto;
 import keepgoing.demo.domain.ai.service.AiClient;
 import keepgoing.demo.domain.diet.dto.*;
 import keepgoing.demo.domain.diet.entity.AiReport;
@@ -30,7 +31,7 @@ public class DietService {
     private final AiClient aiClient;
     private final ObjectMapper objectMapper;
     @Transactional
-    public AiResponseDto analyzeDailyDiet(Long memberId, LocalDate date) {
+    public AiAnalyzeDto analyzeDailyDiet(Long memberId, LocalDate date) {
         // 1. 회원 조회
         Member member = memberMapper.findById(memberId)
                 .orElseThrow(() -> new IllegalArgumentException("회원 없음"));
@@ -49,7 +50,6 @@ public class DietService {
             String foodNames = d.getFoods().stream()
                     .map(Food::getName).collect(Collectors.joining(", "));
 
-            System.out.println(foodNames);
             summary.append(String.format("[%s] %s (탄:%.0f, 단:%.0f, 지:%.0f) / ",
                     d.getMealTime(), foodNames, d.getCarbohydrate(), d.getProtein(), d.getFat()));
         }
@@ -83,21 +83,21 @@ public class DietService {
         );
 
         // 5. AI 호출
-        AiResponseDto result = aiClient.requestAnalysis(request);
-
+        AiAnalyzeDto result = aiClient.requestAnalysis(request);
+//        AiRecommendDto recommendDto = aiClient.requestRecommend(request);
         // 6. 결과 저장 (구조 변경 반영)
         try {
             // AiResponseDto 구조가 바뀌었으므로 .dailyFeedback() 제거
             // .score(), .oneLineSummary() 바로 접근
             // .recommendations() 리스트를 JSON으로 변환
-            String recommendJson = objectMapper.writeValueAsString(result.recommendations());
+//            String recommendJson = objectMapper.writeValueAsString(recommendDto.recommendations);
             dietMapper.saveAiReport(AiReport.builder()
                     .memberId(memberId)
                     .date(date)
                     .score(result.score())               // 수정됨
                     .rank(result.rank())
                     .feedbackText(result.oneLineSummary()) // 수정됨
-                    .recommendJson(recommendJson)
+//                    .recommendJson(recommendJson)
                     .build());
             dietMapper.upsertEvaluation(memberId,date, result.rank());
 
