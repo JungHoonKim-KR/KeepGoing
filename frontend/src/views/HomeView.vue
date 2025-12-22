@@ -99,71 +99,69 @@
     </section>
 
     <section class="page water-page">
-      <div class="page-content">
+      <div class="page-content split-layout">
+        
+        <div 
+          class="pixel-card interactive blue-theme half-card" 
+          @click="handleWaterClick"
+        >
+          <template v-if="waterData.water === 0">
+            <h1 class="page-title pixel-font">수분 섭취</h1>
+            <div class="empty-state-icon">💧</div>
+            <p class="pixel-text-center">기록이 없습니다.</p>
+            <button class="retro-btn blue-btn sm-btn">START</button>
+          </template>
 
-        <div v-if="waterData.water === 0" class="pixel-card interactive blue-theme" @click="handleWaterClick">
-          <h1 class="page-title pixel-font">수분 섭취 기록</h1>
-          <div class="empty-state-icon">💧</div>
-          <p class="pixel-text-center">오늘의 수분량을<br />기록하지 않았습니다.</p>
-          <button class="retro-btn blue-btn">RECHARGE MANA</button>
-        </div>
-
-        <div v-else class="pixel-card interactive blue-theme" @click="handleWaterClick">
-                   <h1 class="page-title pixel-font">수분 섭취 기록</h1>
-
-          <div class="hud-top">
-            <span class="hud-label">MANA (H2O)</span>
-            <span class="hud-val">{{ Math.round((waterData.water / waterData.goal) * 100) }}%</span>
-          </div>
-
-          <div class="water-dashboard">
-            <div class="current-water">{{ waterData.water }}<span class="unit">L</span></div>
-            <div class="goal-water">MAX: {{ waterData.goal }}L</div>
-          </div>
-
-          <div class="mana-bar-container">
-            <div
-              class="mana-bar-fill"
-              :style="{
-                width: Math.min((waterData.water / waterData.goal) * 100, 100) + '%',
-              }"
-            >
-              <div class="glare"></div>
-            </div>
-          </div>
-
-          <button class="retro-btn blue-btn sm-btn">DRINK MORE</button>
-        </div>
-      </div>
-      <div class="page-content">
-
-        <div v-if="weightData.weight == 0.0" class="pixel-card interactive purple-theme" @click="handleWeightClick">
-          <h1 class="page-title pixel-font">체중 기록</h1>
-          <div class="empty-state-icon">⚖️</div>
-          <p class="pixel-text-center">오늘의 스코어(체중)를<br />기록하지 않았습니다.</p>
-          <button class="retro-btn purple-btn">NEW RECORD</button>
-        </div>
-
-        <div v-else class="pixel-card interactive purple-theme" @click="handleWeightClick">
-          
-
-          <div class="weight-dashboard">
-                      <h1 class="page-title pixel-font">체중 기록</h1>
-
-            <div class="score-display">
-              <span class="score-val">{{ weightData.weight }}</span>
-              <span class="score-unit">KG</span>
+          <template v-else>
+            <h1 class="page-title pixel-font">수분 섭취</h1>
+            <div class="hud-top">
+              <span class="hud-label">MP (WATER)</span>
+              <span class="hud-val blink-text">{{ Math.round((waterData.water / waterData.goal) * 100) }}%</span>
             </div>
 
-            <div class="score-change" :class="weightData.diff > 0 ? 'bad' : 'good'">
-              <span class="change-icon">{{ weightData.diff > 0 ? "▲" : "▼" }}</span>
-              {{ Math.abs(weightData.diff) }}kg
-              <span class="change-text">{{ weightData.diff > 0 ? "(WARNING)" : "(NICE!)" }}</span>
+            <div class="mana-bar-container">
+              <div
+                class="mana-bar-fill"
+                :style="{ width: Math.min((waterData.water / waterData.goal) * 100, 100) + '%' }"
+              >
+                <div class="glare-effect"></div>
+              </div>
+              <div class="mana-text-overlay">
+                {{ waterData.water }}L <span class="divider">/</span> {{ waterData.goal }}L
+              </div>
             </div>
-          </div>
-
-          <button class="retro-btn purple-btn sm-btn">UPDATE SCORE</button>
+            <button class="retro-btn blue-btn sm-btn" style="margin-top:auto;">DRINK</button>
+          </template>
         </div>
+
+        <div 
+          class="pixel-card interactive purple-theme half-card" 
+          @click="handleWeightClick"
+        >
+          <template v-if="weightData.weight == 0.0">
+            <h1 class="page-title pixel-font">체중 기록</h1>
+            <div class="empty-state-icon">⚖️</div>
+            <p class="pixel-text-center">기록이 없습니다.</p>
+            <button class="retro-btn purple-btn sm-btn">RECORD</button>
+          </template>
+
+          <template v-else>
+            <div class="weight-dashboard">
+              <h1 class="page-title pixel-font">체중 기록</h1>
+              <div class="score-display">
+                <span class="score-val">{{ weightData.weight }}</span>
+                <span class="score-unit">KG</span>
+              </div>
+              <div class="score-change" :class="weightData.diff > 0 ? 'bad' : 'good'">
+                <span class="change-icon">{{ weightData.diff > 0 ? "▲" : "▼" }}</span>
+                {{ Math.abs(weightData.diff) }}kg
+                <span class="change-text">{{ weightData.diff > 0 ? "(WARN)" : "(GOOD)" }}</span>
+              </div>
+            </div>
+            <button class="retro-btn purple-btn sm-btn" style="margin-top:auto;">UPDATE</button>
+          </template>
+        </div>
+
       </div>
     </section>
 
@@ -488,11 +486,15 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start;
-  padding: 2rem 1rem 6rem 1rem;
+  justify-content: center; /* 세로 중앙 정렬 */
+  
+  /* 헤더와 푸터 높이만큼 패딩을 넉넉하게 줍니다 */
+  padding-top: 5rem;    /* 상단 헤더 공간 확보 */
+  padding-bottom: 6rem; /* 하단 푸터 공간 확보 */
+  padding-left: 1rem;
+  padding-right: 1rem;
   box-sizing: border-box;
 }
-
 .page-content {
   width: 100%;
   max-width: 600px;
@@ -500,7 +502,65 @@ onMounted(async () => {
   flex-direction: column;
   gap: 0.8rem;
 }
+.page-content.split-layout {
+  height: 100%;
+  max-height: 70vh; /* 너무 길어지지 않게 제한 */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1.5rem; /* 두 카드 사이의 간격 */
+}
 
+/* 반반 카드 스타일 (Flex로 공간 균등 분배) */
+.half-card {
+  flex: 1; /* 남은 공간을 1:1로 차지 */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 0; /* Flexbox 내부 스크롤 방지 */
+}
+
+/* 내부 요소들이 너무 붙지 않게 여백 조정 */
+.half-card .page-title {
+  margin-bottom: 0.5rem;
+  font-size: 1.1rem;
+}
+
+.empty-state-icon {
+  font-size: 2.5rem;
+  margin: 0.5rem 0;
+}
+
+/* 체중 대시보드 스타일 미세 조정 */
+.weight-dashboard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  width: 100%;
+}
+
+.score-display {
+  background: rgba(0,0,0,0.2);
+  padding: 5px 15px;
+  border-radius: 4px;
+  margin: 5px 0;
+}
+
+/* 반응형: 화면이 너무 작으면 갭을 줄임 */
+@media (max-height: 700px) {
+  .page-content.split-layout {
+    gap: 0.8rem;
+  }
+  .page {
+    padding-top: 4rem;
+    padding-bottom: 5rem;
+  }
+  .pixel-box, .pixel-card {
+    padding: 0.6rem;
+  }
+}
 .pixel-box, .pixel-card {
   border: 4px solid #fff;
   box-shadow: 4px 4px 0px 0px rgba(0, 0, 0, 0.5);
@@ -640,5 +700,71 @@ onMounted(async () => {
   position: absolute;
   bottom: 1px; right: 2px;
   font-size: 0.5rem; color: #777;
+}
+/* --- 수분(마나) 바 스타일 --- */
+.mana-bar-container {
+  position: relative;
+  width: 100%;
+  height: 35px; /* 바 두께를 키워서 잘 보이게 함 */
+  background-color: #001133; /* 빈 공간은 어두운 남색 */
+  border: 4px solid #fff; /* 픽셀 테두리 */
+  margin: 15px 0;
+  box-shadow: inset 2px 2px 4px rgba(0, 0, 0, 0.8); /* 안쪽 그림자로 깊이감 */
+  overflow: hidden;
+}
+
+.mana-bar-fill {
+  height: 100%;
+  background: linear-gradient(180deg, #40e0d0 0%, #00e5ff 40%, #0077be 100%); /* 입체적인 파란색 */
+  transition: width 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94); /* 부드럽게 차오르는 애니메이션 */
+  position: relative;
+  box-shadow: 0 0 10px #00e5ff; /* 빛나는 효과 */
+}
+
+/* 유리 질감 효과 */
+.glare-effect {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 40%;
+  background: rgba(255, 255, 255, 0.3);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* 바 중앙에 위치하는 텍스트 */
+.mana-text-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%); /* 정중앙 정렬 */
+  color: #fff;
+  font-size: 1rem;
+  font-weight: bold;
+  text-shadow: 2px 2px 0 #000, -1px -1px 0 #003366; /* 글자 가독성을 위한 테두리 */
+  z-index: 5;
+  letter-spacing: 1px;
+}
+
+.mana-text-overlay .divider {
+  color: #aaddff;
+  margin: 0 4px;
+}
+
+.blink-text {
+  animation: pulse-opacity 2s infinite;
+}
+
+.pixel-desc {
+  font-size: 0.8rem;
+  color: #88ccff;
+  margin-top: -5px;
+  margin-bottom: 10px;
+}
+
+@keyframes pulse-opacity {
+  0% { opacity: 1; }
+  50% { opacity: 0.7; }
+  100% { opacity: 1; }
 }
 </style>

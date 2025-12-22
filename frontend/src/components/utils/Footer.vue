@@ -27,13 +27,13 @@
           <div class="led-light"></div>
         </button>
 
-        <button @click="$emit('open-radio')" class="retro-btn">
+        <!-- <button @click="$emit('open-radio')" class="retro-btn">
           <div class="btn-face">
             <span class="nav-icon">📻</span>
             <span class="nav-label">COMM</span>
           </div>
           <div class="led-light"></div>
-        </button>
+        </button> -->
 
         <button
           @click="navigate('/ai-analysis')"
