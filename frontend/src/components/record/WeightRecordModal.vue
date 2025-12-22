@@ -102,9 +102,9 @@ const props = defineProps({
   }
 }); 
 
-const weightInput = ref("60.0");
-const weightSlider = ref(60);
-const targetWeight = ref(70.0); // 목표 체중 (API에서 가져올 예정)
+const weightInput = ref(authStore.weight);
+const weightSlider = ref(authStore.weight);
+const targetWeight = ref(authStore.targetWeight); // 목표 체중 (API에서 가져올 예정)
 const MEMBER_ID = authStore.memberId;
 const API_ENDPOINT = config.API_ENDPOINT;
 const formattedDate = computed(() => ref(props.dateToUse));
