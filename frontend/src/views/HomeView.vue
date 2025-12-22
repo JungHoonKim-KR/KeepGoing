@@ -94,6 +94,30 @@
             </div>
           </div>
         </div>
+
+        <div class="ai-btn-container">
+  <button 
+    class="ai-analyze-btn" 
+    :class="{ 'active': isAllMealsRecorded }"
+    :disabled="!isAllMealsRecorded"
+    @click="startAIAnalysis"
+  >
+    <span v-if="isAllMealsRecorded">🤖 AI 식단 분석 시작하기</span>
+    <span v-else>🔒 4끼를 모두 기록하면 열려요 ({{ recordedCount }}/4)</span>
+  </button>
+</div>
+
+<Transition name="fade">
+  <div v-if="isAiLoading" class="loading-overlay">
+    <div class="loading-content">
+      <div class="loading-icon">🤖</div>
+      <div class="loading-bar-container">
+        <div class="loading-bar"></div>
+      </div>
+      <p class="loading-text">{{ loadingText }}</p>
+    </div>
+  </div>
+</Transition>
       </div>
     </section>
 
@@ -215,6 +239,73 @@ import confetti from "canvas-confetti";
 import WaterRecordModal from "@/components/record/WaterRecordModal.vue";
 import WeightRecordModal from "@/components/record/WeightRecordModal.vue";
 import MealRecordModal from "@/components/record/MealRecordModal.vue";
+
+/* --- 기존 import 아래에 추가 --- */
+const isAiLoading = ref(false); // 로딩 상태
+const loadingText = ref("AI 분석 서버 연결 중..."); // 로딩 멘트
+
+// [수정] 4가지 식사가 모두 기록되었는지 확인
+const isAllMealsRecorded = computed(() => {
+  // 'todayDiet'가 아니라 'todayMeals'를 사용해야 합니다.
+  if (!todayMeals.value) return false;
+
+  // 프로젝트에서 사용하는 한글 키값 기준
+  const requiredTypes = ['아침', '점심', '저녁', '간식'];
+  
+  // 현재 기록된 식사 타입들 추출 (meal.mealType이 아니라 meal.type)
+  const recordedTypes = todayMeals.value.map(d => d.type);
+  
+  // 4가지가 모두 있는지 확인
+  return requiredTypes.every(type => recordedTypes.includes(type));
+});
+
+// [수정] 기록된 식사 개수 (버튼 표시용)
+const recordedCount = computed(() => {
+  return todayMeals.value ? todayMeals.value.length : 0;
+});
+
+// 3. AI 분석 시작 및 로딩 애니메이션
+const startAIAnalysis = async () => {
+  if (!isAllMealsRecorded.value) return;
+
+  isAiLoading.value = true;
+  
+  // 재미있는 로딩 멘트 배열
+  const messages = [
+    "🍎 음식 데이터 스캔 중...",
+    "🥩 단백질 함량 분석 중...",
+    "🍰 당분 수치 계산 중...",
+    "🤖 AI가 조언을 생성하고 있습니다...",
+    "✨ 거의 다 됐어요!"
+  ];
+
+  let msgIndex = 0;
+  loadingText.value = messages[0];
+
+  // 0.8초마다 멘트 변경
+  const interval = setInterval(() => {
+    msgIndex++;
+    if (msgIndex < messages.length) {
+      loadingText.value = messages[msgIndex];
+    }
+  }, 800);
+
+  try {
+    // 여기에 실제 AI 분석 API 호출 코드를 넣으세요
+    // await fetchAiAnalysis(); 
+    
+    // (테스트용) 4초 뒤에 로딩 끝
+    await new Promise(resolve => setTimeout(resolve, 4000));
+    
+    alert("AI 분석이 완료되었습니다! (결과 모달 띄우기)");
+  } catch (e) {
+    console.error(e);
+    alert("분석 중 오류가 발생했습니다.");
+  } finally {
+    clearInterval(interval);
+    isAiLoading.value = false;
+  }
+};
 
 const authStore = useAuthStore();
 const config = useConfigStore();
@@ -850,5 +941,119 @@ onMounted(async () => {
   0% { opacity: 1; }
   50% { opacity: 0.7; }
   100% { opacity: 1; }
+}
+
+/* --- AI 분석 버튼 스타일 --- */
+.ai-btn-container {
+  width: 100%;
+  padding: 10px 20px;
+  box-sizing: border-box;
+  margin-top: 10px;
+  margin-bottom: 20px; /* 푸터와 간격 */
+}
+
+.ai-analyze-btn {
+  width: 100%;
+  padding: 15px;
+  border: 2px solid #555;
+  background: #333;
+  color: #888;
+  font-family: "NeoDunggeunmo", monospace;
+  font-size: 1rem;
+  cursor: not-allowed;
+  transition: all 0.3s ease;
+  border-radius: 8px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* 활성화 상태 (4끼 모두 기록 시) */
+.ai-analyze-btn.active {
+  background: linear-gradient(90deg, #6a11cb 0%, #2575fc 100%);
+  border-color: #fff;
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 0 15px rgba(37, 117, 252, 0.5);
+  animation: pulse-btn 2s infinite;
+}
+
+.ai-analyze-btn.active:hover {
+  transform: scale(1.02);
+  box-shadow: 0 0 25px rgba(37, 117, 252, 0.8);
+}
+
+@keyframes pulse-btn {
+  0% { box-shadow: 0 0 10px rgba(37, 117, 252, 0.5); }
+  50% { box-shadow: 0 0 20px rgba(37, 117, 252, 0.9); }
+  100% { box-shadow: 0 0 10px rgba(37, 117, 252, 0.5); }
+}
+
+
+/* --- 재미있는 로딩 화면 (레트로 스타일) --- */
+.loading-overlay {
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0, 0, 30, 0.95);
+  z-index: 10000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+}
+
+.loading-content {
+  text-align: center;
+  color: #00e5ff;
+}
+
+.loading-icon {
+  font-size: 4rem;
+  margin-bottom: 20px;
+  animation: bounce 1s infinite alternate;
+}
+
+.loading-text {
+  font-family: "NeoDunggeunmo", monospace;
+  font-size: 1.2rem;
+  margin-top: 15px;
+  color: #fff;
+  min-width: 250px; /* 글자 바뀔 때 흔들림 방지 */
+}
+
+.loading-bar-container {
+  width: 200px;
+  height: 10px;
+  border: 2px solid #fff;
+  margin: 0 auto;
+  padding: 2px;
+  border-radius: 4px;
+}
+
+.loading-bar {
+  height: 100%;
+  background: #00e5ff;
+  width: 0%;
+  animation: loading-progress 4s linear infinite; /* 4초 동안 참 */
+}
+
+@keyframes bounce {
+  from { transform: translateY(0); }
+  to { transform: translateY(-20px); }
+}
+
+@keyframes loading-progress {
+  0% { width: 0%; }
+  50% { width: 70%; }
+  80% { width: 90%; }
+  100% { width: 100%; }
+}
+
+/* Vue 트랜지션 */
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.3s;
+}
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
 }
 </style>
