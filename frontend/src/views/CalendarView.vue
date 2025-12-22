@@ -1,46 +1,44 @@
 <template>
   <div class="calendar-view retro-theme">
+    <div class="scanlines"></div>
 
     <header class="header">
       <div class="retro-box month-control">
         <button @click="changeMonth(-1)" class="pixel-arrow">◀</button>
         <div class="month-display" @click.stop="openYearMonthModal">
           <span class="value">{{ currentYear }}.{{ String(currentMonth + 1).padStart(2, "0") }}</span>
-          <!-- <span class="blink-cursor">_</span> -->
         </div>
         <button @click="changeMonth(1)" class="pixel-arrow">▶</button>
       </div>
 
       <div class="category-tabs">
-        <button 
-          v-for="cat in categories" 
-          :key="cat.id"
-          class="tab-btn"
-          :class="{ active: currentCategory === cat.id }"
-          @click="changeCategory(cat.id)"
-        >
-          {{ cat.label }}
-        </button>
+        <button class="tab-btn active">DAILY RANKING</button>
       </div>
     </header>
 
     <div class="content">
       <div class="legend-box">
-        <div class="pixel-label-sm">EVALUATION GUIDE</div>
+        <div class="pixel-label-sm">RANK GUIDE</div>
         <div class="tracking-states">
           <div v-for="grade in grades" :key="grade.key" class="state-chip" :class="grade.key">
-            <img :src="grade.src" class="chip-img pixelated" alt="icon" />
-            <span class="chip-text">{{ grade.label }}</span>
+            <span class="rank-char">{{ grade.key }}</span>
           </div>
         </div>
       </div>
 
       <div class="calendar-frame">
-        <div class="frame-decor tl"></div><div class="frame-decor tr"></div>
-        <div class="frame-decor bl"></div><div class="frame-decor br"></div>
+        <div class="frame-decor tl"></div>
+        <div class="frame-decor tr"></div>
+        <div class="frame-decor bl"></div>
+        <div class="frame-decor br"></div>
 
         <div class="days-of-week">
-          <span v-for="day in daysOfWeek" :key="day" class="weekday-header" :class="{ weekend: day === '일' || day === '토' }">
+          <span
+            v-for="day in daysOfWeek"
+            :key="day"
+            class="weekday-header"
+            :class="{ weekend: day === 'SUN' || day === 'SAT' }"
+          >
             {{ day }}
           </span>
         </div>
@@ -50,27 +48,22 @@
             <button
               v-if="day.isCurrentMonth"
               class="date-tile"
-              :class="{ 
-                'is-today': day.isToday, 
+              :class="{
+                'is-today': day.isToday,
                 'is-selected': day.isSelected,
-                'long-pressing': isLongPress && pressingDateKey === day.dateKey,
-                'has-record': !!getDayEvaluation(day.dateKey) 
+                'has-record': !!getDayRank(day.dateKey),
+                'has-plan': !!getDayPlan(day.dateKey),
               }"
-              @mousedown.prevent="startPress(day)"
-              @touchstart.prevent="startPress(day)"
-              @mouseup.prevent="endPress(day)"
-              @touchend.prevent="endPress(day)"
-              @mouseleave.prevent="cancelPress"
-              @touchcancel.prevent="cancelPress"
+              @click="handleDateClick(day)"
             >
               <span class="tile-number">{{ day.day }}</span>
 
-              <div v-if="getDayEvaluation(day.dateKey)" class="tile-loot">
-                <img 
-                  :src="getGradeObj(getDayEvaluation(day.dateKey))?.src"
-                  class="loot-img pixelated"
-                  alt="stamp"
-                />
+              <div v-if="getDayPlan(day.dateKey)" class="plan-dot"></div>
+
+              <div v-if="getDayRank(day.dateKey)" class="tile-loot">
+                <span class="rank-stamp" :class="getDayRank(day.dateKey)">
+                  {{ getDayRank(day.dateKey) }}
+                </span>
               </div>
 
               <div v-if="day.isToday" class="player-cursor">P1</div>
@@ -86,32 +79,44 @@
     <Teleport to="body">
       <div v-if="isColorModalOpen" class="modal-overlay" @click.self="closeColorModal">
         <div class="retro-modal color-select-modal">
-          <h2 class="modal-title">{{ getCategoryLabel(currentCategory) }} CHECK!</h2>
+          <h2 class="modal-title">DAILY LOG</h2>
           <div class="modal-subtitle">{{ modalTargetDay?.dateKey }}</div>
 
-          <div class="action-list">
-            <button
-              v-for="grade in grades"
-              :key="grade.key"
-              class="action-btn"
-              :class="{ active: getDayEvaluation(modalTargetDay?.dateKey) === grade.key }"
-              @click="selectEvaluation(grade.key)"
-            >
-              <img :src="grade.src" class="action-img pixelated" alt="icon" />
-              <span class="action-label">{{ grade.label }}</span>
-              <span class="action-check" v-if="getDayEvaluation(modalTargetDay?.dateKey) === grade.key">✔</span>
-            </button>
+          <div v-if="getDayPlan(modalTargetDay?.dateKey)" class="mission-log-box">
+            <div class="box-header">
+              <span class="pixel-label-xs">▼ TODAY'S MENU</span>
+              <span class="total-cal">{{ getDayPlan(modalTargetDay?.dateKey).totalCal }} kcal</span>
+            </div>
+
+            <div class="mission-content">
+              <div class="menu-list">
+                <div v-for="(item, idx) in getDayPlan(modalTargetDay?.dateKey).menus" :key="idx" class="menu-item">
+                  <div class="menu-info">
+                    <span class="menu-name">{{ item.name }}</span>
+                  </div>
+                  <div class="menu-meta">
+                    <span class="mini-tag cal">{{ item.cal }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="quest-row">
+                <span class="icon">⚔️</span>
+                <span class="quest-text">{{ getDayPlan(modalTargetDay?.dateKey).quest }}</span>
+              </div>
+            </div>
           </div>
-          
-          <button 
-            v-if="getDayEvaluation(modalTargetDay?.dateKey)" 
-            @click="removeEvaluation" 
-            class="retro-btn delete-btn"
-          >
-            RESET
+
+          <div v-else class="no-plan-msg">NO MISSION DATA</div>
+
+          <button v-if="getDayRank(modalTargetDay?.dateKey)" @click="removeRank" class="retro-btn delete-btn">
+            RESET RANK
           </button>
-          
-          <button @click="closeColorModal" class="retro-btn close-btn">CLOSE</button>
+
+          <div class="modal-nav-row">
+            <button class="retro-btn nav-btn" @click="goToDetail">GO TO DETAIL</button>
+            <button class="retro-btn close-btn" @click="closeColorModal">CLOSE</button>
+          </div>
         </div>
       </div>
     </Teleport>
@@ -131,7 +136,12 @@
           <div class="control-group">
             <label>MONTH</label>
             <div class="month-grid">
-              <button v-for="month in availableMonths" :key="month" :class="['month-chip', { active: tempSelectedMonth === month }]" @click="tempSelectedMonth = month">
+              <button
+                v-for="month in availableMonths"
+                :key="month"
+                :class="['month-chip', { active: tempSelectedMonth === month }]"
+                @click="tempSelectedMonth = month"
+              >
                 {{ month + 1 }}
               </button>
             </div>
@@ -161,7 +171,26 @@ const authStore = useAuthStore();
 const MEMBER_ID = authStore.memberId;
 const API_ENDPOINT = config.API_ENDPOINT;
 
-// === 🔊 Sound FX ===
+const grades = [
+  { key: "S", label: "SPECIAL", color: "#FFD700" },
+  { key: "A", label: "EXCELLENT", color: "#FF0055" },
+  { key: "B", label: "GOOD", color: "#00E5FF" },
+  { key: "C", label: "SOSO", color: "#FFA500" },
+  { key: "F", label: "FAIL", color: "#888888" },
+];
+
+const dailyDataMap = ref({});
+const dailyPlanMap = ref({});
+
+const currentDate = ref(new Date());
+const selectedDate = ref(new Date().toDateString());
+
+const isColorModalOpen = ref(false);
+const modalTargetDay = ref(null);
+const isYearMonthModalOpen = ref(false);
+const tempSelectedYear = ref(currentDate.value.getFullYear());
+const tempSelectedMonth = ref(currentDate.value.getMonth());
+
 const playSound = (type) => {
   const AudioContext = window.AudioContext || window.webkitAudioContext;
   if (!AudioContext) return;
@@ -190,92 +219,70 @@ const playSound = (type) => {
   }
 };
 
-// --- 1. 데이터 정의 ---
+const getDayRank = (dateKey) => dailyDataMap.value[dateKey] || null;
+const getDayPlan = (dateKey) => dailyPlanMap.value[dateKey] || null;
 
-// 이미지 경로 헬퍼
-const getAssetUrl = (path) => {
-  return new URL(path, import.meta.url).href;
+const formatDateKey = (date) => {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
 };
 
-// 카테고리 정의
-const categories = [
-  { id: 'DIET', label: '식단' },
-  { id: 'WATER', label: '수분' },
-  { id: 'WEIGHT', label: '몸무게' },
-  { id: 'BOWEL', label: '배변' },
-  { id: 'PERIOD', label: '생리' },
-];
-const currentCategory = ref('DIET');
+// 🌟 [수정됨] Difficulty 제거 버전
+const generateMockData = (days) => {
+  const plans = {};
+  const menuPool = [
+    { name: "닭가슴살 샐러드", cal: 350 },
+    { name: "현미밥 & 고등어", cal: 500 },
+    { name: "그릭 요거트", cal: 200 },
+    { name: "아보카도 덮밥", cal: 450 },
+    { name: "연어 포케", cal: 480 },
+    { name: "두부 쉐이크", cal: 250 },
+    { name: "소고기 뭇국", cal: 400 },
+    { name: "오트밀 죽", cal: 300 },
+  ];
+  const quests = ["물 2L 마시기", "천천히 씹기", "야식 금지", "10분 산책", "탄산 끊기"];
 
-// 🌟 [수정됨] 모든 등급에 이미지 경로 할당 (SOSO.png 가정)
-const grades = [
-  { 
-    key: 'GOOD', 
-    label: '좋음', 
-    src: getAssetUrl('../assets/images/stickers/GOOD.png'), 
-    color: '#4CAF50' 
-  },
-  { 
-    key: 'SOSO', 
-    label: '보통', 
-    src: getAssetUrl('../assets/images/stickers/SOSO.png'), 
-    color: '#F5C857' 
-  },
-  { 
-    key: 'BAD',  
-    label: '나쁨', 
-    src: getAssetUrl('../assets/images/stickers/BAD.png'), 
-    color: '#FF3838' 
-  },
-];
+  for (let i = 0; i < days; i++) {
+    const tDate = new Date();
+    tDate.setDate(tDate.getDate() + i);
+    const dateKey = formatDateKey(tDate);
 
-// 데이터 저장소
-const dailyDataMap = ref({});
+    const dailyMenus = [];
+    const count = Math.floor(Math.random() * 2) + 2;
+    let totalCal = 0;
 
-const currentDate = ref(new Date());
-const selectedDate = ref(new Date().toDateString());
-const isColorModalOpen = ref(false);
-const modalTargetDay = ref(null);
-const isYearMonthModalOpen = ref(false);
-const tempSelectedYear = ref(currentDate.value.getFullYear());
-const tempSelectedMonth = ref(currentDate.value.getMonth());
+    for (let j = 0; j < count; j++) {
+      const randomItem = menuPool[Math.floor(Math.random() * menuPool.length)];
+      dailyMenus.push(randomItem);
+      totalCal += randomItem.cal;
+    }
 
-// --- 2. Helper Methods ---
+    const rQuest = quests[Math.floor(Math.random() * quests.length)];
 
-const getCategoryLabel = (catId) => categories.find(c => c.id === catId)?.label;
-
-const getDayEvaluation = (dateKey) => {
-  if (!dailyDataMap.value[dateKey]) return null;
-  return dailyDataMap.value[dateKey][currentCategory.value];
+    plans[dateKey] = {
+      menus: dailyMenus,
+      quest: rQuest,
+      totalCal: totalCal,
+    };
+  }
+  return plans;
 };
-
-// 🌟 [수정됨] 등급 키로 전체 객체 반환 (src 사용을 위해)
-const getGradeObj = (gradeKey) => {
-  return grades.find(g => g.key === gradeKey);
-};
-
-const changeCategory = (catId) => {
-  playSound("select");
-  currentCategory.value = catId;
-};
-
-// --- 3. API 연동 ---
 
 const fetchEvaluations = async (year, month) => {
   const apiMonth = month + 1;
   const url = `${API_ENDPOINT}/diets/evaluations?memberId=${MEMBER_ID}&year=${year}&month=${apiMonth}`;
-  
+
   try {
     const res = await fetch(url);
     if (!res.ok) throw new Error("Fetch failed");
     const data = await res.json();
-    
+
     const map = {};
-    data.forEach(item => {
-      if (!map[item.date]) map[item.date] = {};
-      map[item.date][item.category] = item.evaluation;
+    data.forEach((item) => {
+      map[item.date] = item.rank;
     });
-    
     dailyDataMap.value = map;
   } catch (e) {
     console.error(e);
@@ -283,18 +290,13 @@ const fetchEvaluations = async (year, month) => {
   }
 };
 
-const selectEvaluation = async (gradeKey) => {
+const selectRank = async (rankKey) => {
   playSound("select");
   if (!modalTargetDay.value) return;
   const dateKey = modalTargetDay.value.dateKey;
-  
-  // UI 즉시 반영
-  if (!dailyDataMap.value[dateKey]) dailyDataMap.value[dateKey] = {};
-  dailyDataMap.value[dateKey][currentCategory.value] = gradeKey;
-  
-  closeColorModal();
-  
-  // 서버 전송
+
+  dailyDataMap.value[dateKey] = rankKey;
+
   try {
     await fetch(`${API_ENDPOINT}/diets/evaluation`, {
       method: "POST",
@@ -302,9 +304,8 @@ const selectEvaluation = async (gradeKey) => {
       body: JSON.stringify({
         memberId: MEMBER_ID,
         date: dateKey,
-        category: currentCategory.value, 
-        evaluation: gradeKey
-      })
+        rank: rankKey,
+      }),
     });
   } catch (e) {
     console.error("저장 실패");
@@ -312,32 +313,42 @@ const selectEvaluation = async (gradeKey) => {
   }
 };
 
-const removeEvaluation = async () => {
+const removeRank = async () => {
   playSound("select");
   if (!modalTargetDay.value) return;
   const dateKey = modalTargetDay.value.dateKey;
-  
-  if (dailyDataMap.value[dateKey]) {
-    delete dailyDataMap.value[dateKey][currentCategory.value];
-  }
-  closeColorModal();
-  
+  delete dailyDataMap.value[dateKey];
+
   try {
-    const url = `${API_ENDPOINT}/diets/evaluation?memberId=${MEMBER_ID}&date=${dateKey}&category=${currentCategory.value}`;
+    const url = `${API_ENDPOINT}/diets/evaluation?memberId=${MEMBER_ID}&date=${dateKey}`;
     await fetch(url, { method: "DELETE" });
   } catch (e) {
     fetchEvaluations(currentYear.value, currentMonth.value);
   }
 };
 
-// --- 4. 캘린더 로직 ---
+const handleDateClick = (day) => {
+  if (!day.dateKey) return;
+  playSound("select");
+  modalTargetDay.value = day;
+  isColorModalOpen.value = true;
+};
+
+const goToDetail = () => {
+  if (modalTargetDay.value?.dateKey) {
+    playSound("warp");
+    isColorModalOpen.value = false;
+    router.push({ path: "/", query: { date: modalTargetDay.value.dateKey } });
+  }
+};
+
+const closeColorModal = () => {
+  isColorModalOpen.value = false;
+  modalTargetDay.value = null;
+};
 
 const currentYear = computed(() => currentDate.value.getFullYear());
 const currentMonth = computed(() => currentDate.value.getMonth());
-const availableYears = computed(() => {
-  const y = new Date().getFullYear();
-  return Array.from({ length: 11 }, (_, i) => y - 5 + i);
-});
 const availableMonths = computed(() => Array.from({ length: 12 }, (_, i) => i));
 const daysOfWeek = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
 
@@ -354,7 +365,7 @@ const calendarDays = computed(() => {
 
   for (let i = 1; i <= lastDate; i++) {
     const fullDate = new Date(year, month, i);
-    const dateKey = `${fullDate.getFullYear()}-${String(fullDate.getMonth() + 1).padStart(2, "0")}-${String(fullDate.getDate()).padStart(2, "0")}`;
+    const dateKey = formatDateKey(fullDate);
 
     days.push({
       day: i,
@@ -364,11 +375,7 @@ const calendarDays = computed(() => {
       dateKey: dateKey,
     });
   }
-  const totalCells = 42;
-  const remainingCells = totalCells - days.length;
-  for (let i = 0; i < remainingCells; i++) {
-    days.push({ day: "", isCurrentMonth: false, dateKey: null });
-  }
+  while (days.length < 42) days.push({ day: "", isCurrentMonth: false, dateKey: null });
   return days;
 });
 
@@ -380,84 +387,33 @@ const changeMonth = (delta) => {
   fetchEvaluations(newDate.getFullYear(), newDate.getMonth());
 };
 
-// 롱프레스 로직 (마우스 뗄 때 이동 방지 로직 포함)
-const pressTimer = ref(null);
-const isLongPress = ref(false);
-const pressingDateKey = ref(null);
-
-const startPress = (day) => {
-  if (!day.dateKey) return;
-  if (pressTimer.value) clearTimeout(pressTimer.value);
-  isLongPress.value = false;
-  pressingDateKey.value = day.dateKey;
-
-  pressTimer.value = setTimeout(() => {
-    isLongPress.value = true;
-    playSound("warp");
-    modalTargetDay.value = day;
-    isColorModalOpen.value = true;
-    pressingDateKey.value = null; // 모달 뜨면 흔들림 중지
-  }, 500);
-};
-
-const endPress = (day) => {
-  clearTimeout(pressTimer.value);
-  pressTimer.value = null;
-  pressingDateKey.value = null;
-
-  // 🌟 [핵심] 롱프레스가 아니고, 모달도 안 떴을 때만 이동
-  if (!isLongPress.value && !isColorModalOpen.value) {
-    playSound("select");
-    selectDayAndNavigate(day);
-  }
-  isLongPress.value = false;
-};
-
-const cancelPress = () => {
-  if (pressTimer.value) clearTimeout(pressTimer.value);
-  pressTimer.value = null;
-  isLongPress.value = false;
-  pressingDateKey.value = null;
-};
-
-const selectDayAndNavigate = (day) => {
-  if (day.dateKey) {
-    selectedDate.value = day.dateKey;
-    router.push({ path: "/", query: { date: day.dateKey } });
-  }
-};
-
-const closeColorModal = () => {
-  isColorModalOpen.value = false;
-  modalTargetDay.value = null;
-};
-
 const openYearMonthModal = () => {
   playSound("select");
-  tempSelectedYear.value = currentDate.value.getFullYear();
-  tempSelectedMonth.value = currentDate.value.getMonth();
+  tempSelectedYear.value = currentYear.value;
+  tempSelectedMonth.value = currentMonth.value;
   isYearMonthModalOpen.value = true;
 };
-const closeYearMonthModal = () => { isYearMonthModalOpen.value = false; };
-
+const closeYearMonthModal = () => {
+  isYearMonthModalOpen.value = false;
+};
 const applyYearMonth = () => {
   playSound("warp");
-  const currentDayOfMonth = currentDate.value.getDate();
-  let newDate = new Date(tempSelectedYear.value, tempSelectedMonth.value, currentDayOfMonth);
-  if (newDate.getMonth() !== tempSelectedMonth.value) {
-    newDate = new Date(tempSelectedYear.value, tempSelectedMonth.value + 1, 0);
-  }
+  const newDate = new Date(tempSelectedYear.value, tempSelectedMonth.value, 1);
   currentDate.value = newDate;
   closeYearMonthModal();
   fetchEvaluations(newDate.getFullYear(), newDate.getMonth());
 };
 
-watch(() => router.currentRoute.value.path, () => {
-  if (isColorModalOpen.value) closeColorModal();
-});
+watch(
+  () => router.currentRoute.value.path,
+  () => {
+    if (isColorModalOpen.value) closeColorModal();
+  }
+);
 
 onMounted(() => {
   fetchEvaluations(currentYear.value, currentMonth.value);
+  dailyPlanMap.value = generateMockData(7);
 });
 </script>
 
@@ -473,9 +429,22 @@ onMounted(() => {
   overflow-x: hidden;
 }
 
+.scanlines {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%),
+    linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+  background-size: 100% 3px, 4px 100%;
+  z-index: 999;
+}
 
-/* 헤더 */
-.header { padding: 1rem 1rem 0 1rem; }
+.header {
+  padding: 1rem 1rem 0 1rem;
+}
 .retro-box {
   background: #000;
   border: 2px solid #fff;
@@ -487,18 +456,28 @@ onMounted(() => {
   margin-bottom: 1rem;
 }
 .pixel-arrow {
-  background: #333; color: #fff; border: 1px solid #fff; width: 32px; height: 32px; cursor: pointer;
+  background: #333;
+  color: #fff;
+  border: 1px solid #fff;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
 }
-.month-display { display: flex; align-items: baseline; gap: 5px; cursor: pointer; }
-.value { color: #00e5ff; font-size: 1.2rem; text-shadow: 0 0 5px #00e5ff; }
-.blink-cursor { animation: blink 1s infinite; }
+.month-display {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  cursor: pointer;
+}
+.value {
+  color: #00e5ff;
+  font-size: 1.2rem;
+  text-shadow: 0 0 5px #00e5ff;
+}
 
-/* 탭 스타일 */
 .category-tabs {
   display: flex;
-  gap: 5px;
   padding-bottom: 1rem;
-  overflow-x: auto;
 }
 .tab-btn {
   background: #111;
@@ -506,11 +485,8 @@ onMounted(() => {
   border: 2px solid #555;
   padding: 8px 10px;
   font-family: inherit;
-  cursor: pointer;
-  white-space: nowrap;
-  font-size: 0.8rem;
-  flex: 1;
-  transition: all 0.2s;
+  width: 100%;
+  font-size: 0.9rem;
 }
 .tab-btn.active {
   background: #00e5ff;
@@ -518,119 +494,516 @@ onMounted(() => {
   border-color: #fff;
   font-weight: bold;
   box-shadow: 0 0 8px #00e5ff;
-  transform: translateY(-2px);
 }
 
-/* 범례 */
-.content { padding: 0 1rem; }
-.legend-box { margin-bottom: 1rem; }
+.content {
+  padding: 0 1rem;
+}
+.legend-box {
+  margin-bottom: 1rem;
+}
 .pixel-label-sm {
-  font-size: 0.7rem; color: #ffd700; margin-bottom: 5px; border-bottom: 1px dashed #555; display: inline-block;
+  font-size: 0.7rem;
+  color: #ffd700;
+  margin-bottom: 5px;
+  border-bottom: 1px dashed #555;
+  display: inline-block;
 }
-.tracking-states { display: flex; gap: 10px; }
+.tracking-states {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
 .state-chip {
-  background: #222; border: 1px solid #555; padding: 4px 8px; border-radius: 4px; display: flex; align-items: center; gap: 5px; font-size: 0.7rem;
+  background: #222;
+  border: 1px solid #555;
+  padding: 4px 8px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.7rem;
 }
-.state-chip.GOOD { border-color: #4CAF50; color: #4CAF50; }
-.state-chip.SOSO { border-color: #F5C857; color: #F5C857; }
-.state-chip.BAD  { border-color: #FF3838; color: #FF3838; }
+.rank-char {
+  font-weight: bold;
+  font-size: 0.8rem;
+}
+.state-chip.S .rank-char {
+  color: #ffd700;
+}
+.state-chip.A .rank-char {
+  color: #ff0055;
+}
+.state-chip.B .rank-char {
+  color: #00e5ff;
+}
+.state-chip.C .rank-char {
+  color: #ffa500;
+}
+.state-chip.F .rank-char {
+  color: #888;
+}
 
-/* 캘린더 프레임 */
 .calendar-frame {
-  background: #111; border: 2px solid #333; padding: 10px; position: relative; margin-bottom: 2rem;
+  background: #111;
+  border: 2px solid #333;
+  padding: 10px;
+  position: relative;
+  margin-bottom: 2rem;
 }
-.frame-decor { position: absolute; width: 10px; height: 10px; border: 2px solid #fff; }
-.tl { top: -2px; left: -2px; border-right: none; border-bottom: none; }
-.tr { top: -2px; right: -2px; border-left: none; border-bottom: none; }
-.bl { bottom: -2px; left: -2px; border-right: none; border-top: none; }
-.br { bottom: -2px; right: -2px; border-left: none; border-top: none; }
+.frame-decor {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border: 2px solid #fff;
+}
+.tl {
+  top: -2px;
+  left: -2px;
+  border-right: none;
+  border-bottom: none;
+}
+.tr {
+  top: -2px;
+  right: -2px;
+  border-left: none;
+  border-bottom: none;
+}
+.bl {
+  bottom: -2px;
+  left: -2px;
+  border-right: none;
+  border-top: none;
+}
+.br {
+  bottom: -2px;
+  right: -2px;
+  border-left: none;
+  border-top: none;
+}
 
 .days-of-week {
-  display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; margin-bottom: 10px; border-bottom: 1px solid #333;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  text-align: center;
+  margin-bottom: 10px;
+  border-bottom: 1px solid #333;
 }
-.weekday-header { font-size: 0.8rem; color: #888; padding: 5px 0; }
-.weekday-header.weekend { color: #ff0055; }
+.weekday-header {
+  font-size: 0.8rem;
+  color: #888;
+  padding: 5px 0;
+}
+.weekday-header.weekend {
+  color: #ff0055;
+}
 
-.date-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.date-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+.date-cell-wrapper {
+  aspect-ratio: 1;
+}
 .date-tile {
-  width: 100%; aspect-ratio: 1; background: #222; border: 1px solid #444; position: relative; cursor: pointer; display: flex; justify-content: center; align-items: center; padding: 0; color: #aaa;
+  width: 100%;
+  height: 100%;
+  background: #222;
+  border: 1px solid #444;
+  position: relative;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0;
+  color: #aaa;
+  transition: transform 0.1s;
 }
-.date-tile:active { transform: translateY(2px); }
-.tile-number { position: absolute; top: 2px; left: 3px; font-size: 0.7rem; }
+.date-tile:active {
+  transform: translateY(2px);
+}
+.tile-number {
+  position: absolute;
+  top: 2px;
+  left: 3px;
+  font-size: 0.7rem;
+}
+.is-today {
+  border-color: #00e5ff;
+  background: #001a1a;
+}
+.is-selected {
+  background: #333;
+  border: 2px solid #fff;
+  color: #fff;
+}
 
-.is-today { border-color: #00e5ff; background: #001a1a; box-shadow: inset 0 0 5px #00e5ff; }
-.is-selected { background: #333; border: 2px solid #fff; color: #fff; }
-.has-record { background: #2a2a2a; border-color: #666; }
-.long-pressing { animation: shake 0.5s infinite; background: #ff0055 !important; color: #fff; }
-
-@keyframes shake {
-  0% { transform: translate(1px, 1px) rotate(0deg); }
-  10% { transform: translate(-1px, -2px) rotate(-1deg); }
-  30% { transform: translate(3px, 2px) rotate(0deg); }
-  50% { transform: translate(-1px, 2px) rotate(-1deg); }
-  70% { transform: translate(3px, 1px) rotate(-1deg); }
-  90% { transform: translate(1px, 2px) rotate(0deg); }
-  100% { transform: translate(1px, -2px) rotate(-1deg); }
+/* Plan Dot */
+.plan-dot {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 4px;
+  height: 4px;
+  background-color: #ffd700;
+  box-shadow: 0 0 3px #ffd700;
 }
 
 .tile-loot {
-  width: 70%; height: 70%; display: flex; align-items: center; justify-content: center; z-index: 1;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+.rank-stamp {
+  font-size: 1.5rem;
+  font-weight: bold;
+  font-family: "NeoDunggeunmo", monospace;
+  animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  line-height: 1;
+  text-shadow: 2px 2px 0px #000;
+}
+.rank-stamp.S {
+  color: #ffd700;
+  text-shadow: 0 0 10px #ffd700, 2px 2px 0 #000;
+}
+.rank-stamp.A {
+  color: #ff0055;
+  text-shadow: 0 0 5px #ff0055, 2px 2px 0 #000;
+}
+.rank-stamp.B {
+  color: #00e5ff;
+}
+.rank-stamp.C {
+  color: #ffa500;
+}
+.rank-stamp.F {
+  color: #888;
 }
 .player-cursor {
-  position: absolute; bottom: 1px; right: 1px; font-size: 0.5rem; background: #00e5ff; color: #000; padding: 0 2px;
+  position: absolute;
+  bottom: 1px;
+  right: 1px;
+  font-size: 0.5rem;
+  background: #00e5ff;
+  color: #000;
+  padding: 0 2px;
 }
-.empty-tile { background: transparent; border: 1px dashed #222; opacity: 0.5; }
-
-/* 🌟 이미지 스타일 추가 */
-.pixelated {
-  image-rendering: pixelated; 
-}
-.loot-img {
-  width: 80%; height: 80%; object-fit: contain;
-}
-.chip-img {
-  width: 16px; height: 16px; margin-right: 5px;
-}
-.action-img {
-  width: 24px; height: 24px; margin-right: 10px;
+.empty-tile {
+  background: transparent;
+  border: 1px dashed #222;
+  opacity: 0.5;
 }
 
-/* 모달 */
 .modal-overlay {
-  position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.8); display: flex; justify-content: center; align-items: center; z-index: 1000;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
 }
 .retro-modal {
-  background: #202028; border: 4px solid #fff; padding: 1.5rem; width: 90%; max-width: 350px; box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.5); color: #fff;
+  background: #202028;
+  border: 4px solid #fff;
+  padding: 1.5rem;
+  width: 90%;
+  max-width: 350px;
+  box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.5);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
 }
-.modal-title { color: #ff0055; margin-top: 0; text-align: center; font-size: 1.2rem; text-shadow: 2px 2px #000; }
-.modal-subtitle { text-align: center; color: #888; font-size: 0.8rem; margin-bottom: 1rem; border-bottom: 1px dashed #555; padding-bottom: 0.5rem; }
+.modal-title {
+  color: #ff0055;
+  margin: 0 0 0.5rem 0;
+  text-align: center;
+  font-size: 1.2rem;
+}
+.modal-subtitle {
+  text-align: center;
+  color: #888;
+  font-size: 0.8rem;
+  margin-bottom: 1rem;
+}
+.divider {
+  color: #555;
+  font-size: 0.7rem;
+  text-align: center;
+  margin: 10px 0;
+  letter-spacing: 2px;
+}
 
-.action-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 1rem; }
+/* 🌟 Mission Log Box */
+.mission-log-box {
+  background: #111;
+  border: 2px dashed #555;
+  padding: 10px;
+  margin-bottom: 1rem;
+  text-align: left;
+}
+.box-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  border-bottom: 1px solid #333;
+  padding-bottom: 4px;
+}
+.pixel-label-xs {
+  font-size: 0.6rem;
+  color: #ffd700;
+  letter-spacing: 1px;
+}
+.total-cal {
+  font-size: 0.7rem;
+  color: #00e5ff;
+}
+
+.mission-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Menu List */
+.menu-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 120px;
+  overflow-y: auto;
+}
+.menu-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+}
+.menu-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #fff;
+}
+.menu-name {
+  font-weight: bold;
+}
+
+.menu-meta {
+  display: flex;
+  gap: 4px;
+}
+.mini-tag {
+  font-size: 0.6rem;
+  padding: 1px 4px;
+  border-radius: 3px;
+  color: #000;
+}
+.mini-tag.cal {
+  background: #ccc;
+}
+
+.quest-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  font-size: 0.8rem;
+  color: #aaa;
+  border-top: 1px solid #333;
+  padding-top: 6px;
+}
+.quest-text {
+  color: #ffd700;
+}
+.no-plan-msg {
+  color: #555;
+  font-size: 0.8rem;
+  text-align: center;
+  margin-bottom: 1rem;
+  border: 2px dashed #333;
+  padding: 10px;
+}
+
+/* 🌟 [핵심] 모달 네비게이션 버튼 그룹 (가로 배치) */
+.modal-nav-row {
+  display: flex;
+  gap: 10px; /* 버튼 간격 */
+  margin-top: 20px;
+}
+
+.retro-btn {
+  flex: 1; /* 가로 너비 균등 분배 */
+  padding: 5px;
+  border: 2px solid #fff;
+  font-family: inherit;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 0.9rem;
+  transition: transform 0.1s;
+}
+.retro-btn:active {
+  transform: scale(0.95);
+}
+
+.nav-btn {
+  background: #00e5ff;
+  color: #000;
+  border-color: #fff;
+}
+.close-btn {
+  background: #000;
+  color: #fff;
+}
+.delete-btn {
+  width: 100%;
+  margin-top: 5px;
+  background: #333;
+  color: #ff3838;
+  border-color: #ff3838;
+}
+
+.action-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 1rem;
+}
 .action-btn {
-  background: #000; border: 2px solid #555; color: #fff; padding: 12px; display: flex; align-items: center; gap: 10px; cursor: pointer; transition: all 0.2s; font-family: inherit;
+  background: #000;
+  border: 2px solid #555;
+  color: #fff;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
 }
-.action-btn:hover, .action-btn.active { border-color: #00e5ff; background: #111; }
-.action-btn.active .action-label { color: #00e5ff; font-weight: bold; }
-.action-check { margin-left: auto; font-size: 0.9rem; color: #00e5ff; }
+.action-btn:hover,
+.action-btn.active {
+  border-color: #00e5ff;
+  background: #111;
+}
+.action-rank-circle {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  border: 2px solid #fff;
+  font-size: 0.9rem;
+}
+.action-rank-circle.S {
+  background: #ffd700;
+  color: #000;
+}
+.action-rank-circle.A {
+  background: #ff0055;
+  color: #fff;
+}
+.action-rank-circle.B {
+  background: #00e5ff;
+  color: #000;
+}
+.action-rank-circle.C {
+  background: #ffa500;
+  color: #000;
+}
+.action-rank-circle.F {
+  background: #888;
+  color: #fff;
+}
 
-.delete-btn { width: 100%; margin-top: 10px; background: #333; color: #ff3838; border: 1px solid #ff3838; padding: 10px; cursor: pointer; font-family: inherit; }
-.close-btn { width: 100%; margin-top: 10px; background: #000; color: #fff; border: 1px solid #fff; padding: 10px; cursor: pointer; font-family: inherit; }
+.action-check {
+  margin-left: auto;
+  color: #00e5ff;
+}
 
-/* 년/월 모달 등 기타 스타일 */
-.time-modal { border-color: #00e5ff; }
-.time-modal .modal-title { color: #00e5ff; }
-.control-group { margin-bottom: 1.5rem; }
-.control-group label { display: block; color: #ffd700; font-size: 0.8rem; margin-bottom: 5px; }
-.stepper { display: flex; justify-content: center; align-items: center; gap: 10px; background: #000; padding: 5px; border: 1px solid #333; }
-.step-btn { width: 30px; height: 30px; background: #333; color: #fff; border: 1px solid #fff; cursor: pointer; }
-.step-val { font-size: 1.2rem; width: 80px; text-align: center; }
-.month-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
-.month-chip { background: #222; color: #aaa; border: 1px solid #444; padding: 8px 0; cursor: pointer; font-family: inherit; }
-.month-chip.active { background: #00e5ff; color: #000; border-color: #fff; }
-.modal-actions { display: flex; gap: 10px; }
-.retro-btn { flex: 1; padding: 10px; border: 2px solid #fff; font-family: inherit; cursor: pointer; font-weight: bold; }
-.retro-btn.cancel { background: #333; color: #fff; }
-.retro-btn.confirm { background: #00e5ff; color: #000; }
+.time-modal {
+  border-color: #00e5ff;
+}
+.time-modal .modal-title {
+  color: #00e5ff;
+}
+.control-group {
+  margin-bottom: 1rem;
+}
+.control-group label {
+  display: block;
+  color: #ffd700;
+  font-size: 0.8rem;
+  margin-bottom: 5px;
+}
+.stepper {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  background: #000;
+  padding: 5px;
+  border: 1px solid #333;
+}
+.step-btn {
+  width: 30px;
+  height: 30px;
+  background: #333;
+  color: #fff;
+  border: 1px solid #fff;
+}
+.step-val {
+  font-size: 1.2rem;
+  min-width: 60px;
+  text-align: center;
+}
+.month-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+}
+.month-chip {
+  background: #222;
+  color: #aaa;
+  border: 1px solid #444;
+  padding: 8px 0;
+  cursor: pointer;
+}
+.month-chip.active {
+  background: #00e5ff;
+  color: #000;
+  border-color: #fff;
+}
+.modal-actions {
+  display: flex;
+  gap: 10px;
+}
+.confirm {
+  background: #00e5ff;
+  color: #000;
+}
+.cancel {
+  background: #333;
+  color: #fff;
+}
 
-@keyframes blink { 50% { opacity: 0; } }
+@keyframes popIn {
+  from {
+    transform: scale(0);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
 </style>
