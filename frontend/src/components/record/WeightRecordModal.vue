@@ -10,8 +10,8 @@
         <!-- 체중 시각화 -->
         <div class="weight-visual-section">
           <div class="body-container">
-            <div class="body-outline">
-              <div class="body-fill" :style="{ height: bodyFillPercentage + '%' }">
+            <div class="body-outline" :class="{ 'over-target': isOverTarget }">
+              <div class="body-fill" :class="{ 'danger': isOverTarget }" :style="{ height: bodyFillPercentage + '%' }">
                 <div class="body-surface"></div>
                 <div class="weight-bubbles">
                   <span></span>
@@ -28,11 +28,16 @@
               type="number"
               step="0.1"
               class="weight-input"
+              :class="{ 'over-target-text': isOverTarget }"
               @input="updateSlider"
             />
             <span class="unit">kg</span>
           </div>
-          <div class="weight-percentage">{{ bodyFillPercentage }}%</div>
+          <div class="weight-info">
+            <span class="weight-percentage">{{ bodyFillPercentage }}%</span>
+            <span class="target-weight">목표: {{ targetWeight }}kg</span>
+          </div>
+          <div v-if="isOverTarget" class="warning-message">⚠️ 목표 체중 초과</div>
         </div>
 
         <!-- 간단한 조정 버튼 -->
@@ -49,7 +54,7 @@
             v-model="weightSlider"
             type="range"
             min="30"
-            max="150"
+            :max="sliderMax"
             step="0.1"
             class="weight-slider"
             @input="updateInput"
@@ -93,16 +98,35 @@ const props = defineProps({
 
 const weightInput = ref("60.0");
 const weightSlider = ref(60);
+const targetWeight = ref(70.0); // 목표 체중 (API에서 가져올 예정)
 const MEMBER_ID = authStore.memberId;
 const API_ENDPOINT = config.API_ENDPOINT;
 const formattedDate = computed(() => ref(props.dateToUse));
 const recentRecords = ref([]);
 
-// 체중에 따른 채움 퍼센트 계산 (30kg = 0%, 150kg = 100%)
+// 슬라이더 최대값 (목표 체중 + 30kg)
+const sliderMax = computed(() => {
+  return Math.max(targetWeight.value + 30, 150);
+});
+
+// 목표 체중 초과 여부
+const isOverTarget = computed(() => {
+  return parseFloat(weightInput.value) > targetWeight.value;
+});
+
+// 체중에 따른 채움 퍼센트 계산 (30kg = 0%, 목표체중 = 100%)
 const bodyFillPercentage = computed(() => {
   const weight = parseFloat(weightInput.value) || 30;
-  const percentage = ((weight - 30) / (150 - 30)) * 100;
-  return Math.min(Math.max(Math.round(percentage), 0), 100);
+  const target = targetWeight.value;
+  
+  // 목표 체중이 기본값(30kg)보다 작거나 같을 경우 예외 처리
+  if (target <= 30) return 100; 
+
+  // 비율 계산: (현재 - 30) / (목표 - 30)
+  const percentage = ((weight - 30) / (target - 30)) * 100;
+
+  // 0% 미만으로만 떨어지지 않게 하고, 100%가 넘어도 그대로 반환 (Math.min 제거)
+  return Math.max(Math.round(percentage), 0);
 });
 
 const playSound = (type) => {
@@ -137,7 +161,7 @@ const playSound = (type) => {
 
 const updateSlider = () => {
   const value = parseFloat(weightInput.value) || 30;
-  weightSlider.value = Math.max(30, Math.min(150, value));
+  weightSlider.value = Math.max(30, Math.min(sliderMax.value, value));
 };
 
 const updateInput = () => {
@@ -147,7 +171,7 @@ const updateInput = () => {
 const adjustWeight = (amount) => {
   playSound("blip");
   const current = parseFloat(weightInput.value) || 60;
-  const newWeight = Math.max(30, Math.min(150, current + amount));
+  const newWeight = Math.max(30, Math.min(sliderMax.value, current + amount));
   weightInput.value = newWeight.toFixed(1);
   weightSlider.value = newWeight;
 };
@@ -182,6 +206,22 @@ const saveWeight = async () => {
   
   setTimeout(() => closeModal(), 300);
 };
+
+// 목표 체중 가져오기
+async function fetchTargetWeight() {
+  try {
+    const response = await fetch(`${API_ENDPOINT}/api/member?memberId=${MEMBER_ID}`);
+    if (!response.ok) throw new Error("Failed to fetch target weight");
+    
+    const data = await response.json();
+    if (data && data.targetWeight) {
+      targetWeight.value = data.targetWeight;
+    }
+  } catch (error) {
+    console.error("Error fetching target weight:", error);
+    // 기본값 70kg 유지
+  }
+}
 
 async function fetchWeightLogs() {
   const baseURL = `${API_ENDPOINT}/api/member/weight/logs`;
@@ -220,6 +260,7 @@ async function fetchWeightLogs() {
 
 onMounted(async () => {
   document.body.style.overflow = "hidden";
+  await fetchTargetWeight(); // 목표 체중 먼저 가져오기
   await fetchWeightLogs();
 });
 
@@ -318,40 +359,24 @@ onUnmounted(() => (document.body.style.overflow = ""));
   position: relative;
   background: rgba(255, 255, 255, 0.3);
   overflow: hidden;
-  clip-path: polygon(
-    /* 머리 */
-    40% 0%, 60% 0%,
-    65% 5%, 65% 12%,
-    /* 오른쪽 어깨 */
-    75% 15%, 85% 20%,
-    90% 25%, 90% 35%,
-    /* 오른쪽 팔 */
-    95% 38%, 95% 50%,
-    90% 52%, 85% 50%,
-    /* 오른쪽 몸통 */
-    80% 48%, 78% 60%,
-    75% 75%, 72% 85%,
-    /* 오른쪽 다리 */
-    70% 90%, 65% 100%,
-    62% 100%, 58% 95%,
-    55% 85%, 52% 75%,
-    /* 중앙 하체 */
-    50% 70%, 48% 75%,
-    45% 85%, 42% 95%,
-    38% 100%, 35% 100%,
-    /* 왼쪽 다리 */
-    30% 90%, 28% 85%,
-    25% 75%, 22% 60%,
-    /* 왼쪽 몸통 */
-    20% 48%, 15% 50%,
-    10% 52%, 5% 50%,
-    /* 왼쪽 팔 */
-    5% 38%, 10% 35%,
-    10% 25%, 15% 20%,
-    /* 왼쪽 어깨 */
-    25% 15%, 35% 12%,
-    35% 5%, 40% 0%
-  );
+  transition: border-color 0.3s;
+  clip-path: polygon(/* 머리 */ 40% 0%, 60% 0%, 65% 5%, 65% 12%, /* 오른쪽 어깨 */ 75% 15%, 85% 20%, 90% 25%, 90% 35%, /* 오른쪽 팔 */ 95% 38%, 95% 50%, 90% 52%, 85% 50%, /* 오른쪽 몸통 */ 80% 48%, 78% 60%, 75% 75%, 72% 85%, /* 오른쪽 다리 */ 70% 90%, 65% 100%, 62% 100%, 58% 95%, 55% 85%, 52% 75%, /* 중앙 하체 */ 50% 70%, 48% 75%, 45% 85%, 42% 95%, 38% 100%, 35% 100%, /* 왼쪽 다리 */ 30% 90%, 28% 85%, 25% 75%, 22% 60%, /* 왼쪽 몸통 */ 20% 48%, 15% 50%, 10% 52%, 5% 50%, /* 왼쪽 팔 */ 5% 38%, 10% 35%, 10% 25%, 15% 20%, /* 왼쪽 어깨 */ 25% 15%, 35% 12%, 35% 5%, 40% 0%);
+}
+
+.body-outline.over-target {
+  border-color: #ff0055;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    border-color: #ff0055;
+    box-shadow: 0 0 10px rgba(255, 0, 85, 0.5);
+  }
+  50% {
+    border-color: #ff5588;
+    box-shadow: 0 0 20px rgba(255, 0, 85, 0.8);
+  }
 }
 
 .body-fill {
@@ -359,8 +384,13 @@ onUnmounted(() => (document.body.style.overflow = ""));
   bottom: 0;
   width: 100%;
   background: linear-gradient(180deg, rgba(255, 193, 7, 0.8), rgba(255, 152, 0, 0.9));
-  transition: height 0.3s ease-out;
+  transition: height 0.3s ease-out, background 0.3s ease-out;
   box-shadow: 0 0 15px rgba(255, 193, 7, 0.5);
+}
+
+.body-fill.danger {
+  background: linear-gradient(180deg, rgba(255, 0, 85, 0.8), rgba(255, 50, 100, 0.9));
+  box-shadow: 0 0 15px rgba(255, 0, 85, 0.7);
 }
 
 .body-surface {
@@ -428,6 +458,11 @@ onUnmounted(() => (document.body.style.overflow = ""));
   text-align: center;
   outline: none;
   font-weight: bold;
+  transition: color 0.3s;
+}
+
+.weight-input.over-target-text {
+  color: #ff0055;
 }
 
 .weight-input::-webkit-inner-spin-button,
@@ -441,9 +476,36 @@ onUnmounted(() => (document.body.style.overflow = ""));
   color: #888;
 }
 
+.weight-info {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  margin-bottom: 0.3rem;
+}
+
 .weight-percentage {
   font-size: 0.8rem;
   color: #ffd700;
+}
+
+.target-weight {
+  font-size: 0.75rem;
+  color: #888;
+}
+
+.warning-message {
+  font-size: 0.8rem;
+  color: #ff0055;
+  background: rgba(255, 0, 85, 0.1);
+  padding: 4px 12px;
+  border-radius: 12px;
+  border: 1px solid #ff0055;
+  animation: blink 1.5s infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
 
 /* 간단한 조정 버튼 */

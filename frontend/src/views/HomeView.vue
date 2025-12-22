@@ -650,7 +650,7 @@ onMounted(async () => {
 .character-gif {
   width: auto;       /* 너비를 강제하지 않고 원본 비율에 따름 */
   max-width: 90%;    /* 혹시 너무 넓은 이미지가 와도 화면을 넘지 않게 제한 */
-  height: 100px;     /* 높이를 고정하여 게임 화면 내에서 일정한 크기 유지 (max-height 대신 height 권장) */
+  height: 200px;     /* 높이를 고정하여 게임 화면 내에서 일정한 크기 유지 (max-height 대신 height 권장) */
   image-rendering: pixelated;
   margin-bottom: 5px;
   object-fit: contain; /* 비율을 유지하며 영역 안에 쏙 들어가게 함 (안전장치) */
