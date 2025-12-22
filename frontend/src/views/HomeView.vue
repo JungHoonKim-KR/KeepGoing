@@ -88,7 +88,7 @@
               </div>
             </div>
 
-            <div class="meal-slot add-slot" @click="handleMealClick">
+            <div v-if="!isAllMealsRecorded" class="meal-slot add-slot" @click="handleMealClick">
               <span class="plus-icon">+</span>
               <span class="add-text">ADD NEW ITEM</span>
             </div>
