@@ -70,7 +70,6 @@ public class DietService {
                         member.getGender(),
                         member.getActivity(),
                         member.getGoal(),
-                        // ▼ 추가된 4개 필드 (순서 중요!)
                         healthCondition,
                         allergies,
                         dislikedFood,
@@ -79,7 +78,8 @@ public class DietService {
                 new AiRequestDto.DailyLog(
                         date.toString(),
                         summary.toString()
-                )
+                ),
+                null // [중요] 식단 분석에서는 SurveyData가 필요 없으므로 null 전달
         );
 
         // 5. AI 호출
@@ -107,6 +107,57 @@ public class DietService {
         }
 
         return result;
+    }
+
+    // -------------------------------------------------------------------------
+    // [New] 1. AI 식단 생성 (Controller -> Service -> AiClient)
+    // -------------------------------------------------------------------------
+    public List createDietPlan(AiRequestDto requestDto) {
+        // 필요하다면 여기서 회원의 기본 정보(키, 몸무게 등)를 DB에서 조회하여
+        // requestDto에 없는 정보를 채워 넣을 수도 있습니다.
+        // 예: requestDto = requestDto.withProfile(member.getHeight(), ...);
+
+        // 여기서는 Controller가 보내준 DTO를 그대로 AI 서버로 토스합니다.
+        return aiClient.requestDietGeneration(requestDto);
+    }
+
+    // -------------------------------------------------------------------------
+    // [New] 2. RPG 바디 스캔
+    // -------------------------------------------------------------------------
+    public Map scanBodyStats(Long memberId) {
+
+        // 1. DB에서 회원 정보 조회
+        Member member = memberMapper.findById(memberId)
+                .orElseThrow(() -> new IllegalArgumentException("회원 정보가 없습니다. ID=" + memberId));
+
+        // 2. AI 요청용 DTO 직접 생성 (DB에 있는 키, 몸무게 사용)
+        AiRequestDto request = new AiRequestDto(
+                new AiRequestDto.UserProfile(
+                        member.getHeight(), // DB 값 사용
+                        member.getWeight(), // DB 값 사용
+                        member.getAge(),
+                        member.getGender(),
+                        member.getActivity(),
+                        null, // goal (바디스캔엔 불필요)
+                        null, // healthCondition
+                        null, // allergies
+                        null, // dislikedFood
+                        null  // targetWeight
+                ),
+                null, // dailyLog (불필요)
+                null  // survey (불필요)
+        );
+
+        // 3. AI 서버로 요청
+        return aiClient.requestBodyScan(request);
+    }
+    // -------------------------------------------------------------------------
+    // [New] 3. 음식 사진 스캔
+    // -------------------------------------------------------------------------
+    public Map scanFoodImage(org.springframework.web.multipart.MultipartFile file) {
+        // 파일 저장 로직이 필요하다면 여기에 추가 (S3 업로드 등)
+        // 지금은 AI 분석 결과만 바로 리턴
+        return aiClient.requestFoodScan(file);
     }
 
     // 월별 조회
