@@ -1090,7 +1090,7 @@ onMounted(async () => {
   align-items: center;
   justify-content: center;
   gap: 12px;
-  color: #666;
+  color: black;
   font-family: 'Orbitron', sans-serif; /* 게이밍 폰트가 없다면 기본 고딕 */
   letter-spacing: 2px;
   font-size: 0.9rem;
