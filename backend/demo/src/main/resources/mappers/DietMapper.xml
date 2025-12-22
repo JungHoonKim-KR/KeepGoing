@@ -190,6 +190,21 @@
             , '%m') = #{month}
     </select>
 
+    <insert id="upsertEvaluation">
+        INSERT INTO daily_evaluation (
+            member_id,
+            date,
+            `rank`
+        ) VALUES (
+                     #{memberId},
+                     #{date},
+                     #{rank}
+                 )
+            ON DUPLICATE KEY UPDATE
+                                 `rank` = #{rank},
+                                 updated_at = CURRENT_TIMESTAMP
+    </insert>
+
     <update id="updateDietNutrients">
         UPDATE diet
         SET energy       = #{diet.energy},

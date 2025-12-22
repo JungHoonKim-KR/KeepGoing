@@ -3,7 +3,7 @@ package keepgoing.demo.domain.ai.dto;
 import java.util.List;
 
 // Class 대신 Record 사용 (Lombok @Data, @NoArgsConstructor 불필요)
-public record AiResponseDto(
+public record AiAnalyzeDto(
         int score,
         String rank,
         String dailyTitle,
