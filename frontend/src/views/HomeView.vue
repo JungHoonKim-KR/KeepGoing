@@ -482,10 +482,10 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center; /* 세로 중앙 정렬 */
+  justify-content: flex-start; /* 세로 중앙 정렬 */
   
   /* 헤더와 푸터 높이만큼 패딩을 넉넉하게 줍니다 */
-  padding-top: 5rem;    /* 상단 헤더 공간 확보 */
+  /* padding-top: 5rem;    상단 헤더 공간 확보 */
   padding-bottom: 6rem; /* 하단 푸터 공간 확보 */
   padding-left: 1rem;
   padding-right: 1rem;
@@ -579,8 +579,8 @@ onMounted(async () => {
 
 /* 체중 감소 (좋음 - 파란색/민트색 계열) */
 .score-change.good {
-  color: #00e5ff;
-  border-color: #00e5ff;
+  color: #ffd700;
+  border-color: #ffd700;
   background: rgba(0, 229, 255, 0.1);
 }
 
@@ -607,7 +607,7 @@ onMounted(async () => {
     gap: 0.8rem;
   }
   .page {
-    padding-top: 4rem;
+    padding-top: 2rem;
     padding-bottom: 5rem;
   }
   .pixel-box, .pixel-card {

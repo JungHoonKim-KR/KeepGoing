@@ -28,15 +28,21 @@
               type="number"
               step="0.1"
               class="weight-input"
-              :class="{ 'over-target-text': isOverTarget }"
+              
               @input="updateSlider"
             />
             <span class="unit">kg</span>
           </div>
           <div class="weight-info">
-            <span class="weight-percentage">{{ bodyFillPercentage }}%</span>
-            <span class="target-weight">목표: {{ targetWeight }}kg</span>
-          </div>
+  <span 
+    class="weight-percentage" 
+    :class="{ 'warning-text': bodyFillPercentage > 100 }"
+  >
+    {{ bodyFillPercentage }}%
+  </span>
+  
+  <span class="target-weight">목표: {{ targetWeight }}kg</span>
+</div>
           <div v-if="isOverTarget" class="warning-message">⚠️ 목표 체중 초과</div>
         </div>
 
@@ -451,7 +457,7 @@ onUnmounted(() => (document.body.style.overflow = ""));
 .weight-input {
   background: transparent;
   border: none;
-  color: #00e5ff;
+  color: white;
   font-family: "NeoDunggeunmo", monospace;
   font-size: 2.5rem;
   width: 120px;
@@ -486,6 +492,9 @@ onUnmounted(() => (document.body.style.overflow = ""));
 .weight-percentage {
   font-size: 0.8rem;
   color: #ffd700;
+}
+.warning-text {
+  color: #ff0055 !important; /* Red */
 }
 
 .target-weight {
@@ -528,7 +537,7 @@ onUnmounted(() => (document.body.style.overflow = ""));
 }
 
 .adjust-btn:active {
-  border-color: #00e5ff;
+  border-color: #39ff14;
   background: #333;
   transform: scale(0.95);
 }
@@ -552,7 +561,7 @@ onUnmounted(() => (document.body.style.overflow = ""));
   -webkit-appearance: none;
   width: 24px;
   height: 24px;
-  background: #00e5ff;
+  background: #39ff14;
   border: 2px solid #fff;
   cursor: pointer;
   box-shadow: 2px 2px 0 #000;
@@ -567,7 +576,7 @@ onUnmounted(() => (document.body.style.overflow = ""));
   font-size: 0.9rem;
   border-bottom: 2px solid #333;
   margin-bottom: 0.5rem;
-  color: #ffd700;
+  color: #39ff14;
   padding-bottom: 0.3rem;
 }
 
@@ -609,7 +618,7 @@ onUnmounted(() => (document.body.style.overflow = ""));
 }
 
 .history-row .diff.down {
-  color: #00e5ff;
+  color: #00ff62;
 }
 
 .history-row .diff.up {
@@ -619,7 +628,7 @@ onUnmounted(() => (document.body.style.overflow = ""));
 /* 저장 버튼 */
 .save-btn {
   width: 100%;
-  background: #00e5ff;
+  background: #39ff14;
   color: #000;
   border: 2px solid #fff;
   padding: 12px;
