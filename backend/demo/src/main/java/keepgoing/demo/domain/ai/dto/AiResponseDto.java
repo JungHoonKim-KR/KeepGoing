@@ -1,34 +1,28 @@
 package keepgoing.demo.domain.ai.dto;
 
-import lombok.Data;
-import lombok.NoArgsConstructor;
 import java.util.List;
 
-@Data
-@NoArgsConstructor
-public class AiResponseDto {
-    private int score;
-    private String rank;
-    private String dailyTitle;
-    private String oneLineSummary;
+// Class 대신 Record 사용 (Lombok @Data, @NoArgsConstructor 불필요)
+public record AiResponseDto(
+        int score,
+        String rank,
+        String dailyTitle,
+        String oneLineSummary,
+        List<Insight> insights,
+        List<Recommendation> recommendations,
+        List<String> miningKeywords
+) {
 
-    private List<Insight> insights;
-    private List<Recommendation> recommendations;
+    // 내부 클래스도 Record로 정의
+    public record Insight(
+            String type,
+            String iconType,
+            String title,
+            String description
+    ) {}
 
-    // [수정] 단순 문자열 리스트로 변경
-    private List<String> miningKeywords;
-
-    @Data
-    public static class Insight {
-        private String type;
-        private String iconType;
-        private String title;
-        private String description;
-    }
-
-    @Data
-    public static class Recommendation {
-        private String menu;
-        private String reason;
-    }
+    public record Recommendation(
+            String menu,
+            String reason
+    ) {}
 }
