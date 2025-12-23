@@ -310,40 +310,110 @@ async def scan_food_image(file: UploadFile = File(...)):
 # EndPoint: /api/body/scan
 # 설명: 키/몸무게 기반 RPG 캐릭터 생성
 # =========================================================
+# 1. 모델은 그대로 (Optional 허용)
+class BodyScanRequest(BaseModel):
+    height: float
+    weight: float
+    age: int
+    gender: str
+    activity: str
+    goal: str | None = None
+    sleep: str | None = None
+    water: str | None = None
+    meals: int | None = None
+    favorite: str | None = None
+
+
+# 2. 바디 스캔 로직 (설문 없을 때 대응 버전)
 @app.post("/api/body/scan")
 def body_scan(request: BodyScanRequest):
-    print(f"🧬 [바디 스캔] 키:{request.height}, 몸무게:{request.weight}")
+    print(f"🧬 [간편 바디 스캔] {request.gender}, {request.age}세, 활동량:{request.activity}")
 
-    h_m = request.height / 100
-    bmi = request.weight / (h_m * h_m)
+    # --- 프롬프트: 데이터가 부족하면 '추론'하라고 지시 ---
+    system_prompt = """
+    당신은 통찰력 있는 'AI 신체 분석가'입니다. 
+    제공된 신체 정보(키, 몸무게, 나이, 활동량)를 바탕으로 사용자의 상태를 분석하여 JSON으로 반환하세요.
 
-    char_class = "UNKNOWN"
-    desc = ""
-    stats = {"hp": 50, "str": 50, "agi": 50, "def": 50}
+    [중요 지침]
+    **수면, 물, 식습관 정보가 'None'이나 'Unknown'으로 들어올 수 있습니다.**
+    이 경우, 입력된 BMI(체질량지수)와 활동량(Activity), 나이를 기반으로 **가장 개연성 있는 습관을 추론**하여 분석을 채우세요.
+    (예: 활동량이 적고 BMI가 높음 -> '운동 부족' 및 '관절' 위험 추론)
 
-    if bmi < 18.5:
-        char_class = "SKELETON THIEF"
-        desc = "가볍고 빠르지만 내구력이 약합니다. 잘 먹는 것이 곧 훈련입니다."
-        stats = {"hp": 30, "str": 20, "agi": 95, "def": 10}
-    elif 18.5 <= bmi < 23:
-        char_class = "BALANCED KNIGHT"
-        desc = "가장 이상적인 밸런스입니다. 꾸준한 훈련으로 전설이 되세요."
-        stats = {"hp": 75, "str": 60, "agi": 60, "def": 60}
-    elif 23 <= bmi < 25:
-        char_class = "ORC WARRIOR"
-        desc = "넘치는 힘! 지방 갑옷을 근육으로 바꾸면 최강이 됩니다."
-        stats = {"hp": 90, "str": 85, "agi": 40, "def": 70}
-    else:
-        char_class = "IRON GOLEM"
-        desc = "압도적인 탱킹 능력! 하지만 움직임이 둔합니다. 유산소가 시급합니다."
-        stats = {"hp": 100, "str": 95, "agi": 10, "def": 90}
+    [분석 항목]
+    1. healthTier: 건강 등급 (입문자/아마추어/프로/월드클래스 중 택1)
+    2. vulnerableParts: 취약 부위 1~2곳 (영어 대문자: HEAD, HEART, STOMACH, LIVER, KNEE, MUSCLE, SKIN)
+       - 과체중 -> KNEE
+       - 고령 -> JOINT
+       - 저체중/근육부족 -> MUSCLE
+    3. prediction: 30일 후 예상 변화 (위트 있게)
+    4. healthScore: 5가지 지표 (0~100점). 정보가 없으면 신체 스펙으로 추정.
 
-    return {
-        "bmi": round(bmi, 1),
-        "class": char_class,
-        "desc": desc,
-        "stats": stats
+    [JSON 포맷]
+    {
+        "bmi": float,
+        "title": "한 줄 별명 (예: 잠재력만 높은 휴먼)",
+        "healthTier": "문자열",
+        "vulnerableParts": ["KNEE"],
+        "prediction": "예측 문구",
+        "healthScore": {
+            "muscle": 0~100,
+            "endurance": 0~100,
+            "recovery": 0~100,
+            "nutrition": 0~100,
+            "metabolism": 0~100
+        },
+        "tags": ["#추정태그1", "#추정태그2"],
+        "actionTip": "조언"
     }
+    """
+
+    # 정보가 없을 때를 대비한 문자열 처리
+    user_sleep = request.sleep if request.sleep else "정보 없음(추론 필요)"
+    user_water = request.water if request.water else "정보 없음(추론 필요)"
+    user_meals = f"{request.meals}끼" if request.meals else "정보 없음"
+
+    user_prompt = f"""
+    [사용자 데이터]
+    - 신체: {request.height}cm / {request.weight}kg ({request.age}세, {request.gender})
+    - 활동량: {request.activity}
+    - 목표: {request.goal}
+    - (참고) 수면: {user_sleep}
+    - (참고) 물섭취: {user_water}
+    - (참고) 식사: {user_meals}
+    """
+
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ],
+            response_format={"type": "json_object"},
+            temperature=0.7
+        )
+
+        result = json.loads(response.choices[0].message.content)
+
+        # BMI 재계산 (정확도 보장)
+        h_m = request.height / 100
+        result["bmi"] = round(request.weight / (h_m * h_m), 1)
+
+        return result
+
+    except Exception as e:
+        print(f"❌ 분석 실패: {e}")
+        # 기본값 반환
+        return {
+            "bmi": 0.0,
+            "title": "데이터 부족한 유령 회원",
+            "healthTier": "입문자",
+            "vulnerableParts": [],
+            "prediction": "데이터가 부족하여 미래를 볼 수 없습니다.",
+            "healthScore": {"muscle": 40, "endurance": 40, "recovery": 40, "nutrition": 40, "metabolism": 40},
+            "tags": ["#데이터필요"],
+            "actionTip": "AI 서버 상태를 확인해주세요."
+        }
 
 
 if __name__ == "__main__":

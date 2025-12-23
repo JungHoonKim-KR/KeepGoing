@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import keepgoing.demo.domain.ai.dto.AiAnalyzeDto;
 import keepgoing.demo.domain.ai.dto.AiRecommendDto;
 import keepgoing.demo.domain.ai.dto.AiRequestDto;
+import keepgoing.demo.domain.ai.dto.BodyScanResponse;
 import keepgoing.demo.domain.ai.service.AiClient;
 import keepgoing.demo.domain.diet.dto.*;
 import keepgoing.demo.domain.diet.entity.*;
@@ -126,31 +127,26 @@ public class DietService {
         return aiClient.requestDietGeneration(requestDto);
     }
 
-    // -------------------------------------------------------------------------
-    // [New] 2. RPG 바디 스캔
-    // -------------------------------------------------------------------------
-    public Map scanBodyStats(Long memberId) {
+    public BodyScanResponse scanBodyStats(Long memberId) {
 
-        // 1. DB에서 회원 정보 조회
+        // 1. 회원 정보 조회
         Member member = memberMapper.findById(memberId)
                 .orElseThrow(() -> new IllegalArgumentException("회원 정보가 없습니다. ID=" + memberId));
 
-        // 2. AI 요청용 DTO 직접 생성 (DB에 있는 키, 몸무게 사용)
+        // 2. AI 요청용 DTO 생성
+        // 설문(Survey) 데이터는 없으므로 null을 보냅니다.
         AiRequestDto request = new AiRequestDto(
                 new AiRequestDto.UserProfile(
-                        member.getHeight(), // DB 값 사용
-                        member.getWeight(), // DB 값 사용
+                        member.getHeight(),
+                        member.getWeight(),
                         member.getAge(),
                         member.getGender(),
-                        member.getActivity(),
-                        null, // goal (바디스캔엔 불필요)
-                        null, // healthCondition
-                        null, // allergies
-                        null, // dislikedFood
-                        null  // targetWeight
+                        member.getActivity(), // 활동량은 필수!
+                        member.getGoal(),     // 목표도 있으면 좋음
+                        null, null, null, null // 기타 상세 정보는 null
                 ),
                 null, // dailyLog (불필요)
-                null  // survey (불필요)
+                null  // survey (설문 안 하므로 null) 👈 핵심
         );
 
         // 3. AI 서버로 요청

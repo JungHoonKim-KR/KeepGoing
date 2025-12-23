@@ -7,6 +7,8 @@ import { useConfigStore } from "@/stores/configStore";
 import { useAuthStore } from "@/stores/authStore";
 import axios from "axios";
 
+
+
 const YOUTUBE_API_KEY = "AIzaSyBwl61AGUcuiXLBjEv6d9I8cHsCPtJpU94";
 
 const isVideoLoading = ref(false); // 로딩 상태
@@ -90,6 +92,25 @@ const bodyScanResult = ref(null);
 
 const MEMBER_ID = authStore.memberId;
 const TODAY_DATE = new Date().toISOString().split("T")[0];
+
+// script의 methods 추가
+const getScoreLabel = (key) => {
+  const labels = {
+    muscle: '💪 근력',
+    endurance: '🏃 지구력',
+    recovery: '😴 회복력',
+    nutrition: '🥗 영양',
+    metabolism: '🔥 대사'
+  };
+  return labels[key] || key;
+};
+
+const getScoreColor = (value) => {
+  if (value >= 80) return '#00ff00';
+  if (value >= 60) return '#00e5ff';
+  if (value >= 40) return '#ffaa00';
+  return '#ff0055';
+};
 
 // ------------------------------------------------------------------
 // 2. 설문 데이터 (수정됨: 6번째 질문 input 타입 변경)
@@ -292,14 +313,24 @@ const analyzeFoodImage = async () => {
 
 const analyzeBodyStats = async () => {
   isScanningBody.value = true;
+  showBodyScanModal.value = true; // 모달 먼저 열기
+  bodyScanResult.value = null; // 결과 초기화
+
   try {
     const result = await scanBodyApi(MEMBER_ID);
-    bodyScanResult.value = result;
-    showBodyScanModal.value = true;
+    
+    // 스캔 애니메이션 충분히 보여주기 위해 딜레이
+    setTimeout(() => {
+      bodyScanResult.value = result;
+    }, 2500);
   } catch (error) {
+    console.error("바디 스캔 실패:", error);
     alert("신체 정보를 불러올 수 없습니다.");
+    showBodyScanModal.value = false;
   } finally {
-    isScanningBody.value = false;
+    setTimeout(() => {
+      isScanningBody.value = false;
+    }, 2500);
   }
 };
 
@@ -623,34 +654,91 @@ const confirmDietPlan = async () => {
       </div>
     </div>
 
-    <div v-if="showBodyScanModal && bodyScanResult" class="modal-overlay" @click.self="showBodyScanModal = false">
-      <div class="modal-win scan-modal pop-in">
-        <div class="modal-header">
-          <span>CHARACTER STATUS</span>
-          <button class="close-btn" @click="showBodyScanModal = false">✕</button>
+    <div v-if="showBodyScanModal" class="modal-overlay fade-in" @click.self="showBodyScanModal = false">
+  <div class="modal-win scan-modal pop-in" style="max-width: 500px;">
+    <div class="modal-header">
+      <span>🧬 {{ isScanningBody ? '신체 분석 중...' : '신체 분석 완료' }}</span>
+      <button class="close-btn hover-rotate" @click="showBodyScanModal = false" v-if="!isScanningBody">✕</button>
+    </div>
+    
+    <!-- 스캔 중일 때 -->
+    <div v-if="isScanningBody" class="modal-body scanning-body">
+      <div class="body-silhouette"></div>
+      <p class="blink-text">AI가 당신의 신체를 분석하고 있습니다...</p>
+      <div class="scan-stats">
+        <div class="scan-stat">
+          <div class="stat-label">BMI</div>
+          <div class="stat-value">--</div>
         </div>
-        <div class="modal-body result">
-          <div class="rpg-class-title glitch" :data-text="bodyScanResult.class">
-            {{ bodyScanResult.class }}
-          </div>
-          <div class="rpg-desc">{{ bodyScanResult.desc }}</div>
-
-          <div class="bmi-info">BMI: {{ bodyScanResult.bmi }}</div>
-
-          <div class="stats-container">
-            <div class="stat-row" v-for="(val, key) in bodyScanResult.stats" :key="key">
-              <span class="stat-label">{{ key.toUpperCase() }}</span>
-              <div class="stat-bar">
-                <div class="stat-fill" :class="key" :style="{ width: val + '%' }"></div>
-              </div>
-              <span class="stat-val">{{ val }}</span>
-            </div>
-          </div>
-
-          <button class="apply-btn" @click="showBodyScanModal = false">확인</button>
+        <div class="scan-stat">
+          <div class="stat-label">체력</div>
+          <div class="stat-value">--</div>
+        </div>
+        <div class="scan-stat">
+          <div class="stat-label">등급</div>
+          <div class="stat-value">--</div>
         </div>
       </div>
     </div>
+    
+    <!-- 결과 화면 -->
+    <div v-else-if="bodyScanResult" class="modal-body result body-scan-result">
+      <!-- BMI & 타이틀 -->
+      <div class="bmi-section">
+        <div class="bmi-value neon-text">BMI {{ bodyScanResult.bmi }}</div>
+        <div class="character-title glitch" :data-text="bodyScanResult.title">
+          {{ bodyScanResult.title }}
+        </div>
+        <div class="health-tier-badge" :class="bodyScanResult.healthTier">
+          {{ bodyScanResult.healthTier }}
+        </div>
+      </div>
+
+      <!-- 취약 부위 -->
+      <div class="vulnerable-section" v-if="bodyScanResult.vulnerableParts && bodyScanResult.vulnerableParts.length > 0">
+        <div class="section-title">⚠️ 주의 필요 부위</div>
+        <div class="vulnerable-parts">
+          <span v-for="part in bodyScanResult.vulnerableParts" :key="part" class="part-badge pulse">
+            {{ part }}
+          </span>
+        </div>
+      </div>
+
+      <!-- 건강 스코어 -->
+      <div class="health-scores">
+        <div class="section-title">💪 건강 지표</div>
+        <div class="score-grid">
+          <div class="score-item" v-for="(value, key) in bodyScanResult.healthScore" :key="key">
+            <div class="score-label">{{ getScoreLabel(key) }}</div>
+            <div class="score-bar">
+              <div class="score-fill shine" :style="{ width: value + '%', background: getScoreColor(value) }"></div>
+            </div>
+            <div class="score-number">{{ value }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 30일 예측 -->
+      <div class="prediction-box">
+        <div class="section-title">🔮 30일 후 예측</div>
+        <p class="prediction-text">{{ bodyScanResult.prediction }}</p>
+      </div>
+
+      <!-- 태그 -->
+      <div class="tags-section" v-if="bodyScanResult.tags && bodyScanResult.tags.length > 0">
+        <span v-for="tag in bodyScanResult.tags" :key="tag" class="tag-item">{{ tag }}</span>
+      </div>
+
+      <!-- 액션 팁 -->
+      <div class="action-tip-box">
+        <div class="tip-icon">💡</div>
+        <div class="tip-text">{{ bodyScanResult.actionTip }}</div>
+      </div>
+
+      <button class="apply-btn pulse-btn" @click="showBodyScanModal = false">확인</button>
+    </div>
+  </div>
+</div>
   </div>
 </template>
 
@@ -1894,5 +1982,252 @@ const confirmDietPlan = async () => {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* 스타일 추가 */
+.body-scan-result { padding: 25px !important; }
+
+.bmi-section {
+  text-align: center;
+  margin-bottom: 25px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #333;
+}
+
+.bmi-value {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: #00e5ff;
+  margin-bottom: 10px;
+}
+
+.character-title {
+  font-size: 1.3rem;
+  font-weight: bold;
+  color: #fff;
+  margin-bottom: 10px;
+}
+
+.health-tier-badge {
+  display: inline-block;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-weight: bold;
+  font-size: 0.9rem;
+  border: 2px solid;
+  animation: pulse 2s infinite;
+}
+
+.health-tier-badge.입문자 { color: #888; border-color: #888; }
+.health-tier-badge.아마추어 { color: #00e5ff; border-color: #00e5ff; }
+.health-tier-badge.프로 { color: #ffd700; border-color: #ffd700; }
+.health-tier-badge.월드클래스 { color: #ff00ff; border-color: #ff00ff; }
+
+.vulnerable-section {
+  background: rgba(255, 0, 85, 0.1);
+  border: 1px solid #ff0055;
+  border-radius: 10px;
+  padding: 15px;
+  margin-bottom: 20px;
+}
+
+.section-title {
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: #00e5ff;
+  margin-bottom: 12px;
+}
+
+.vulnerable-parts {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.part-badge {
+  background: #ff0055;
+  color: #fff;
+  padding: 6px 12px;
+  border-radius: 15px;
+  font-size: 0.85rem;
+  font-weight: bold;
+}
+
+.health-scores { margin-bottom: 20px; }
+
+.score-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.score-item {
+  display: grid;
+  grid-template-columns: 80px 1fr 50px;
+  align-items: center;
+  gap: 10px;
+}
+
+.score-label {
+  font-size: 0.9rem;
+  color: #ccc;
+}
+
+.score-bar {
+  height: 20px;
+  background: #222;
+  border-radius: 10px;
+  overflow: hidden;
+  position: relative;
+}
+
+.score-fill.shine {
+  height: 100%;
+  transition: width 1.5s ease-out;
+  position: relative;
+  overflow: hidden;
+}
+
+.score-fill.shine::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  animation: shine-sweep 2s infinite;
+}
+
+@keyframes shine-sweep {
+  to { left: 100%; }
+}
+
+.score-number {
+  font-weight: bold;
+  color: #00ff00;
+  text-align: right;
+}
+
+.prediction-box {
+  background: linear-gradient(135deg, rgba(0, 229, 255, 0.1), rgba(255, 0, 255, 0.1));
+  border: 2px solid #00e5ff;
+  border-radius: 10px;
+  padding: 15px;
+  margin-bottom: 15px;
+}
+
+.prediction-text {
+  color: #fff;
+  line-height: 1.5;
+  font-size: 0.95rem;
+}
+
+.tags-section {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 15px;
+}
+
+.tag-item {
+  background: rgba(0, 229, 255, 0.2);
+  color: #00e5ff;
+  padding: 5px 12px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  border: 1px solid #00e5ff;
+}
+
+.action-tip-box {
+  background: rgba(255, 170, 0, 0.1);
+  border: 1px solid #ffaa00;
+  border-radius: 10px;
+  padding: 15px;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 20px;
+}
+
+.tip-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.tip-text {
+  color: #fff;
+  line-height: 1.5;
+  font-size: 0.9rem;
+}
+
+/* 스캔 중 애니메이션 추가 */
+.scanning-body {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.body-silhouette {
+  width: 150px;
+  height: 300px;
+  margin: 0 auto 30px;
+  background: linear-gradient(180deg, #00e5ff 0%, #0066ff 100%);
+  border-radius: 80px 80px 40px 40px;
+  position: relative;
+  animation: body-pulse 1.5s infinite;
+  opacity: 0.3;
+}
+
+.body-silhouette::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 5px;
+  background: #00ff00;
+  animation: body-scan 2s linear infinite;
+  box-shadow: 0 0 20px #00ff00;
+}
+
+@keyframes body-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.3; }
+  50% { transform: scale(1.05); opacity: 0.6; }
+}
+
+@keyframes body-scan {
+  0% { top: 0%; }
+  100% { top: 100%; }
+}
+
+.scan-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.scan-stat {
+  background: rgba(0, 229, 255, 0.1);
+  border: 1px solid #00e5ff;
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  color: #888;
+  margin-bottom: 5px;
+}
+
+.stat-value {
+  font-size: 1.3rem;
+  font-weight: bold;
+  color: #00e5ff;
+  animation: count-up 2s;
+}
+
+@keyframes count-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 </style>
