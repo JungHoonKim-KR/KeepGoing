@@ -114,7 +114,7 @@
           </div>
 
           <div class="meal-list">
-            <div v-for="meal in todayMeals" :key="meal.id" class="meal-slot" @click="handleMealClick">
+            <div v-for="meal in todayMeals" :key="meal.id" class="meal-slot" @click="handleMealClick(meal.type)">
               <div class="slot-icon-box">{{ meal.icon }}</div>
               <div class="slot-info">
                 <div class="slot-top">
@@ -244,6 +244,7 @@
       @close="closeMealModal"
       :date-to-use="formattedDate"
       :initial-meal-data="todayMealMap"
+      :initial-tab="targetMealType"
     />
     <WaterRecordModal
       v-if="showWaterModal"
@@ -710,7 +711,7 @@ const handleScreenClick = () => {
 
 const waterData = ref({ water: 0, goal: authStore.targetWater });
 const weightData = ref({ weight: 0.0, diff: 0.0 });
-
+const targetMealType = ref("아침");
 const showModal = ref(false);
 const showWaterModal = ref(false);
 const showWeightModal = ref(false);
@@ -759,7 +760,10 @@ const triggerLevelUp = () => {
   }, 3000);
 };
 
-const handleMealClick = () => (showMealModal.value = true);
+const handleMealClick = (type) => {
+  targetMealType.value = type; // 1. 클릭한 타입 저장 ("점심" 등)
+  showMealModal.value = true;  // 2. 모달 열기
+};
 const closeMealModal = async () => {
   showMealModal.value = false;
   await fetchDailyDiet();

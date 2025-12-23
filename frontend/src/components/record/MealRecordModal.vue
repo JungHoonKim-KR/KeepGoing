@@ -106,17 +106,21 @@ const props = defineProps({
     type: String,
     required: true,
   },
-  // 🌟 [추가] 부모(HomeView)로부터 받은 전체 식사 데이터 (Map 형태)
   initialMealData: {
     type: Object,
     default: () => ({}),
+  },
+  // 🌟 [추가] 모달이 열릴 때 선택되어 있을 탭 이름 (기본값: 아침)
+  initialTab: {
+    type: String,
+    default: "아침",
   },
 });
 
 const formattedDate = computed(() => props.dateToUse);
 
 // === Data ===
-const selectedMealTime = ref("아침");
+const selectedMealTime = ref(props.initialTab || "아침");
 const foodName = ref("");
 const selectedFoodList = ref([]);
 const suggestions = ref([]);
