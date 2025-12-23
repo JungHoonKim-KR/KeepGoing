@@ -94,11 +94,7 @@ const props = defineProps({
 
 const weightInput = ref(authStore.weight);
 const weightSlider = ref(authStore.weight);
-<<<<<<< HEAD
 const targetWeight = ref(authStore.targetWeight); // 목표 체중 (API에서 가져올 예정)
-=======
-const targetWeight = ref(authStore.weight); // 목표 체중 (API에서 가져올 예정)
->>>>>>> ef69063 (목표 체중)
 const MEMBER_ID = authStore.memberId;
 const API_ENDPOINT = config.API_ENDPOINT;
 const formattedDate = computed(() => ref(props.dateToUse));
@@ -207,8 +203,6 @@ const saveWeight = async () => {
   setTimeout(() => closeModal(), 300);
 };
 
-<<<<<<< HEAD
-=======
 // 목표 체중 가져오기
 async function fetchTargetWeight() {
   try {
@@ -225,7 +219,6 @@ async function fetchTargetWeight() {
   }
 }
 
->>>>>>> ef69063 (목표 체중)
 async function fetchWeightLogs() {
   const baseURL = `${API_ENDPOINT}/api/member/weight/logs`;
   const params = new URLSearchParams({
