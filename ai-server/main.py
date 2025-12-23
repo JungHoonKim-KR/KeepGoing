@@ -6,8 +6,7 @@ import os
 import base64
 from openai import OpenAI
 from dotenv import load_dotenv
-import io
-from PIL import Image
+from typing import List, Optional, Any
 
 # 1. 환경 변수 로드
 load_dotenv()
@@ -139,30 +138,49 @@ def generate_diet_plan(request: DietGenerationRequest):
     print(f"📅 [식단 생성 요청] 기간: {request.duration}일, 목표: {request.favorite}")
 
     try:
+    # [들여쓰기 중요] try 내부이므로 4칸 들여쓰기 시작
         system_instruction = f"""
         너는 전문 영양사야. 사용자의 생활 습관 설문을 바탕으로 {request.duration}일치 식단표를 짜줘.
 
         [사용자 정보]
-        - 운동: {request.exercise}
+        - 운동: {request.exercise} (운동량에 따라 칼로리를 조절할 것)
         - 수면: {request.sleep}
-        - 선호 음식: {request.favorite} (건강하게 포함할 것)
+        - 선호 음식: {request.favorite} (건강하게 변형해서 포함할 것)
+
+        [중요 지침]
+        1. "cal" (칼로리) 필드는 절대 1500으로 고정하지 마.
+        2. 그 날짜의 아침, 점심, 저녁 메뉴 구성을 보고 실제 대략적인 총 칼로리를 계산해서 정수값으로 넣어. (예: 1450, 1620, 1800 등 다양하게)
+        3. 메뉴의 키 값은 반드시 영어 소문자("breakfast", "lunch", "dinner")를 사용해. (한글 "아침" 금지)
 
         [응답 포맷 (JSON Only)]
         반드시 최상위 키 "plans" 안에 배열을 담아서 반환해.
         {{
             "plans": [
                 {{ 
-                  "day": 1, 
-                  "menu": "메뉴 이름", 
-                  "cal": 500, 
-                  "difficulty": "EASY", 
-                  "quest": "식전 물 한 컵 마시기"
+                    "day": 1, 
+                    "menu": {{
+                        "breakfast": "오트밀과 블루베리 (약 350kcal)",
+                        "lunch": "닭가슴살 샐러드와 고구마 (약 500kcal)",
+                        "dinner": "연어 스테이크와 아스파라거스 (약 600kcal)"
+                    }}, 
+                    "cal": 1450, 
+                    "difficulty": "EASY", 
+                    "quest": "식전 물 한 컵 마시기"
                 }},
-                ...
+                {{ 
+                    "day": 2, 
+                    "menu": {{
+                        "breakfast": "그릭 요거트",
+                        "lunch": "현미밥과 불고기",
+                        "dinner": "두부 쉐이크"
+                    }}, 
+                    "cal": 1620, 
+                    "difficulty": "NORMAL", 
+                    "quest": "스쿼트 20회 하기"
+                }}
             ]
         }}
         """
-
         completion = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
@@ -196,57 +214,38 @@ def generate_diet_plan(request: DietGenerationRequest):
         ]
 
 
-def resize_image(image_bytes, max_size=768):
-    image = Image.open(io.BytesIO(image_bytes))
-
-    if image.mode in ("RGBA", "P"):
-        image = image.convert("RGB")
-
-    image.thumbnail((max_size, max_size))
-
-    buffer = io.BytesIO()
-    image.save(buffer, format="JPEG", quality=70)  # 🔥 핵심
-    return buffer.getvalue()
-
-
 
 # =========================================================
 # 3. 음식 사진 스캔 (칼로리 분석) API
 # EndPoint: /api/diet/scan
+# 설명: 사진을 분석하여 음식명, 칼로리, 소모 운동량(고정형) 반환
 # =========================================================
 @app.post("/api/diet/scan")
-async def scan_food_image(file: UploadFile = File(...)):
+def scan_food_image(file: UploadFile = File(...)):
     print(f"📸 [음식 스캔 요청] 파일명: {file.filename}")
 
     try:
-        # 1. 파일 읽기
-        contents = await file.read()
-
-        # 2. [핵심] 리사이징 수행! (용량 줄이기)
-        resized_contents = resize_image(contents)
-
-        # 3. Base64 인코딩
-        base64_image = base64.b64encode(resized_contents).decode('utf-8')
+        contents = file.file.read()
+        base64_image = base64.b64encode(contents).decode('utf-8')
 
         system_instruction = """
         너는 'AI 칼로리 측정기'야. 사진 속 음식을 분석해줘.
 
         [응답 포맷 (JSON Only)]
-        {
+        {{
             "name": "음식 이름 (예: 페퍼로니 피자)",
             "emoji": "🍕",
-            "calories": 0,
-            "exercise": {
-                "running": 0,
-                "walking": 0,
-                "swimming": 0
-            }
-        }
+            "calories": 0 (총 칼로리 정수),
+            "exercise": {{
+                "running": 0 (분),
+                "walking": 0 (분),
+                "swimming": 0 (분)
+            }}
+        }}
         """
 
-        # 4. OpenAI API 호출
         completion = client.chat.completions.create(
-            model="gpt-4o",
+            model="gpt-4o",  # Vision 기능은 gpt-4o 필수
             messages=[
                 {"role": "system", "content": system_instruction},
                 {
@@ -264,15 +263,12 @@ async def scan_food_image(file: UploadFile = File(...)):
             response_format={"type": "json_object"}
         )
 
-        # 5. 결과 반환
         return json.loads(completion.choices[0].message.content)
 
     except Exception as e:
         print(f"❌ 이미지 분석 에러: {e}")
         return {
-            "name": "분석 실패",
-            "emoji": "❌",
-            "calories": 0,
+            "name": "분석 실패", "emoji": "❌", "calories": 0,
             "exercise": {"running": 0, "walking": 0, "swimming": 0}
         }
 
