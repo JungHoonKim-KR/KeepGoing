@@ -6,13 +6,13 @@ import os
 import base64
 from openai import OpenAI
 from dotenv import load_dotenv
-from typing import List, Optional
+from typing import List, Optional, Any
 
 # 1. 환경 변수 로드
 load_dotenv()
 API_KEY = os.getenv("OPENAI_API_KEY")
 
-# SSAFY GMS 설정
+# SSAFY GMS 설정 (또는 일반 OpenAI API 사용 시 base_url 제거)
 client = OpenAI(
     api_key=API_KEY,
     base_url="https://gms.ssafy.io/gmsapi/api.openai.com/v1"
@@ -66,8 +66,9 @@ def encode_image(image_file):
 
 
 # =========================================================
-# 1. [기존] 식단 분석 API
+# 1. [Update] 분석 API (데일리 리포트)
 # EndPoint: /api/diet/analyze
+# 설명: 점수, 피드백뿐만 아니라 총 칼로리와 추천 운동 3가지를 랜덤으로 제안
 # =========================================================
 @app.post("/api/diet/analyze")
 def analyze_diet(request: DietRequest):
@@ -75,21 +76,36 @@ def analyze_diet(request: DietRequest):
 
     try:
         system_instruction = f"""
-        너는 'AI 영양사'야. 사용자의 오늘 식단을 평가해줘. JSON 포맷 준수.
+        너는 'AI 헬스 트레이너'야. 사용자의 오늘 식단을 평가해줘. JSON 포맷 준수.
 
-        [필수 포함]
-        1. score (0~100), rank (S/A/B/C/F)
-        2. dailyTitle (한줄 요약 제목)
-        3. oneLineSummary (총평)
-        4. insights (배열: type, iconType, title, description)
-           - iconType: muscle, warning, balance, water 중 택1
-        5. miningKeywords (배열: 음식명 문자열 5개)
+        [필수 포함 항목]
+        1. score (0~100 정수): 식단 점수
+        2. rank (String): 등급 (S/A/B/C/F)
+        3. dailyTitle (String): 한줄 요약 제목
+        4. oneLineSummary (String): 구체적인 총평
+        5. insights (Array): [{{ "type": "positive/negative", "iconType": "muscle/warning/balance/water", "title": "...", "description": "..." }}]
+        6. miningKeywords (Array of Strings): 음식 키워드 5개 (예: ["닭가슴살", "사과"])
+
+        [New! 칼로리 및 운동 처방]
+        7. totalCalories (Integer): 오늘 식단의 총 추정 칼로리 (kcal)
+        8. recommendedExercises (Array): 섭취한 칼로리와 영양소를 고려하여 추천하는 운동 3가지.
+           - 단순히 걷기/뛰기만 하지 말고, '스쿼트', '버피테스트', '계단 오르기', '요가', '줄넘기', '플랭크' 등 다양한 운동 중 3개를 랜덤하게 선정.
+           - 각 객체 형태: {{ "name": "운동명", "time": "시간(분, 정수)", "emoji": "이모지" }}
 
         [응답 예시]
         {{
-          "score": 85, "rank": "B", "dailyTitle": "제목", "oneLineSummary": "총평",
-          "insights": [ {{ "type": "positive", "iconType": "muscle", "title": "제목", "description": "내용" }} ],
-          "miningKeywords": ["닭가슴살", "사과", "아메리카노", "현미밥", "계란"]
+          "score": 78, 
+          "rank": "B", 
+          "dailyTitle": "탄수화물이 조금 과했던 하루", 
+          "oneLineSummary": "점심은 좋았지만 저녁에 면 요리를 드셨군요. 유산소 운동이 필요합니다.",
+          "insights": [ {{ "type": "warning", "iconType": "balance", "title": "탄수화물 과다", "description": "저녁 식사의 비중을 조금 줄여보세요." }} ],
+          "miningKeywords": ["라면", "김밥", "아이스크림", "단무지", "콜라"],
+          "totalCalories": 2100,
+          "recommendedExercises": [
+              {{ "name": "버피테스트", "time": 20, "emoji": "🏋️" }},
+              {{ "name": "계단 오르기", "time": 40, "emoji": "🪜" }},
+              {{ "name": "실내 자전거", "time": 50, "emoji": "🚴" }}
+          ]
         }}
         """
 
@@ -101,10 +117,10 @@ def analyze_diet(request: DietRequest):
                 {"role": "system", "content": system_instruction},
                 {"role": "user", "content": user_message}
             ],
-            temperature=0.3,
+            temperature=0.7,  # 창의적인 운동 추천을 위해 온도 약간 높임
             response_format={"type": "json_object"}
         )
-        # 여기는 객체 {} 형태가 맞음 (자바 DTO와 매핑됨)
+        print("식단 분석 응답 결과 : ", json.loads(completion.choices[0].message.content))
         return json.loads(completion.choices[0].message.content)
 
     except Exception as e:
@@ -113,34 +129,33 @@ def analyze_diet(request: DietRequest):
 
 
 # =========================================================
-# 2. [New] AI 맞춤형 식단 생성 API (여기가 문제였음)
+# 2. [Update] AI 맞춤형 식단 생성 API
 # EndPoint: /api/diet/generate
+# 설명: 3~14일치 식단표 생성 (자바 List 호환성 수정 완료)
 # =========================================================
 @app.post("/api/diet/generate")
 def generate_diet_plan(request: DietGenerationRequest):
     print(f"📅 [식단 생성 요청] 기간: {request.duration}일, 목표: {request.favorite}")
 
     try:
-        # 중요: response_format={"type": "json_object"}는 최상위가 {}여야 합니다.
-        # 따라서 AI에게 "plans"라는 키 안에 배열을 담으라고 지시해야 합니다.
         system_instruction = f"""
         너는 전문 영양사야. 사용자의 생활 습관 설문을 바탕으로 {request.duration}일치 식단표를 짜줘.
 
         [사용자 정보]
         - 운동: {request.exercise}
         - 수면: {request.sleep}
-        - 선호 음식: {request.favorite} (건강하게 포함)
+        - 선호 음식: {request.favorite} (건강하게 포함할 것)
 
         [응답 포맷 (JSON Only)]
-        반드시 "plans" 라는 키 안에 배열을 담아서 줘.
+        반드시 최상위 키 "plans" 안에 배열을 담아서 반환해.
         {{
             "plans": [
                 {{ 
                   "day": 1, 
-                  "menu": "현미밥과 닭가슴살 샐러드", 
+                  "menu": "메뉴 이름", 
                   "cal": 500, 
-                  "difficulty": "EASY",
-                  "quest": "물 2L 마시기"
+                  "difficulty": "EASY", 
+                  "quest": "식전 물 한 컵 마시기"
                 }},
                 ...
             ]
@@ -159,31 +174,31 @@ def generate_diet_plan(request: DietGenerationRequest):
 
         result = json.loads(completion.choices[0].message.content)
 
-        # [핵심 수정] 자바는 List<?>를 원하므로, 딕셔너리를 벗기고 내용물 리스트만 리턴
+        # 자바 호환성을 위해 리스트만 추출하여 반환
         if "plans" in result:
             return result["plans"]
 
-        # 혹시 키 이름이 다를 경우를 대비해 값 중 리스트인 것을 찾음
+        # plans 키가 없을 경우 값 중 리스트 탐색
         for value in result.values():
             if isinstance(value, list):
                 return value
 
-        # 리스트가 없으면 빈 배열이라도 줘야 자바가 안 죽음
-        print("⚠️ AI 응답에 배열이 없습니다. 빈 배열 반환.")
+        # 리스트가 없으면 빈 리스트 반환 (서버 에러 방지)
         return []
 
     except Exception as e:
         print(f"❌ 식단 생성 에러: {e}")
-        # 에러 발생 시에도 빈 리스트나 더미 리스트 반환해야 자바 에러 방지
+        # 에러 시 더미 데이터 반환
         return [
-            {"day": i + 1, "menu": "일시적 오류", "cal": 0, "difficulty": "EASY", "quest": "잠시 후 다시 시도"}
+            {"day": i + 1, "menu": "생성 실패(재시도 필요)", "cal": 0, "difficulty": "EASY", "quest": "잠시 후 다시 시도해주세요"}
             for i in range(request.duration)
         ]
 
 
 # =========================================================
-# 3. [New] 음식 사진 스캔 (칼로리 분석) API
+# 3. 음식 사진 스캔 (칼로리 분석) API
 # EndPoint: /api/diet/scan
+# 설명: 사진을 분석하여 음식명, 칼로리, 소모 운동량(고정형) 반환
 # =========================================================
 @app.post("/api/diet/scan")
 def scan_food_image(file: UploadFile = File(...)):
@@ -198,19 +213,19 @@ def scan_food_image(file: UploadFile = File(...)):
 
         [응답 포맷 (JSON Only)]
         {{
-            "name": "음식 이름",
+            "name": "음식 이름 (예: 페퍼로니 피자)",
             "emoji": "🍕",
-            "calories": 0 (정수),
+            "calories": 0 (총 칼로리 정수),
             "exercise": {{
-                "running": 0,
-                "walking": 0,
-                "swimming": 0
+                "running": 0 (분),
+                "walking": 0 (분),
+                "swimming": 0 (분)
             }}
         }}
         """
 
         completion = client.chat.completions.create(
-            model="gpt-4o",
+            model="gpt-4o",  # Vision 기능은 gpt-4o 필수
             messages=[
                 {"role": "system", "content": system_instruction},
                 {
@@ -224,7 +239,7 @@ def scan_food_image(file: UploadFile = File(...)):
                     ]
                 }
             ],
-            max_tokens=300,
+            max_tokens=500,
             response_format={"type": "json_object"}
         )
 
@@ -239,8 +254,9 @@ def scan_food_image(file: UploadFile = File(...)):
 
 
 # =========================================================
-# 4. [New] RPG 바디 스캔
+# 4. RPG 바디 스캔
 # EndPoint: /api/body/scan
+# 설명: 키/몸무게 기반 RPG 캐릭터 생성
 # =========================================================
 @app.post("/api/body/scan")
 def body_scan(request: BodyScanRequest):
@@ -255,19 +271,19 @@ def body_scan(request: BodyScanRequest):
 
     if bmi < 18.5:
         char_class = "SKELETON THIEF"
-        desc = "가볍고 빠르지만 스치면 부러집니다. 단백질 섭취가 시급합니다."
+        desc = "가볍고 빠르지만 내구력이 약합니다. 잘 먹는 것이 곧 훈련입니다."
         stats = {"hp": 30, "str": 20, "agi": 95, "def": 10}
     elif 18.5 <= bmi < 23:
         char_class = "BALANCED KNIGHT"
-        desc = "가장 이상적인 밸런스입니다. 근육량만 늘리면 완벽합니다."
+        desc = "가장 이상적인 밸런스입니다. 꾸준한 훈련으로 전설이 되세요."
         stats = {"hp": 75, "str": 60, "agi": 60, "def": 60}
     elif 23 <= bmi < 25:
         char_class = "ORC WARRIOR"
-        desc = "힘이 넘치지만 지방 갑옷이 조금 두껍습니다. 커팅이 필요합니다."
+        desc = "넘치는 힘! 지방 갑옷을 근육으로 바꾸면 최강이 됩니다."
         stats = {"hp": 90, "str": 85, "agi": 40, "def": 70}
     else:
-        char_class = "HEAVY GOLEM"
-        desc = "압도적인 탱킹 능력! 하지만 계단을 오를 때 HP가 급격히 소모됩니다."
+        char_class = "IRON GOLEM"
+        desc = "압도적인 탱킹 능력! 하지만 움직임이 둔합니다. 유산소가 시급합니다."
         stats = {"hp": 100, "str": 95, "agi": 10, "def": 90}
 
     return {

@@ -1,6 +1,7 @@
 package keepgoing.demo.domain.ai.dto;
 
 import java.util.List;
+import java.util.Map;
 
 // Class 대신 Record 사용 (Lombok @Data, @NoArgsConstructor 불필요)
 public record AiAnalyzeDto(
@@ -9,8 +10,10 @@ public record AiAnalyzeDto(
         String dailyTitle,
         String oneLineSummary,
         List<Insight> insights,
-        List<Recommendation> recommendations,
-        List<String> miningKeywords
+        List<String> miningKeywords,
+        Integer totalCalories,
+        List<Map<String, Object>> recommendedExercises
+
 ) {
 
     // 내부 클래스도 Record로 정의

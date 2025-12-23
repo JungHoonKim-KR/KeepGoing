@@ -91,12 +91,19 @@ public class DietService {
             // .score(), .oneLineSummary() 바로 접근
             // .recommendations() 리스트를 JSON으로 변환
 //            String recommendJson = objectMapper.writeValueAsString(recommendDto.recommendations);
+            String exerciseJson = "[]";
+            if (result.recommendedExercises() != null) {
+                // List -> JSON String 변환
+                exerciseJson = objectMapper.writeValueAsString(result.recommendedExercises());
+            }
             dietMapper.saveAiReport(AiReport.builder()
                     .memberId(memberId)
                     .date(date)
                     .score(result.score())               // 수정됨
                     .rank(result.rank())
                     .feedbackText(result.oneLineSummary()) // 수정됨
+                    .totalCalories(result.totalCalories())
+                    .exerciseJson(exerciseJson)
 //                    .recommendJson(recommendJson)
                     .build());
             dietMapper.upsertEvaluation(memberId,date, result.rank());

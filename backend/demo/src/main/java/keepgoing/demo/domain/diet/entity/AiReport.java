@@ -14,4 +14,6 @@ public class AiReport {
     private String rank;
     private String feedbackText;
     private String recommendJson; // 추천 식단 JSON 문자열
+    private int totalCalories;
+    private String exerciseJson;
 }

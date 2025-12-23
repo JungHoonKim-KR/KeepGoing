@@ -265,6 +265,8 @@
       </div>
     </div>
   </div>
+
+
   
   <div class="score-container-mega">
     <div class="score-label-neon">TOTAL GAINED XP</div>
@@ -277,6 +279,32 @@
   </div>
 </div>
 
+<div class="physical-stats-retro">
+            <h3 class="section-title-retro">▶ ENERGY_METRICS</h3>
+            
+            <div class="energy-dashboard">
+              <div class="calorie-gauge pixel-box">
+                <span class="gauge-label">TOTAL ENERGY</span>
+                <div class="gauge-val blink-text">
+                  🔥 {{ analysisResult?.totalCalories || 0 }} <span class="unit">kcal</span>
+                </div>
+              </div>
+
+              <div class="training-grid">
+                <div 
+                  v-for="(ex, i) in analysisResult?.recommendedExercises" 
+                  :key="i" 
+                  class="training-card"
+                >
+                  <div class="card-icon floating">{{ ex.emoji }}</div>
+                  <div class="card-info">
+                    <div class="card-name">{{ ex.name }}</div>
+                    <div class="card-time">{{ ex.time }}분</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
           <div class="insights-section">
             <h3 class="section-title-retro">▶ ANALYSIS_LOG</h3>
             <div class="insight-list-retro">
@@ -463,14 +491,17 @@ const startAIAnalysis = async () => {
 
   try {
     const data = await analyzeDiet(MEMBER_ID, TODAY_DATE);
-
     analysisResult.value = {
       score: data.score,
       rank: data.rank,
       dailyTitle: data.dailyTitle,
       oneLineSummary: data.oneLineSummary,
-      insights: data.insights
+      insights: data.insights,
+      totalCalories: data.totalCalories,
+      recommendedExercises: data.recommendedExercises
+
     };
+        console.log(analysisResult.value);
 
     await new Promise(resolve => setTimeout(resolve, 2500));
     isResultModalOpen.value = true;
@@ -478,7 +509,7 @@ const startAIAnalysis = async () => {
   } catch (error) {
     console.error("AI 분석 호출 실패:", error);
     
-    // 💡 백엔드 연결 실패 시 Mock 데이터 표시
+    // 💡 백엔드 연결 실패 시 보여줄 Mock 데이터
     analysisResult.value = {
       score: 85,
       rank: "A",
@@ -503,12 +534,19 @@ const startAIAnalysis = async () => {
           title: "수분 섭취 적정",
           description: "하루 2L 목표를 달성했습니다."
         }
+      ],
+      // ▼▼▼ [추가] 현실적인 예시 데이터 ▼▼▼
+      totalCalories: 2150, 
+      recommendedExercises: [
+        { name: "가벼운 조깅", time: 30, emoji: "🏃" },
+        { name: "스쿼트", time: 15, emoji: "🏋️" },
+        { name: "전신 스트레칭", time: 10, emoji: "🧘" }
       ]
     };
     
     await new Promise(resolve => setTimeout(resolve, 1000));
     isResultModalOpen.value = true;
-  } finally {
+  }finally {
     clearInterval(msgInterval);
     isAiLoading.value = false;
   }
@@ -1734,4 +1772,104 @@ onMounted(async () => {
   .score-number-glitch { font-size: 2.2rem; }
   .rank-aura { width: 90px; height: 90px; }
 }
+
+/* --- [NEW] 에너지 & 트레이닝 스타일 --- */
+
+.physical-stats-retro {
+  margin: 20px 0;
+  padding: 0 5px;
+}
+
+.energy-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+/* 칼로리 게이지 (배터리 느낌) */
+.calorie-gauge {
+  background: #0a0a0a;
+  border: 2px solid #ffaa00; /* 에너지 색상 */
+  padding: 15px;
+  text-align: center;
+  position: relative;
+  box-shadow: 0 0 10px rgba(255, 170, 0, 0.2);
+}
+.calorie-gauge::before {
+  /* 픽셀 모서리 효과 */
+  content: "";
+  position: absolute;
+  top: -4px; left: -4px; right: -4px; bottom: -4px;
+  border: 2px solid rgba(255, 170, 0, 0.3);
+  z-index: -1;
+}
+
+.gauge-label {
+  display: block;
+  font-size: 0.8rem;
+  color: #ffaa00;
+  letter-spacing: 2px;
+  margin-bottom: 5px;
+}
+
+.gauge-val {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #fff;
+  text-shadow: 2px 2px 0px #ffaa00;
+  font-family: 'NeoDunggeunmo', monospace;
+}
+.gauge-val .unit {
+  font-size: 1rem;
+  color: #ccc;
+}
+
+/* 운동 그리드 */
+.training-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr); /* 3개 나란히 */
+  gap: 8px;
+}
+
+.training-card {
+  background: rgba(0, 255, 0, 0.05);
+  border: 1px dashed #00ff00;
+  padding: 10px 5px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  transition: transform 0.2s;
+}
+.training-card:hover {
+  background: rgba(0, 255, 0, 0.15);
+  transform: translateY(-2px);
+  border-style: solid;
+}
+
+.card-icon {
+  font-size: 1.8rem;
+}
+.card-info {
+  text-align: center;
+}
+.card-name {
+  font-size: 0.7rem;
+  color: #aaa;
+  margin-bottom: 2px;
+  white-space: nowrap;
+}
+.card-time {
+  font-size: 0.9rem;
+  font-weight: bold;
+  color: #00ff00; /* 네온 그린 */
+}
+
+/* 애니메이션 유틸 */
+.blink-text { animation: blink 1.5s infinite; }
+.floating { animation: float 3s ease-in-out infinite; }
+
+@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+@keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
 </style>

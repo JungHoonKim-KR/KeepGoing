@@ -148,23 +148,30 @@
     </insert>
 
     <insert id="saveAiReport" parameterType="keepgoing.demo.domain.diet.entity.AiReport">
-        INSERT INTO ai_report (member_id,
-                               date,
-                               score,
-                               `rank`,
-                               feedback_text,
-                               recommend_json)
-        VALUES (#{memberId},
-                #{date},
-                #{score},
-                #{rank},
-                #{feedbackText},
-                #{recommendJson}) ON DUPLICATE KEY
-        UPDATE
-            score = #{score},
-            `rank` = #{rank},
-            feedback_text = #{feedbackText},
-            recommend_json = #{recommendJson}
+        INSERT INTO ai_report (
+        member_id,
+        date,
+        score,
+        `rank`,
+        feedback_text,
+        total_calories,
+        exercise_json
+        )
+        VALUES (
+        #{memberId},
+        #{date},
+        #{score},
+        #{rank},
+        #{feedbackText},
+        #{totalCalories},
+        #{exerciseJson}
+        )
+        ON DUPLICATE KEY UPDATE
+        score = #{score},
+        `rank` = #{rank},
+        feedback_text = #{feedbackText},
+        total_calories = #{totalCalories},
+        exercise_json = #{exerciseJson}
     </insert>
 
     <insert id="insertFoodMappings" parameterType="java.util.List">
