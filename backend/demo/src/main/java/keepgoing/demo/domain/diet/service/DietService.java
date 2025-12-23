@@ -1,15 +1,13 @@
 package keepgoing.demo.domain.diet.service;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import keepgoing.demo.domain.ai.dto.AiAnalyzeDto;
 import keepgoing.demo.domain.ai.dto.AiRecommendDto;
 import keepgoing.demo.domain.ai.dto.AiRequestDto;
 import keepgoing.demo.domain.ai.service.AiClient;
 import keepgoing.demo.domain.diet.dto.*;
-import keepgoing.demo.domain.diet.entity.AiReport;
-import keepgoing.demo.domain.diet.entity.Diet;
-import keepgoing.demo.domain.diet.entity.Food;
-import keepgoing.demo.domain.diet.entity.HydrationRecord;
+import keepgoing.demo.domain.diet.entity.*;
 import keepgoing.demo.domain.diet.mapper.DietMapper;
 import keepgoing.demo.domain.diet.norm.MealTime;
 import keepgoing.demo.domain.member.entity.Member;
@@ -167,6 +165,80 @@ public class DietService {
         return aiClient.requestFoodScan(file);
     }
 
+    @Transactional
+    public void insertSchedule(DietApplyRequestDto requestDto) {
+        // 기준일: 오늘
+        LocalDate startDate = LocalDate.now();
+
+        // 리스트 순회
+        for (DietApplyRequestDto.DietPlanItem item : requestDto.getPlans()) {
+            try {
+                // 1. 날짜 계산 (Day 1 = 오늘, Day 2 = 내일 ...)
+                // day는 1부터 시작하므로 (day - 1)을 더함
+                LocalDate targetDate = startDate.plusDays(item.getDay());
+
+                // 2. JSON 컬럼에 넣을 데이터 Map으로 구성
+                // (day는 날짜로 변환되었으니 JSON 내용에서는 뺍니다)
+                Map<String, Object> jsonMap = new HashMap<>();
+                jsonMap.put("menu", item.getMenu());
+                jsonMap.put("cal", item.getCal());
+                jsonMap.put("difficulty", item.getDifficulty());
+                jsonMap.put("quest", item.getQuest());
+
+                // 3. Map -> JSON String 변환
+                String jsonString = objectMapper.writeValueAsString(jsonMap);
+
+                // 4. Mapper 호출 (Upsert)
+                dietMapper.upsertFoodSchedule(requestDto.getMemberId(), targetDate, jsonString);
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                throw new RuntimeException("식단 스케쥴 저장 중 오류 발생");
+            }
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public List<DietScheduleResponseDto> getMySchedules(Long memberId) {
+        // 1. DB 조회
+        List<FoodSchedule> schedules = dietMapper.findSchedulesAfterToday(memberId);
+
+        // 2. Entity -> DTO 변환
+        return schedules.stream().map(s -> {
+            // [수정 포인트] String -> Map 변환 로직 추가
+            Map<String, Object> json = new HashMap<>();
+            try {
+                // DB에 있는 String JSON을 Map으로 파싱
+                if (s.getRecommendJson() != null) {
+                    json = objectMapper.readValue(s.getRecommendJson(), new TypeReference<Map<String, Object>>() {});
+                }
+            } catch (Exception e) {
+                e.printStackTrace(); // 파싱 실패 시 빈 맵 유지
+            }
+
+            // 3. 데이터 추출 (이제 json은 Map 타입이므로 get 가능)
+            String menuName = (String) json.getOrDefault("menu", "식단 정보 없음");
+            String quest = (String) json.getOrDefault("quest", "미션 없음");
+
+            int calories = 0;
+            if (json.get("cal") instanceof Number) {
+                calories = ((Number) json.get("cal")).intValue();
+            }
+
+            // 4. 프론트엔드 구조에 맞게 포장
+            DietScheduleResponseDto.MenuDto menuDto = DietScheduleResponseDto.MenuDto.builder()
+                    .name(menuName)
+                    .cal(calories)
+                    .build();
+
+            return DietScheduleResponseDto.builder()
+                    .date(s.getDate().toString())
+                    .menus(Collections.singletonList(menuDto))
+                    .totalCal(calories)
+                    .quest(quest)
+                    .build();
+        }).collect(Collectors.toList());
+    }
     // 월별 조회
     public List<DailyEvaluationDto> getMonthlyEvaluations(Long memberId, int year, int month) {
         String strYear = String.valueOf(year);

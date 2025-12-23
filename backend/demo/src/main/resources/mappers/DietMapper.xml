@@ -47,6 +47,14 @@
                     notNullColumn="code"/>
     </resultMap>
 
+    <resultMap id="FoodScheduleResultMap" type="keepgoing.demo.domain.diet.entity.FoodSchedule">
+        <id property="id" column="id"/>
+        <result property="memberId" column="member_id"/>
+        <result property="date" column="date"/>
+        <result property="recommendJson" column="recommend_json"/> <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+
     <select id="findAllByDate" resultMap="DietWithFoodsResultMap">
         SELECT
             -- 1. Diet 테이블 필드
@@ -174,6 +182,31 @@
         exercise_json = #{exerciseJson}
     </insert>
 
+    <insert id="upsertFoodSchedule">
+        INSERT INTO food_schedule (
+            member_id,
+            date,
+            recommend_json,
+            created_at,
+            updated_at
+        ) VALUES (
+                     #{memberId},
+                     #{date},
+                     #{recommendJson},  NOW(),
+                     NOW()
+                 )
+            ON DUPLICATE KEY UPDATE
+                                 recommend_json = VALUES(recommend_json),
+                                 updated_at = NOW()
+    </insert>
+
+    <select id="findSchedulesAfterToday" resultMap="FoodScheduleResultMap">
+        SELECT *
+        FROM food_schedule
+        WHERE member_id = #{memberId}
+          AND date >= CURDATE()
+        ORDER BY date ASC
+    </select>
     <insert id="insertFoodMappings" parameterType="java.util.List">
         INSERT INTO diet_food_mapping (
         diet_id, food_code, servings

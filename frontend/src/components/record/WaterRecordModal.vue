@@ -30,19 +30,19 @@
         <div class="inventory-section">
           <h3 class="pixel-subtitle">SELECT ITEM</h3>
           <div class="item-grid">
-            <button @click="addWater(0.1)" class="item-slot" title="Small Potion">
+            <button @click="addWater(100)" class="item-slot" title="Small Potion">
               <div class="item-icon">💧</div>
               <div class="item-name">Small<br />+100</div>
             </button>
-            <button @click="addWater(0.2)" class="item-slot" title="Medium Potion">
+            <button @click="addWater(200)" class="item-slot" title="Medium Potion">
               <div class="item-icon">🧪</div>
               <div class="item-name">Medium<br />+200</div>
             </button>
-            <button @click="addWater(0.3)" class="item-slot" title="Large Potion">
+            <button @click="addWater(300)" class="item-slot" title="Large Potion">
               <div class="item-icon">🏺</div>
               <div class="item-name">Large<br />+300</div>
             </button>
-            <button @click="addWater(0.5)" class="item-slot" title="Elixir">
+            <button @click="addWater(500)" class="item-slot" title="Elixir">
               <div class="item-icon">💎</div>
               <div class="item-name">Elixir<br />+500</div>
             </button>
@@ -50,13 +50,13 @@
         </div>
 
         <div class="slider-section">
-          <label>FINE TUNE AMOUNT</label>
+          <label>FINE TUNE AMOUNT (mL)</label>
           <input
-            v-model="sliderValue"
+            v-model.number="sliderValue"
             type="range"
             min="0"
-            max="50"
-            step="1"
+            max="5000"
+            step="50"
             class="retro-slider"
             @input="updateFromSlider"
           />
@@ -74,7 +74,8 @@
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useAuthStore } from "@/stores/authStore";
 import dayjs from "dayjs";
-import { useConfigStore } from "@/stores/configStore"; // Pinia Store 경로를 정확히 확인해주세요.
+import { useConfigStore } from "@/stores/configStore";
+
 const emit = defineEmits(["close", "update-water"]);
 
 // Data
@@ -94,39 +95,38 @@ const props = defineProps({
     required: true,
   },
 });
-const formattedDate = computed(() => ref(props.dateToUse));
+
 const MEMBER_ID = authStore.memberId;
 const API_ENDPOINT = config.API_ENDPOINT;
 
 const todayRecords = ref([]);
 
 // Data
-// 🌟 props 값으로 초기화 (API 데이터 반영)
-const currentAmount = ref(props.initialAmount);
+const currentAmount = ref(props.initialAmount); // 내부적으로는 Liter 유지 (API 호환)
 const goalAmount = ref(props.initialGoal);
-const sliderValue = ref(Math.round(props.initialAmount * 10));
+
+// ✨ [수정 3] 초기 슬라이더 값을 mL 단위 정수로 변환 (예: 1.5L -> 1500)
+const sliderValue = ref(Math.round(props.initialAmount * 1000));
+
 // Computed
 const waterPercentage = computed(() => {
+  if (goalAmount.value === 0) return 0;
   const percentage = (currentAmount.value / goalAmount.value) * 100;
   return Math.min(Math.round(percentage), 100);
 });
 
-// 🔊 8-bit 사운드 효과
+// Sound (기존 동일)
 const playSound = (type) => {
   const AudioContext = window.AudioContext || window.webkitAudioContext;
   if (!AudioContext) return;
-
   const ctx = new AudioContext();
   const osc = ctx.createOscillator();
   const gain = ctx.createGain();
-
   osc.connect(gain);
   gain.connect(ctx.destination);
-
   const now = ctx.currentTime;
 
   if (type === "glug") {
-    // 물 마시는 소리
     osc.type = "triangle";
     osc.frequency.setValueAtTime(400, now);
     osc.frequency.linearRampToValueAtTime(200, now + 0.15);
@@ -135,11 +135,10 @@ const playSound = (type) => {
     osc.start(now);
     osc.stop(now + 0.15);
   } else if (type === "save") {
-    // 저장 성공 소리
     osc.type = "square";
-    osc.frequency.setValueAtTime(523.25, now); // C
-    osc.frequency.setValueAtTime(659.25, now + 0.1); // E
-    osc.frequency.setValueAtTime(783.99, now + 0.2); // G
+    osc.frequency.setValueAtTime(523.25, now);
+    osc.frequency.setValueAtTime(659.25, now + 0.1);
+    osc.frequency.setValueAtTime(783.99, now + 0.2);
     gain.gain.setValueAtTime(0.05, now);
     gain.gain.linearRampToValueAtTime(0, now + 0.4);
     osc.start(now);
@@ -147,27 +146,50 @@ const playSound = (type) => {
   }
 };
 
-// Methods
-const addWater = (amount) => {
+// ✨ [수정 4] 물 추가 로직 (정수 계산 적용)
+const addWater = (amountInMl) => {
   playSound("glug");
-  currentAmount.value = Math.min(currentAmount.value + amount, 5.0);
-  sliderValue.value = Math.round(currentAmount.value * 10);
 
+  // 1. 현재 Liter 값을 mL 정수로 변환 (소수점 오차 제거를 위해 Math.round 사용)
+  let currentMl = Math.round(currentAmount.value * 1000);
+
+  // 2. 정수끼리 더하기
+  let newMl = currentMl + amountInMl;
+
+  // 3. 최대치 제한 (5000mL = 5L)
+  newMl = Math.min(newMl, 5000);
+
+  // 4. 다시 Liter로 변환하여 저장
+  currentAmount.value = newMl / 1000;
+
+  // 5. 슬라이더 동기화
+  sliderValue.value = newMl;
+
+  // 기록용 (Liter 단위 문자열로 저장)
   const now = dayjs().format("HH:mm");
   todayRecords.value.unshift({
     time: now,
-    amount: amount.toFixed(1),
+    amount: (amountInMl / 1000).toFixed(1), // 기록엔 0.1L 형태로 저장
   });
 };
 
+// ✨ [수정 5] 슬라이더 조작 (정수 -> 소수 변환)
 const updateFromSlider = () => {
-  currentAmount.value = sliderValue.value / 10;
+  // 슬라이더 값(mL)을 1000으로 나누어 Liter로 변환
+  currentAmount.value = sliderValue.value / 1000;
 };
 
+// ✨ [수정 6] 기록 삭제 로직 (정수 계산 적용)
 const removeRecord = (index) => {
-  const removedAmount = parseFloat(todayRecords.value[index].amount);
-  currentAmount.value = Math.max(currentAmount.value - removedAmount, 0);
-  sliderValue.value = Math.round(currentAmount.value * 10);
+  const removedAmountStr = todayRecords.value[index].amount; // "0.1"
+  const removedMl = Math.round(parseFloat(removedAmountStr) * 1000); // 100
+
+  let currentMl = Math.round(currentAmount.value * 1000);
+  let newMl = Math.max(currentMl - removedMl, 0);
+
+  currentAmount.value = newMl / 1000;
+  sliderValue.value = newMl;
+
   todayRecords.value.splice(index, 1);
 };
 
@@ -187,7 +209,7 @@ const saveWater = async () => {
 
   const hydrationData = {
     memberId: MEMBER_ID,
-    waterAmount: currentAmount.value,
+    waterAmount: currentAmount.value, // 최종적으로는 소수점 형태(Liter)로 전송
   };
 
   try {
@@ -198,15 +220,12 @@ const saveWater = async () => {
     });
 
     if (!response.ok) {
-      console.error(`Error Status: ${response.status}`);
       throw new Error("Save Failed");
     }
     emit("update-water", currentAmount.value);
-    // 성공 시 딜레이를 주어 소리 듣게 함
     setTimeout(() => closeModal(), 300);
   } catch (error) {
     console.error("Save Error:", error);
-    // 에러나도 일단 닫거나 사용자 알림 (여기선 닫음)
     closeModal();
   }
 };
@@ -221,7 +240,7 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-/* 폰트 로드 (이미 Home에 있다면 생략 가능) */
+/* 기존 스타일 그대로 유지 */
 @import url("https://cdn.jsdelivr.net/gh/neodgm/neodgm-webfont@latest/neodgm/style.css");
 
 .modal-overlay {
@@ -240,7 +259,6 @@ onUnmounted(() => {
   padding: 10px;
 }
 
-/* 스캔라인 */
 .scanlines {
   position: absolute;
   width: 100%;
@@ -251,10 +269,9 @@ onUnmounted(() => {
   background-size: 100% 4px, 6px 100%;
 }
 
-/* 모달 본체 */
 .retro-modal {
-  background: #000022; /* 심해/우주 색상 */
-  width: 95%; /* 모바일에서 95%로 확장 */
+  background: #000022;
+  width: 95%;
   max-width: 400px;
   border: 4px solid #fff;
   box-shadow: 0 0 20px rgba(0, 229, 255, 0.4), inset 0 0 20px rgba(0, 0, 0, 0.5);
@@ -262,7 +279,6 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  /* 모바일에서 모달이 화면 높이를 넘어가면 스크롤 가능하게 */
   min-height: min-content;
 }
 
@@ -277,7 +293,6 @@ onUnmounted(() => {
   }
 }
 
-/* 헤더 */
 .modal-header {
   background: #fff;
   padding: 0.5rem 1rem;
@@ -317,30 +332,19 @@ onUnmounted(() => {
 .modal-body {
   padding: 1rem;
   color: #fff;
-  /* 모바일에서 세로 공간을 위해 패딩 조절 */
   padding-top: 0.5rem;
 }
 
-.date-display {
-  text-align: right;
-  font-size: 0.8rem;
-  color: #00e5ff;
-  margin-bottom: 0.5rem; /* 마진 감소 */
-  font-family: monospace;
-}
-
-/* 포션 디스플레이 */
 .potion-section {
   display: flex;
   justify-content: center;
-  margin-bottom: 1rem; /* 마진 감소 */
+  margin-bottom: 1rem;
 }
 
 .potion-bottle-container {
   display: flex;
   flex-direction: column;
   align-items: center;
-  /* 작은 화면에서도 병 크기 유지 */
   transform: scale(0.95);
 }
 
@@ -370,7 +374,6 @@ onUnmounted(() => {
   background: #fff;
 }
 
-/* 기포 애니메이션 */
 .bubbles span {
   position: absolute;
   bottom: -10px;
@@ -421,20 +424,18 @@ onUnmounted(() => {
   margin-top: 5px;
 }
 
-/* 아이템 그리드 */
 .pixel-subtitle {
   font-size: 0.9rem;
   border-bottom: 2px solid #333;
   margin-bottom: 0.5rem;
-  color: #ffd700; /* Gold */
+  color: #ffd700;
 }
 
 .inventory-section {
-  margin-bottom: 1rem; /* 마진 감소 */
+  margin-bottom: 1rem;
 }
 
 .item-grid {
-  /* 4열 대신 flex-wrap으로 유연하게 처리 */
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
@@ -442,7 +443,6 @@ onUnmounted(() => {
 }
 
 .item-slot {
-  /* 4개 대신 2개가 한 줄에 오도록 48% 설정 */
   flex-basis: calc(50% - 4px);
   background: #222;
   border: 2px solid #555;
@@ -471,9 +471,8 @@ onUnmounted(() => {
   font-family: monospace;
 }
 
-/* 슬라이더 */
 .slider-section {
-  margin-bottom: 1rem; /* 마진 감소 */
+  margin-bottom: 1rem;
 }
 .slider-section label {
   font-size: 0.7rem;
@@ -500,55 +499,9 @@ onUnmounted(() => {
   box-shadow: 2px 2px 0 #000;
 }
 
-/* 로그 (System Log) */
-.log-section {
-  margin-bottom: 1rem;
-}
-.log-console {
-  background: rgba(0, 0, 0, 0.5);
-  border: 2px solid #333;
-  /* 높이 축소하여 공간 확보 */
-  height: 80px;
-  overflow-y: auto;
-  padding: 5px;
-  font-size: 0.75rem;
-  font-family: monospace;
-}
-.log-line {
-  border-bottom: 1px dashed #333;
-  padding: 4px 0;
-  display: flex;
-  align-items: center;
-}
-.log-line .time {
-  color: #ffd700;
-  margin-right: 5px;
-}
-.log-line .msg {
-  flex: 1;
-  color: #ccc;
-  /* 작은 화면에서 텍스트가 잘리지 않도록 */
-  word-break: break-all;
-}
-.delete-x {
-  background: none;
-  border: none;
-  color: #ff0055;
-  cursor: pointer;
-  font-family: monospace;
-}
-.log-line.empty {
-  color: #555;
-  justify-content: center;
-  /* 높이 축소에 맞춰 패딩 조절 */
-  padding-top: 15px;
-  border: none;
-}
-
-/* 버튼 */
 .action-footer {
   text-align: center;
-  padding-top: 0.5rem; /* 버튼 위 공간 추가 */
+  padding-top: 0.5rem;
 }
 .retro-btn {
   background: #00e5ff;
@@ -566,16 +519,13 @@ onUnmounted(() => {
   box-shadow: none;
 }
 
-/* 450px 이하 화면을 위한 미디어 쿼리 */
 @media (max-width: 450px) {
   .retro-modal {
-    /* 모바일 환경에서 모달의 높이가 화면을 초과하는 경우를 대비하여 padding-bottom 제거 */
     padding-bottom: 0;
-    /* 모바일에서 모달이 화면의 중앙이 아닌 상단에서 시작하도록 조정 */
     margin: 10px auto;
   }
   .modal-overlay {
-    align-items: flex-start; /* 모달을 상단에 정렬 */
+    align-items: flex-start;
   }
 }
 </style>

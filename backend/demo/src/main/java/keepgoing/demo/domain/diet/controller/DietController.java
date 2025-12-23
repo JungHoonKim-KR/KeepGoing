@@ -4,9 +4,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import keepgoing.demo.domain.ai.dto.AiAnalyzeDto;
 import keepgoing.demo.domain.ai.dto.AiRequestDto; // 만능 DTO import
-import keepgoing.demo.domain.diet.dto.DailyEvaluationDto;
-import keepgoing.demo.domain.diet.dto.DietInsertRequestDTO;
-import keepgoing.demo.domain.diet.dto.WaterInsertRequestDTO;
+import keepgoing.demo.domain.diet.dto.*;
 import keepgoing.demo.domain.diet.entity.Diet;
 import keepgoing.demo.domain.diet.service.DietService;
 import lombok.RequiredArgsConstructor;
@@ -68,6 +66,19 @@ public class DietController {
         // Service로 파일 전달
         return ResponseEntity.ok(dietService.scanFoodImage(file));
     }
+
+    @GetMapping("/schedule")
+    public ResponseEntity<List<DietScheduleResponseDto>> getSchedules(@RequestParam Long memberId) {
+        List<DietScheduleResponseDto> schedules = dietService.getMySchedules(memberId);
+        return ResponseEntity.ok(schedules);
+    }
+
+    @PostMapping("/schedule")
+    public ResponseEntity<?> scheduleDiet(@RequestBody DietApplyRequestDto dto) {
+        dietService.insertSchedule(dto);
+        return ResponseEntity.ok().build();
+    }
+
 
 
     @GetMapping("/meal-daily")
