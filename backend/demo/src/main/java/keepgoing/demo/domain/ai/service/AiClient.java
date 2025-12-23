@@ -3,6 +3,7 @@ package keepgoing.demo.domain.ai.service;
 import keepgoing.demo.domain.ai.dto.AiAnalyzeDto;
 import keepgoing.demo.domain.ai.dto.AiRequestDto;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
@@ -19,14 +20,15 @@ import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AiClient {
 
-    // JSON 요청용 RestClient
+    // JSON 요청용 RestClient (분석, 바디스캔 등에서 사용)
     private final RestClient restClient = RestClient.builder()
             .baseUrl("http://localhost:8000")
             .build();
 
-    // Multipart 요청용 RestTemplate
+    // Multipart 및 헤더 수동 제어용 RestTemplate
     private final RestTemplate restTemplate = new RestTemplate();
     private static final String PYTHON_URL = "http://localhost:8000";
 
@@ -40,30 +42,80 @@ public class AiClient {
                 .body(AiAnalyzeDto.class);
     }
 
-    // 2. 식단 생성
+    // =================================================================
+    // 2. 식단 생성 (수정됨: 422 에러 해결을 위해 RestTemplate + Header 사용)
+    // =================================================================
     public List requestDietGeneration(AiRequestDto requestDto) {
-        return restClient.post()
-                .uri("/api/diet/generate")
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(mapDtoToGenerateRequest(requestDto))
-                .retrieve()
-                .body(List.class);
+        // 1. DTO -> Map 변환
+        Map<String, Object> requestBody = mapDtoToGenerateRequest(requestDto);
+
+        // 2. 헤더 설정 (JSON 명시 - 이 부분이 없어서 422 에러가 났던 것)
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        // 3. Body와 Header를 합침
+        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
+
+        try {
+            // 4. 요청 전송
+            ResponseEntity<List> response = restTemplate.postForEntity(
+                    PYTHON_URL + "/api/diet/generate",
+                    entity,
+                    List.class
+            );
+            return response.getBody();
+
+        } catch (Exception e) {
+            log.error("식단 생성 요청 실패: ", e);
+            throw new RuntimeException("식단 생성 중 오류 발생");
+        }
     }
 
-    // 3. 바디 스캔
-    public Map requestBodyScan(AiRequestDto requestDto) {
+    // 3. 바디 스캔 (RestTemplate + Header 적용 버전)
+    public Map<String, Object> requestBodyScan(AiRequestDto requestDto) {
+
+        // 1. 데이터 매핑 (DTO -> Map)
+        // 파이썬 서버가 분석에 필요한 모든 데이터를 Map에 담습니다.
         Map<String, Object> body = new HashMap<>();
+
         if (requestDto.profile() != null) {
             body.put("height", requestDto.profile().height());
             body.put("weight", requestDto.profile().weight());
+            body.put("age", requestDto.profile().age());
+            body.put("gender", requestDto.profile().gender());
+            body.put("goal", requestDto.profile().goal());
+
+            // [중요] 식단 생성 때처럼 'activity'를 'exercise'로 매핑해야 할 수도 있습니다.
+            // 파이썬 서버가 'activity'를 받는지 'exercise'를 받는지 확인 필요하지만,
+            // 보통 같은 변수명을 쓸 확률이 높으니 둘 다 보내거나 식단 때와 똑같이 맞춥니다.
+            body.put("exercise", requestDto.profile().activity());
+            body.put("activity", requestDto.profile().activity()); // 혹시 몰라 둘 다 넣음 (안전빵)
         }
 
-        return restClient.post()
-                .uri("/api/body/scan")
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(body)
-                .retrieve()
-                .body(Map.class);
+        // 2. 헤더 설정 (JSON 명시 - 422 에러 방지 핵심)
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+
+        // 3. Body와 Header를 합침 (택배 포장)
+        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
+
+        try {
+            // 4. 요청 전송 (로그 추가)
+            System.out.println("🚀 바디 스캔 요청 전송: " + body);
+
+            ResponseEntity<Map> response = restTemplate.postForEntity(
+                    PYTHON_URL + "/api/body/scan",
+                    entity,
+                    Map.class
+            );
+
+            return response.getBody();
+
+        } catch (Exception e) {
+            // 에러 발생 시 로그를 자세히 찍어서 원인 파악
+            log.error("❌ 바디 스캔 요청 실패: ", e);
+            throw new RuntimeException("바디 스캔 중 오류 발생: " + e.getMessage());
+        }
     }
 
     // 4. 음식 스캔 (RestTemplate 사용)
@@ -117,7 +169,7 @@ public class AiClient {
             System.err.println("❌ 음식 스캔 실패: " + e.getMessage());
             e.printStackTrace();
 
-            // 더미 데이터 반환 (에러 발생 시 앱이 멈추지 않도록)
+            // 더미 데이터 반환
             Map<String, Object> errorResponse = new HashMap<>();
             errorResponse.put("name", "분석 실패");
             errorResponse.put("emoji", "❌");
@@ -134,7 +186,14 @@ public class AiClient {
 
     // Helper
     private Map<String, Object> mapDtoToGenerateRequest(AiRequestDto dto) {
+        log.info(String.valueOf(dto.survey().duration()));
+        log.info(String.valueOf(dto.survey().sleep()));
+        log.info(String.valueOf(dto.survey().water()));
+        log.info(String.valueOf(dto.survey().meals()));
+        log.info(String.valueOf(dto.survey().favorite()));
+
         Map<String, Object> map = new HashMap<>();
+
         if (dto.survey() != null) {
             map.put("duration", dto.survey().duration());
             map.put("sleep", dto.survey().sleep());
@@ -145,6 +204,8 @@ public class AiClient {
         if (dto.profile() != null) {
             map.put("exercise", dto.profile().activity());
         }
+
+        System.out.println("생성된 맵 데이터: " + map.toString());
         return map;
     }
 }
