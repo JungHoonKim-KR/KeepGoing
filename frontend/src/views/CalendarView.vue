@@ -10,8 +10,6 @@
         </div>
         <button @click="changeMonth(1)" class="pixel-arrow">▶</button>
       </div>
-
- 
     </header>
 
     <div class="content">
@@ -176,8 +174,9 @@ const grades = [
   { key: "F", label: "FAIL", color: "#888888" },
 ];
 
-const dailyDataMap = ref({});
-const dailyPlanMap = ref({});
+// 데이터 저장소
+const dailyDataMap = ref({}); // 랭크 데이터 (S, A, B...)
+const dailyPlanMap = ref({}); // 식단 계획 데이터
 
 const currentDate = ref(new Date());
 const selectedDate = ref(new Date().toDateString());
@@ -188,6 +187,7 @@ const isYearMonthModalOpen = ref(false);
 const tempSelectedYear = ref(currentDate.value.getFullYear());
 const tempSelectedMonth = ref(currentDate.value.getMonth());
 
+// 사운드 효과
 const playSound = (type) => {
   const AudioContext = window.AudioContext || window.webkitAudioContext;
   if (!AudioContext) return;
@@ -216,6 +216,7 @@ const playSound = (type) => {
   }
 };
 
+// Getter 함수들
 const getDayRank = (dateKey) => dailyDataMap.value[dateKey] || null;
 const getDayPlan = (dateKey) => dailyPlanMap.value[dateKey] || null;
 
@@ -226,47 +227,7 @@ const formatDateKey = (date) => {
   return `${y}-${m}-${d}`;
 };
 
-// 🌟 [수정됨] Difficulty 제거 버전
-const generateMockData = (days) => {
-  const plans = {};
-  const menuPool = [
-    { name: "닭가슴살 샐러드", cal: 350 },
-    { name: "현미밥 & 고등어", cal: 500 },
-    { name: "그릭 요거트", cal: 200 },
-    { name: "아보카도 덮밥", cal: 450 },
-    { name: "연어 포케", cal: 480 },
-    { name: "두부 쉐이크", cal: 250 },
-    { name: "소고기 뭇국", cal: 400 },
-    { name: "오트밀 죽", cal: 300 },
-  ];
-  const quests = ["물 2L 마시기", "천천히 씹기", "야식 금지", "10분 산책", "탄산 끊기"];
-
-  for (let i = 0; i < days; i++) {
-    const tDate = new Date();
-    tDate.setDate(tDate.getDate() + i);
-    const dateKey = formatDateKey(tDate);
-
-    const dailyMenus = [];
-    const count = Math.floor(Math.random() * 2) + 2;
-    let totalCal = 0;
-
-    for (let j = 0; j < count; j++) {
-      const randomItem = menuPool[Math.floor(Math.random() * menuPool.length)];
-      dailyMenus.push(randomItem);
-      totalCal += randomItem.cal;
-    }
-
-    const rQuest = quests[Math.floor(Math.random() * quests.length)];
-
-    plans[dateKey] = {
-      menus: dailyMenus,
-      quest: rQuest,
-      totalCal: totalCal,
-    };
-  }
-  return plans;
-};
-
+// [API] 랭크(평가) 조회
 const fetchEvaluations = async (year, month) => {
   const apiMonth = month + 1;
   const url = `${API_ENDPOINT}/diets/evaluations?memberId=${MEMBER_ID}&year=${year}&month=${apiMonth}`;
@@ -287,43 +248,51 @@ const fetchEvaluations = async (year, month) => {
   }
 };
 
-const selectRank = async (rankKey) => {
-  playSound("select");
-  if (!modalTargetDay.value) return;
-  const dateKey = modalTargetDay.value.dateKey;
-
-  dailyDataMap.value[dateKey] = rankKey;
-
+// [API] 식단 스케쥴 조회 (Mock Data 대신 실제 API 호출)
+const fetchSchedules = async () => {
   try {
-    await fetch(`${API_ENDPOINT}/diets/evaluation`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        memberId: MEMBER_ID,
-        date: dateKey,
-        rank: rankKey,
-      }),
+    // memberId를 파라미터로 전송
+    const response = await fetch(`${API_ENDPOINT}/diets/schedule?memberId=${MEMBER_ID}`);
+    if (!response.ok) throw new Error("Failed to fetch schedules");
+
+    const data = await response.json();
+
+    // List -> Map 변환
+    const planMap = {};
+    data.forEach((item) => {
+      planMap[item.date] = {
+        menus: item.menus, // List<MenuDto>
+        quest: item.quest,
+        totalCal: item.totalCal,
+      };
     });
-  } catch (e) {
-    console.error("저장 실패");
-    fetchEvaluations(currentYear.value, currentMonth.value);
+
+    dailyPlanMap.value = planMap;
+  } catch (error) {
+    console.error("스케쥴 로딩 실패:", error);
+    dailyPlanMap.value = {};
   }
 };
 
+// [API] 랭크 삭제
 const removeRank = async () => {
   playSound("select");
   if (!modalTargetDay.value) return;
   const dateKey = modalTargetDay.value.dateKey;
+
+  // UI 즉시 반영 (Optimistic Update)
   delete dailyDataMap.value[dateKey];
 
   try {
     const url = `${API_ENDPOINT}/diets/evaluation?memberId=${MEMBER_ID}&date=${dateKey}`;
     await fetch(url, { method: "DELETE" });
   } catch (e) {
+    // 실패 시 롤백용 재조회
     fetchEvaluations(currentYear.value, currentMonth.value);
   }
 };
 
+// UI 인터랙션
 const handleDateClick = (day) => {
   if (!day.dateKey) return;
   playSound("select");
@@ -344,6 +313,7 @@ const closeColorModal = () => {
   modalTargetDay.value = null;
 };
 
+// Computed: 날짜 계산
 const currentYear = computed(() => currentDate.value.getFullYear());
 const currentMonth = computed(() => currentDate.value.getMonth());
 const availableMonths = computed(() => Array.from({ length: 12 }, (_, i) => i));
@@ -381,6 +351,8 @@ const changeMonth = (delta) => {
   const newDate = new Date(currentDate.value);
   newDate.setMonth(newDate.getMonth() + delta);
   currentDate.value = newDate;
+
+  // 월 변경 시 평가 데이터 다시 로드
   fetchEvaluations(newDate.getFullYear(), newDate.getMonth());
 };
 
@@ -408,9 +380,12 @@ watch(
   }
 );
 
+// 라이프사이클
 onMounted(() => {
+  // 1. 랭크 데이터 조회
   fetchEvaluations(currentYear.value, currentMonth.value);
-  dailyPlanMap.value = generateMockData(7);
+  // 2. 식단 스케쥴 데이터 조회
+  fetchSchedules();
 });
 </script>
 
@@ -472,39 +447,11 @@ onMounted(() => {
   text-shadow: 0 0 5px #00e5ff;
 }
 
-.category-tabs {
-  display: flex;
-  padding-bottom: 1rem;
-}
-.tab-btn {
-  background: #111;
-  color: #888;
-  border: 2px solid #555;
-  padding: 8px 10px;
-  font-family: inherit;
-  width: 100%;
-  font-size: 0.9rem;
-}
-.tab-btn.active {
-  background: #00e5ff;
-  color: #000;
-  border-color: #fff;
-  font-weight: bold;
-  box-shadow: 0 0 8px #00e5ff;
-}
-
 .content {
   padding: 0 1rem;
 }
 .legend-box {
   margin-bottom: 1rem;
-}
-.pixel-label-sm {
-  font-size: 0.7rem;
-  color: #ffd700;
-  margin-bottom: 5px;
-  border-bottom: 1px dashed #555;
-  display: inline-block;
 }
 .tracking-states {
   display: flex;
@@ -636,7 +583,7 @@ onMounted(() => {
   color: #fff;
 }
 
-/* Plan Dot */
+/* Plan Dot (식단 표시) */
 .plan-dot {
   position: absolute;
   top: 4px;
@@ -680,6 +627,7 @@ onMounted(() => {
 .rank-stamp.F {
   color: #888;
 }
+
 .player-cursor {
   position: absolute;
   bottom: 1px;
@@ -730,15 +678,8 @@ onMounted(() => {
   font-size: 0.8rem;
   margin-bottom: 1rem;
 }
-.divider {
-  color: #555;
-  font-size: 0.7rem;
-  text-align: center;
-  margin: 10px 0;
-  letter-spacing: 2px;
-}
 
-/* 🌟 Mission Log Box */
+/* Mission Log Box */
 .mission-log-box {
   background: #111;
   border: 2px dashed #555;
@@ -770,7 +711,6 @@ onMounted(() => {
   gap: 8px;
 }
 
-/* Menu List */
 .menu-list {
   display: flex;
   flex-direction: column;
@@ -793,7 +733,6 @@ onMounted(() => {
 .menu-name {
   font-weight: bold;
 }
-
 .menu-meta {
   display: flex;
   gap: 4px;
@@ -830,15 +769,13 @@ onMounted(() => {
   padding: 10px;
 }
 
-/* 🌟 [핵심] 모달 네비게이션 버튼 그룹 (가로 배치) */
 .modal-nav-row {
   display: flex;
-  gap: 10px; /* 버튼 간격 */
+  gap: 10px;
   margin-top: 20px;
 }
-
 .retro-btn {
-  flex: 1; /* 가로 너비 균등 분배 */
+  flex: 1;
   padding: 5px;
   border: 2px solid #fff;
   font-family: inherit;
@@ -850,7 +787,6 @@ onMounted(() => {
 .retro-btn:active {
   transform: scale(0.95);
 }
-
 .nav-btn {
   background: #00e5ff;
   color: #000;
@@ -866,66 +802,6 @@ onMounted(() => {
   background: #333;
   color: #ff3838;
   border-color: #ff3838;
-}
-
-.action-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-bottom: 1rem;
-}
-.action-btn {
-  background: #000;
-  border: 2px solid #555;
-  color: #fff;
-  padding: 12px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  cursor: pointer;
-  transition: all 0.2s;
-  font-family: inherit;
-}
-.action-btn:hover,
-.action-btn.active {
-  border-color: #00e5ff;
-  background: #111;
-}
-.action-rank-circle {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: bold;
-  border: 2px solid #fff;
-  font-size: 0.9rem;
-}
-.action-rank-circle.S {
-  background: #ffd700;
-  color: #000;
-}
-.action-rank-circle.A {
-  background: #ff0055;
-  color: #fff;
-}
-.action-rank-circle.B {
-  background: #00e5ff;
-  color: #000;
-}
-.action-rank-circle.C {
-  background: #ffa500;
-  color: #000;
-}
-.action-rank-circle.F {
-  background: #888;
-  color: #fff;
-}
-
-.action-check {
-  margin-left: auto;
-  color: #00e5ff;
 }
 
 .time-modal {

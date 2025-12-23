@@ -85,3 +85,13 @@ export const scanFoodImageApi = async (file) => {
     throw error;
   }
 };
+export const applyDietPlanApi = async (memberId, planList) => {
+  // 백엔드 DTO 구조에 맞춤
+  const payload = {
+    memberId: memberId,
+    plans: planList,
+  };
+
+  const response = await api.post("/diets/schedule", payload);
+  return response.data;
+};

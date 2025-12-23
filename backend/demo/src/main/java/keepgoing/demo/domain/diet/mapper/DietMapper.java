@@ -2,10 +2,7 @@ package keepgoing.demo.domain.diet.mapper;
 
 import keepgoing.demo.domain.diet.dto.DailyEvaluationDto;
 import keepgoing.demo.domain.diet.dto.FoodRecordDTO;
-import keepgoing.demo.domain.diet.entity.AiReport;
-import keepgoing.demo.domain.diet.entity.Diet;
-import keepgoing.demo.domain.diet.entity.Food;
-import keepgoing.demo.domain.diet.entity.HydrationRecord;
+import keepgoing.demo.domain.diet.entity.*;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -39,8 +36,12 @@ public interface DietMapper {
     void upsertEvaluation(@Param("memberId") Long memberId, @Param("date")LocalDate date, @Param("rank")String rank);
     // Mapper Interface에 메서드 추가 필요
     void deleteFoodMappings(@Param("dietId") Long dietId);
-
-
+    List<FoodSchedule> findSchedulesAfterToday(@Param("memberId") Long memberId);
+    void upsertFoodSchedule(
+            @Param("memberId") Long memberId,
+            @Param("date") LocalDate date,
+            @Param("recommendJson") String recommendJson
+    );
     // [유지] 2. AI 결과 저장 (이건 내 담당)
     void saveAiReport(AiReport aiReport);
 }

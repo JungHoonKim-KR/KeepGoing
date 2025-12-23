@@ -1,13 +1,8 @@
 <script setup>
 import { ref } from "vue";
 import { useRouter } from "vue-router";
-// API 경로 유지
-import {
-  analyzeDiet,
-  generateDietPlanApi,
-  scanBodyApi,
-  scanFoodImageApi,
-} from "../api/diet/dietApi";
+// [수정] applyDietPlanApi 추가
+import { analyzeDiet, generateDietPlanApi, scanBodyApi, scanFoodImageApi, applyDietPlanApi } from "../api/diet/dietApi";
 import Footer from "../components/utils/Footer.vue";
 import { useConfigStore } from "@/stores/configStore";
 import { useAuthStore } from "@/stores/authStore";
@@ -120,7 +115,7 @@ const getRankColor = (score) => {
 };
 
 // ------------------------------------------------------------------
-// API 로직들 (기존과 동일)
+// API 로직들
 // ------------------------------------------------------------------
 const fetchAnalysis = async () => {
   if (isAnalyzing.value) return;
@@ -188,6 +183,7 @@ const generateDietPlan = async () => {
     };
     const result = await generateDietPlanApi(payload);
     generatedPlan.value = result;
+    console.log(generatedPlan.value);
     dietPlanStep.value = "result";
   } catch (error) {
     alert("식단을 생성하지 못했습니다. 잠시 후 다시 시도해주세요.");
@@ -220,7 +216,7 @@ const analyzeFoodImage = async () => {
   scanStep.value = "analyzing";
   try {
     const result = await scanFoodImageApi(currentFile.value);
-    // 분석 효과를 위해 2초 딜레이 (사용자가 스캔 애니메이션을 볼 수 있게)
+    // 분석 효과를 위해 2초 딜레이
     setTimeout(() => {
       scanResult.value = result;
       scanStep.value = "result";
@@ -245,12 +241,7 @@ const analyzeBodyStats = async () => {
 };
 
 const runBootSequence = () => {
-  const logs = [
-    "INITIALIZING SYSTEM...",
-    "CONNECTING NEURAL NET...",
-    "LOADING BIOMETRICS...",
-    "ACCESS GRANTED.",
-  ];
+  const logs = ["INITIALIZING SYSTEM...", "CONNECTING NEURAL NET...", "LOADING BIOMETRICS...", "ACCESS GRANTED."];
   let logIndex = 0;
   const interval = setInterval(() => {
     if (logIndex < logs.length) {
@@ -260,6 +251,39 @@ const runBootSequence = () => {
     }
   }, 300);
 };
+
+// [추가] 시스템 적용 (DB 저장) 함수
+const confirmDietPlan = async () => {
+  // 1. 데이터 검증
+  if (!generatedPlan.value || generatedPlan.value.length === 0) {
+    alert("SYSTEM ERROR: 저장할 식단 데이터가 없습니다.");
+    return;
+  }
+
+  // 2. 사용자 확인
+  const isConfirmed = confirm(
+    `[SYSTEM NOTICE]\n생성된 ${selectedDuration.value}일치 식단을 스케쥴 데이터베이스에 동기화하시겠습니까?`
+  );
+
+  if (!isConfirmed) return;
+
+  // 3. 로딩 상태 전환
+  dietPlanStep.value = "loading";
+
+  try {
+    // 4. API 호출
+    await applyDietPlanApi(MEMBER_ID, generatedPlan.value);
+
+    // 5. 성공 시
+    alert("SYNC COMPLETE: 식단이 스케쥴에 정상적으로 등록되었습니다.");
+    showDietPlanModal.value = false; // 모달 닫기
+  } catch (error) {
+    // 6. 실패 시
+    console.error(error);
+    alert("SYNC FAILED: 서버 통신 중 오류가 발생했습니다.");
+    dietPlanStep.value = "result"; // 다시 결과 화면으로 복귀
+  }
+};
 </script>
 
 <template>
@@ -268,19 +292,13 @@ const runBootSequence = () => {
 
     <div class="content-wrapper">
       <div class="retro-header">
-        <div class="system-status">
-          <span class="status-light blink"></span> SYSTEM ONLINE
-        </div>
-        <h1 class="page-title glitch" data-text="AI HEALTH LAB">
-          AI HEALTH LAB
-        </h1>
+        <div class="system-status"><span class="status-light blink"></span> SYSTEM ONLINE</div>
+        <h1 class="page-title glitch" data-text="AI HEALTH LAB">AI HEALTH LAB</h1>
       </div>
 
       <div v-if="isLoading" class="loading-terminal">
         <div class="terminal-screen">
-          <div v-for="(log, index) in bootLogs" :key="index" class="log-line">
-            > {{ log }}
-          </div>
+          <div v-for="(log, index) in bootLogs" :key="index" class="log-line">> {{ log }}</div>
           <div class="cursor-line">> <span class="blink-cursor">_</span></div>
         </div>
         <div class="loading-bar-container"><div class="loading-bar"></div></div>
@@ -297,9 +315,7 @@ const runBootSequence = () => {
             </div>
           </div>
           <div class="ai-message">
-            <p v-if="!analysisData" class="typing-text">
-              "시스템 준비 완료. 터치하여 분석 시작."
-            </p>
+            <p v-if="!analysisData" class="typing-text">"시스템 준비 완료. 터치하여 분석 시작."</p>
             <p v-else class="result-text">
               "분석 완료. 랭크 [
               <span class="rank-highlight">{{ analysisData.rank }}</span> ]"
@@ -328,11 +344,7 @@ const runBootSequence = () => {
             <div class="btn-arrow">→</div>
           </button>
 
-          <button
-            class="hero-btn body"
-            @click="analyzeBodyStats"
-            :disabled="isScanningBody"
-          >
+          <button class="hero-btn body" @click="analyzeBodyStats" :disabled="isScanningBody">
             <div class="btn-bg"></div>
             <div class="btn-icon">🧬</div>
             <div class="btn-text">
@@ -347,16 +359,10 @@ const runBootSequence = () => {
 
         <div v-if="analysisData" class="result-section">
           <div class="power-card fade-in-up">
-            <div
-              class="rank-badge"
-              :style="{ color: getRankColor(analysisData.overallScore) }"
-            >
+            <div class="rank-badge" :style="{ color: getRankColor(analysisData.overallScore) }">
               RANK {{ analysisData.rank }}
             </div>
-            <div
-              class="score-val"
-              :style="{ color: getRankColor(analysisData.overallScore) }"
-            >
+            <div class="score-val" :style="{ color: getRankColor(analysisData.overallScore) }">
               {{ analysisData.overallScore }} <span class="max">/ 100</span>
             </div>
             <div class="retro-progress">
@@ -368,9 +374,7 @@ const runBootSequence = () => {
                 }"
               ></div>
             </div>
-            <div class="ai-summary-text">
-              "{{ analysisData.recommendation }}"
-            </div>
+            <div class="ai-summary-text">"{{ analysisData.recommendation }}"</div>
           </div>
         </div>
       </div>
@@ -378,21 +382,13 @@ const runBootSequence = () => {
 
     <Footer />
 
-    <div
-      v-if="showDietPlanModal"
-      class="modal-overlay"
-      @click.self="showDietPlanModal = false"
-    >
+    <div v-if="showDietPlanModal" class="modal-overlay" @click.self="showDietPlanModal = false">
       <div class="modal-win survey-modal pop-in">
         <div class="modal-header">
           <span>{{
-            dietPlanStep === "survey"
-              ? `DATA INPUT ${surveyStep + 1}/${surveyQuestions.length}`
-              : "PROCESSING..."
+            dietPlanStep === "survey" ? `DATA INPUT ${surveyStep + 1}/${surveyQuestions.length}` : "PROCESSING..."
           }}</span>
-          <button class="close-btn" @click="showDietPlanModal = false">
-            ✕
-          </button>
+          <button class="close-btn" @click="showDietPlanModal = false">✕</button>
         </div>
 
         <div v-if="dietPlanStep === 'survey'" class="modal-body">
@@ -427,44 +423,26 @@ const runBootSequence = () => {
               <div class="day">DAY {{ p.day }}</div>
               <div class="menu">{{ p.menu }}</div>
               <div class="quest-row">
-                <span class="badge" :class="p.difficulty">{{
-                  p.difficulty
-                }}</span>
+                <span class="badge" :class="p.difficulty">{{ p.difficulty }}</span>
                 <span class="quest">🎯 {{ p.quest }}</span>
               </div>
               <div class="cal-info">⚡ {{ p.cal }} kcal</div>
             </div>
           </div>
-          <button class="apply-btn" @click="showDietPlanModal = false">
-            시스템 적용
-          </button>
+          <button class="apply-btn" @click="confirmDietPlan">시스템 적용</button>
         </div>
       </div>
     </div>
 
-    <div
-      v-if="showFoodScanModal"
-      class="modal-overlay"
-      @click.self="showFoodScanModal = false"
-    >
+    <div v-if="showFoodScanModal" class="modal-overlay" @click.self="showFoodScanModal = false">
       <div class="modal-win scan-modal pop-in">
         <div class="modal-header">
-          <span>{{
-            scanStep === "result" ? "ANALYSIS COMPLETE" : "VISUAL SCANNER"
-          }}</span>
-          <button class="close-btn" @click="showFoodScanModal = false">
-            ✕
-          </button>
+          <span>{{ scanStep === "result" ? "ANALYSIS COMPLETE" : "VISUAL SCANNER" }}</span>
+          <button class="close-btn" @click="showFoodScanModal = false">✕</button>
         </div>
 
         <div v-if="scanStep === 'upload'" class="modal-body upload-section">
-          <input
-            type="file"
-            accept="image/*"
-            id="food-img"
-            @change="handleImageUpload"
-            style="display: none"
-          />
+          <input type="file" accept="image/*" id="food-img" @change="handleImageUpload" style="display: none" />
           <label for="food-img" class="viewfinder-label">
             <div class="corner top-left"></div>
             <div class="corner top-right"></div>
@@ -495,12 +473,8 @@ const runBootSequence = () => {
 
         <div v-if="scanStep === 'result'" class="modal-body result">
           <img :src="scannedImage" class="preview" />
-          <div class="food-name bounce-in">
-            {{ scanResult.emoji }} {{ scanResult.name }}
-          </div>
-          <div class="calorie-big pulse-text">
-            🔥 {{ scanResult.calories }} kcal
-          </div>
+          <div class="food-name bounce-in">{{ scanResult.emoji }} {{ scanResult.name }}</div>
+          <div class="calorie-big pulse-text">🔥 {{ scanResult.calories }} kcal</div>
           <div class="exercise-grid">
             <div class="ex-card">
               <div>🏃 러닝</div>
@@ -529,17 +503,11 @@ const runBootSequence = () => {
       </div>
     </div>
 
-    <div
-      v-if="showBodyScanModal && bodyScanResult"
-      class="modal-overlay"
-      @click.self="showBodyScanModal = false"
-    >
+    <div v-if="showBodyScanModal && bodyScanResult" class="modal-overlay" @click.self="showBodyScanModal = false">
       <div class="modal-win scan-modal pop-in">
         <div class="modal-header">
           <span>CHARACTER STATUS</span>
-          <button class="close-btn" @click="showBodyScanModal = false">
-            ✕
-          </button>
+          <button class="close-btn" @click="showBodyScanModal = false">✕</button>
         </div>
         <div class="modal-body result">
           <div class="rpg-class-title glitch" :data-text="bodyScanResult.class">
@@ -550,26 +518,16 @@ const runBootSequence = () => {
           <div class="bmi-info">BMI: {{ bodyScanResult.bmi }}</div>
 
           <div class="stats-container">
-            <div
-              class="stat-row"
-              v-for="(val, key) in bodyScanResult.stats"
-              :key="key"
-            >
+            <div class="stat-row" v-for="(val, key) in bodyScanResult.stats" :key="key">
               <span class="stat-label">{{ key.toUpperCase() }}</span>
               <div class="stat-bar">
-                <div
-                  class="stat-fill"
-                  :class="key"
-                  :style="{ width: val + '%' }"
-                ></div>
+                <div class="stat-fill" :class="key" :style="{ width: val + '%' }"></div>
               </div>
               <span class="stat-val">{{ val }}</span>
             </div>
           </div>
 
-          <button class="apply-btn" @click="showBodyScanModal = false">
-            확인
-          </button>
+          <button class="apply-btn" @click="showBodyScanModal = false">확인</button>
         </div>
       </div>
     </div>
@@ -1023,7 +981,7 @@ const runBootSequence = () => {
 }
 
 /* -------------------------------------------
-   6. [중요] 설문조사 & 옵션 버튼 (이게 빠져서 안 보였음)
+   6. [중요] 설문조사 & 옵션 버튼
 ------------------------------------------- */
 .question {
   text-align: center;
@@ -1070,7 +1028,7 @@ const runBootSequence = () => {
 }
 
 /* -------------------------------------------
-   7. 식단 결과 리스트 (이것도 빠져서 안 보였음)
+   7. 식단 결과 리스트
 ------------------------------------------- */
 .summary {
   text-align: center;
@@ -1438,10 +1396,6 @@ const runBootSequence = () => {
 .pulse-text {
   animation: pulse 1s infinite;
 }
-
-/* -------------------------------------------
-   스캔 모달 디자인 리메이크 (깨짐 수정 & 퀄리티 업)
-------------------------------------------- */
 
 /* -------------------------------------------
    스캔 모달 디자인 리메이크 (깨짐 수정 & 퀄리티 업)
