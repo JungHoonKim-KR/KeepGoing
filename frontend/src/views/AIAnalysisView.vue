@@ -6,6 +6,58 @@ import { analyzeDiet, generateDietPlanApi, scanBodyApi, scanFoodImageApi, applyD
 import Footer from "../components/utils/Footer.vue";
 import { useConfigStore } from "@/stores/configStore";
 import { useAuthStore } from "@/stores/authStore";
+import axios from "axios";
+
+const YOUTUBE_API_KEY = "AIzaSyBwl61AGUcuiXLBjEv6d9I8cHsCPtJpU94"; 
+
+const isVideoLoading = ref(false);     // 로딩 상태
+const currentVideoId = ref(null);      // 재생할 영상 ID
+const activeExerciseType = ref(null);  // 현재 클릭된 운동 (running, walking, swimming)
+
+// [YouTube 검색 및 재생 함수]
+const searchAndPlayYoutube = async (exerciseName, minutes, type) => {
+  // 이미 같은 걸 보고 있으면 닫기
+  if (activeExerciseType.value === type && currentVideoId.value) {
+    currentVideoId.value = null;
+    activeExerciseType.value = null;
+    return;
+  }
+
+  // 1. 상태 초기화
+  activeExerciseType.value = type;
+  isVideoLoading.value = true;
+  currentVideoId.value = null;
+  
+  // 2. 검색어 조합 (예: "30분 러닝 다이어트")
+  const query = `${minutes}분 ${exerciseName} 운동 다이어트`;
+
+  try {
+    // 3. YouTube API 호출
+    const response = await axios.get("https://www.googleapis.com/youtube/v3/search", {
+      params: {
+        part: "snippet",
+        q: query,
+        type: "video",
+        maxResults: 1, // 가장 관련성 높은 1개
+        key: YOUTUBE_API_KEY,
+      },
+    });
+
+    // 4. 결과 처리
+    if (response.data.items.length > 0) {
+      currentVideoId.value = response.data.items[0].id.videoId;
+    } else {
+      alert("관련 영상을 찾을 수 없습니다.");
+      activeExerciseType.value = null;
+    }
+  } catch (error) {
+    console.error("YouTube API Error:", error);
+    alert("영상 검색 중 오류가 발생했습니다. (API 키 할당량을 확인하세요)");
+    activeExerciseType.value = null;
+  } finally {
+    isVideoLoading.value = false;
+  }
+};
 
 const router = useRouter();
 const config = useConfigStore();
@@ -471,35 +523,76 @@ const confirmDietPlan = async () => {
           </div>
         </div>
 
+        
         <div v-if="scanStep === 'result'" class="modal-body result">
-          <img :src="scannedImage" class="preview" />
-          <div class="food-name bounce-in">{{ scanResult.emoji }} {{ scanResult.name }}</div>
-          <div class="calorie-big pulse-text">🔥 {{ scanResult.calories }} kcal</div>
-          <div class="exercise-grid">
-            <div class="ex-card">
-              <div>🏃 러닝</div>
-              <div class="time">{{ scanResult.exercise.running }}분</div>
-            </div>
-            <div class="ex-card">
-              <div>🚶 걷기</div>
-              <div class="time">{{ scanResult.exercise.walking }}분</div>
-            </div>
-            <div class="ex-card">
-              <div>🏊 수영</div>
-              <div class="time">{{ scanResult.exercise.swimming }}분</div>
-            </div>
-          </div>
-          <button
-            class="apply-btn"
-            @click="
-              scanStep = 'upload';
-              scannedImage = null;
-              currentFile = null;
-            "
-          >
-            재스캔
-          </button>
-        </div>
+  <img :src="scannedImage" class="preview" />
+  
+  <div class="food-name bounce-in">{{ scanResult.emoji }} {{ scanResult.name }}</div>
+  <div class="calorie-big pulse-text">🔥 {{ scanResult.calories }} kcal</div>
+
+  <div class="exercise-grid">
+    
+    <div 
+      class="ex-card clickable"
+      :class="{ active: activeExerciseType === 'running' }"
+      @click="searchAndPlayYoutube('러닝', scanResult.exercise.running, 'running')"
+    >
+      <div>🏃 러닝</div>
+      <div class="time">{{ scanResult.exercise.running }}분</div>
+    </div>
+
+    <div 
+      class="ex-card clickable"
+      :class="{ active: activeExerciseType === 'walking' }"
+      @click="searchAndPlayYoutube('걷기', scanResult.exercise.walking, 'walking')"
+    >
+      <div>🚶 걷기</div>
+      <div class="time">{{ scanResult.exercise.walking }}분</div>
+    </div>
+
+    <div 
+      class="ex-card clickable"
+      :class="{ active: activeExerciseType === 'swimming' }"
+      @click="searchAndPlayYoutube('수영', scanResult.exercise.swimming, 'swimming')"
+    >
+      <div>🏊 수영</div>
+      <div class="time">{{ scanResult.exercise.swimming }}분</div>
+    </div>
+  </div>
+
+  <div v-if="activeExerciseType" class="video-section fade-in">
+    
+    <div v-if="isVideoLoading" class="video-loading">
+      <div class="hex-spinner small"></div>
+      <span>영상 검색 중...</span>
+    </div>
+
+    <div v-else-if="currentVideoId" class="video-wrapper">
+      <iframe
+        width="100%"
+        height="100%"
+        :src="`https://www.youtube.com/embed/${currentVideoId}?autoplay=1`"
+        title="YouTube video player"
+        frameborder="0"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowfullscreen
+      ></iframe>
+    </div>
+  </div>
+
+  <button
+    class="apply-btn"
+    @click="
+      scanStep = 'upload';
+      scannedImage = null;
+      currentFile = null;
+      currentVideoId = null; 
+      activeExerciseType = null;
+    "
+  >
+    재스캔
+  </button>
+</div>
       </div>
     </div>
 
@@ -1620,5 +1713,64 @@ const confirmDietPlan = async () => {
   50% {
     opacity: 0.3;
   }
+}
+
+/* 클릭 가능한 카드 스타일 */
+.ex-card.clickable {
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+}
+.ex-card.clickable:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateY(-2px);
+  border-color: #00e5ff;
+}
+
+/* 활성화된(선택된) 카드 스타일 */
+.ex-card.active {
+  background: rgba(0, 229, 255, 0.2);
+  border: 1px solid #00e5ff;
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.4);
+}
+
+/* 영상 섹션 */
+.video-section {
+  margin-top: 15px;
+  margin-bottom: 15px;
+  border: 1px solid #333;
+  background: #000;
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+/* 로딩 UI */
+.video-loading {
+  height: 150px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #00e5ff;
+  gap: 10px;
+}
+.hex-spinner.small {
+  width: 30px;
+  height: 30px;
+}
+
+/* 반응형 비디오 (16:9 비율 유지) */
+.video-wrapper {
+  position: relative;
+  padding-bottom: 56.25%; /* 16:9 비율 */
+  height: 0;
+  overflow: hidden;
+}
+.video-wrapper iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
 }
 </style>

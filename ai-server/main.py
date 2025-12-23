@@ -6,7 +6,8 @@ import os
 import base64
 from openai import OpenAI
 from dotenv import load_dotenv
-from typing import List, Optional, Any
+import io
+from PIL import Image
 
 # 1. 환경 변수 로드
 load_dotenv()
@@ -195,37 +196,57 @@ def generate_diet_plan(request: DietGenerationRequest):
         ]
 
 
+def resize_image(image_bytes, max_size=768):
+    image = Image.open(io.BytesIO(image_bytes))
+
+    if image.mode in ("RGBA", "P"):
+        image = image.convert("RGB")
+
+    image.thumbnail((max_size, max_size))
+
+    buffer = io.BytesIO()
+    image.save(buffer, format="JPEG", quality=70)  # 🔥 핵심
+    return buffer.getvalue()
+
+
+
 # =========================================================
 # 3. 음식 사진 스캔 (칼로리 분석) API
 # EndPoint: /api/diet/scan
-# 설명: 사진을 분석하여 음식명, 칼로리, 소모 운동량(고정형) 반환
 # =========================================================
 @app.post("/api/diet/scan")
-def scan_food_image(file: UploadFile = File(...)):
+async def scan_food_image(file: UploadFile = File(...)):
     print(f"📸 [음식 스캔 요청] 파일명: {file.filename}")
 
     try:
-        contents = file.file.read()
-        base64_image = base64.b64encode(contents).decode('utf-8')
+        # 1. 파일 읽기
+        contents = await file.read()
+
+        # 2. [핵심] 리사이징 수행! (용량 줄이기)
+        resized_contents = resize_image(contents)
+
+        # 3. Base64 인코딩
+        base64_image = base64.b64encode(resized_contents).decode('utf-8')
 
         system_instruction = """
         너는 'AI 칼로리 측정기'야. 사진 속 음식을 분석해줘.
 
         [응답 포맷 (JSON Only)]
-        {{
+        {
             "name": "음식 이름 (예: 페퍼로니 피자)",
             "emoji": "🍕",
-            "calories": 0 (총 칼로리 정수),
-            "exercise": {{
-                "running": 0 (분),
-                "walking": 0 (분),
-                "swimming": 0 (분)
-            }}
-        }}
+            "calories": 0,
+            "exercise": {
+                "running": 0,
+                "walking": 0,
+                "swimming": 0
+            }
+        }
         """
 
+        # 4. OpenAI API 호출
         completion = client.chat.completions.create(
-            model="gpt-4o",  # Vision 기능은 gpt-4o 필수
+            model="gpt-4o",
             messages=[
                 {"role": "system", "content": system_instruction},
                 {
@@ -243,12 +264,15 @@ def scan_food_image(file: UploadFile = File(...)):
             response_format={"type": "json_object"}
         )
 
+        # 5. 결과 반환
         return json.loads(completion.choices[0].message.content)
 
     except Exception as e:
         print(f"❌ 이미지 분석 에러: {e}")
         return {
-            "name": "분석 실패", "emoji": "❌", "calories": 0,
+            "name": "분석 실패",
+            "emoji": "❌",
+            "calories": 0,
             "exercise": {"running": 0, "walking": 0, "swimming": 0}
         }
 
