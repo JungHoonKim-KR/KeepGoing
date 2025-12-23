@@ -205,38 +205,45 @@ public class DietService {
 
         // 2. Entity -> DTO 변환
         return schedules.stream().map(s -> {
-            // [수정 포인트] String -> Map 변환 로직 추가
             Map<String, Object> json = new HashMap<>();
             try {
-                // DB에 있는 String JSON을 Map으로 파싱
                 if (s.getRecommendJson() != null) {
                     json = objectMapper.readValue(s.getRecommendJson(), new TypeReference<Map<String, Object>>() {});
                 }
             } catch (Exception e) {
-                e.printStackTrace(); // 파싱 실패 시 빈 맵 유지
+                e.printStackTrace();
             }
 
-            // 3. 데이터 추출 (이제 json은 Map 타입이므로 get 가능)
-            String menuName = (String) json.getOrDefault("menu", "식단 정보 없음");
-            String quest = (String) json.getOrDefault("quest", "미션 없음");
+            // [수정 포인트] "menu"는 이제 String이 아니라 Map(객체)입니다.
+            // objectMapper.convertValue를 사용하면 Map을 클래스(MenuDetail)로 안전하게 변환해줍니다.
+            DietScheduleResponseDto.MenuDetail menuDetail = null;
 
+            try {
+                if (json.containsKey("menu")) {
+                    menuDetail = objectMapper.convertValue(json.get("menu"), DietScheduleResponseDto.MenuDetail.class);
+                }
+            } catch (IllegalArgumentException e) {
+                // 호환성 처리: 옛날 데이터가 String일 경우 대비 (선택사항)
+                menuDetail = DietScheduleResponseDto.MenuDetail.builder()
+                        .breakfast("데이터 형식 오류")
+                        .build();
+            }
+
+            // 퀘스트 및 칼로리 추출
+            String quest = (String) json.getOrDefault("quest", "미션 없음");
             int calories = 0;
             if (json.get("cal") instanceof Number) {
                 calories = ((Number) json.get("cal")).intValue();
             }
 
-            // 4. 프론트엔드 구조에 맞게 포장
-            DietScheduleResponseDto.MenuDto menuDto = DietScheduleResponseDto.MenuDto.builder()
-                    .name(menuName)
-                    .cal(calories)
-                    .build();
-
+            // Builder 패턴으로 반환
             return DietScheduleResponseDto.builder()
                     .date(s.getDate().toString())
-                    .menus(Collections.singletonList(menuDto))
+                    .menu(menuDetail) // 객체 그대로 넣기
                     .totalCal(calories)
                     .quest(quest)
                     .build();
+
         }).collect(Collectors.toList());
     }
     // 월별 조회

@@ -13,10 +13,22 @@ public class DietApplyRequestDto {
     @Data
     @NoArgsConstructor
     public static class DietPlanItem {
-        private int day;        // 날짜 계산용 (DB 저장 X)
-        private String menu;    // JSON 저장 O
-        private int cal;        // JSON 저장 O
-        private String difficulty; // JSON 저장 O
-        private String quest;   // JSON 저장 O
+        private int day;
+
+        // [수정] String -> MenuDetail 객체로 변경
+        private MenuDetail menu;
+
+        private int cal;
+        private String difficulty;
+        private String quest;
+    }
+
+    // [추가] 아침/점심/저녁을 담을 내부 클래스
+    @Data
+    @NoArgsConstructor
+    public static class MenuDetail {
+        private String breakfast;
+        private String lunch;
+        private String dinner;
     }
 }

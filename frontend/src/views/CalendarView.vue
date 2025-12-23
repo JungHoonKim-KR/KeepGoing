@@ -84,14 +84,18 @@
             </div>
 
             <div class="mission-content">
-              <div class="menu-list">
-                <div v-for="(item, idx) in getDayPlan(modalTargetDay?.dateKey).menus" :key="idx" class="menu-item">
-                  <div class="menu-info">
-                    <span class="menu-name">{{ item.name }}</span>
-                  </div>
-                  <div class="menu-meta">
-                    <span class="mini-tag cal">{{ item.cal }}</span>
-                  </div>
+              <div class="menu-list-3">
+                <div class="meal-row">
+                  <span class="meal-badge morning">아침</span>
+                  <span class="meal-text">{{ getDayPlan(modalTargetDay?.dateKey).menu?.breakfast || "-" }}</span>
+                </div>
+                <div class="meal-row">
+                  <span class="meal-badge lunch">점심</span>
+                  <span class="meal-text">{{ getDayPlan(modalTargetDay?.dateKey).menu?.lunch || "-" }}</span>
+                </div>
+                <div class="meal-row">
+                  <span class="meal-badge dinner">저녁</span>
+                  <span class="meal-text">{{ getDayPlan(modalTargetDay?.dateKey).menu?.dinner || "-" }}</span>
                 </div>
               </div>
 
@@ -174,9 +178,8 @@ const grades = [
   { key: "F", label: "FAIL", color: "#888888" },
 ];
 
-// 데이터 저장소
-const dailyDataMap = ref({}); // 랭크 데이터 (S, A, B...)
-const dailyPlanMap = ref({}); // 식단 계획 데이터
+const dailyDataMap = ref({}); // 랭크 데이터
+const dailyPlanMap = ref({}); // 식단 데이터
 
 const currentDate = ref(new Date());
 const selectedDate = ref(new Date().toDateString());
@@ -187,7 +190,6 @@ const isYearMonthModalOpen = ref(false);
 const tempSelectedYear = ref(currentDate.value.getFullYear());
 const tempSelectedMonth = ref(currentDate.value.getMonth());
 
-// 사운드 효과
 const playSound = (type) => {
   const AudioContext = window.AudioContext || window.webkitAudioContext;
   if (!AudioContext) return;
@@ -216,7 +218,6 @@ const playSound = (type) => {
   }
 };
 
-// Getter 함수들
 const getDayRank = (dateKey) => dailyDataMap.value[dateKey] || null;
 const getDayPlan = (dateKey) => dailyPlanMap.value[dateKey] || null;
 
@@ -227,7 +228,7 @@ const formatDateKey = (date) => {
   return `${y}-${m}-${d}`;
 };
 
-// [API] 랭크(평가) 조회
+// [API] 랭크(평가) 데이터 조회
 const fetchEvaluations = async (year, month) => {
   const apiMonth = month + 1;
   const url = `${API_ENDPOINT}/diets/evaluations?memberId=${MEMBER_ID}&year=${year}&month=${apiMonth}`;
@@ -248,10 +249,9 @@ const fetchEvaluations = async (year, month) => {
   }
 };
 
-// [API] 식단 스케쥴 조회 (Mock Data 대신 실제 API 호출)
+// [API] 식단 스케쥴 조회 (수정됨: 객체 매핑)
 const fetchSchedules = async () => {
   try {
-    // memberId를 파라미터로 전송
     const response = await fetch(`${API_ENDPOINT}/diets/schedule?memberId=${MEMBER_ID}`);
     if (!response.ok) throw new Error("Failed to fetch schedules");
 
@@ -261,7 +261,8 @@ const fetchSchedules = async () => {
     const planMap = {};
     data.forEach((item) => {
       planMap[item.date] = {
-        menus: item.menus, // List<MenuDto>
+        // 백엔드에서 menu가 이미 객체 {breakfast:..., lunch:..., dinner:...} 로 옴
+        menu: item.menu,
         quest: item.quest,
         totalCal: item.totalCal,
       };
@@ -279,20 +280,16 @@ const removeRank = async () => {
   playSound("select");
   if (!modalTargetDay.value) return;
   const dateKey = modalTargetDay.value.dateKey;
-
-  // UI 즉시 반영 (Optimistic Update)
   delete dailyDataMap.value[dateKey];
 
   try {
     const url = `${API_ENDPOINT}/diets/evaluation?memberId=${MEMBER_ID}&date=${dateKey}`;
     await fetch(url, { method: "DELETE" });
   } catch (e) {
-    // 실패 시 롤백용 재조회
     fetchEvaluations(currentYear.value, currentMonth.value);
   }
 };
 
-// UI 인터랙션
 const handleDateClick = (day) => {
   if (!day.dateKey) return;
   playSound("select");
@@ -313,7 +310,6 @@ const closeColorModal = () => {
   modalTargetDay.value = null;
 };
 
-// Computed: 날짜 계산
 const currentYear = computed(() => currentDate.value.getFullYear());
 const currentMonth = computed(() => currentDate.value.getMonth());
 const availableMonths = computed(() => Array.from({ length: 12 }, (_, i) => i));
@@ -351,8 +347,6 @@ const changeMonth = (delta) => {
   const newDate = new Date(currentDate.value);
   newDate.setMonth(newDate.getMonth() + delta);
   currentDate.value = newDate;
-
-  // 월 변경 시 평가 데이터 다시 로드
   fetchEvaluations(newDate.getFullYear(), newDate.getMonth());
 };
 
@@ -380,12 +374,9 @@ watch(
   }
 );
 
-// 라이프사이클
 onMounted(() => {
-  // 1. 랭크 데이터 조회
   fetchEvaluations(currentYear.value, currentMonth.value);
-  // 2. 식단 스케쥴 데이터 조회
-  fetchSchedules();
+  fetchSchedules(); // 스케쥴 조회 실행
 });
 </script>
 
@@ -583,7 +574,7 @@ onMounted(() => {
   color: #fff;
 }
 
-/* Plan Dot (식단 표시) */
+/* Plan Dot */
 .plan-dot {
   position: absolute;
   top: 4px;
@@ -711,40 +702,44 @@ onMounted(() => {
   gap: 8px;
 }
 
-.menu-list {
+/* Menu List (3끼) */
+.menu-list-3 {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  max-height: 120px;
-  overflow-y: auto;
-}
-.menu-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 0.85rem;
-}
-.menu-info {
-  display: flex;
-  align-items: center;
   gap: 6px;
-  color: #fff;
+  margin-bottom: 5px;
 }
-.menu-name {
-  font-weight: bold;
-}
-.menu-meta {
+.meal-row {
   display: flex;
-  gap: 4px;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 0.85rem;
+  border-bottom: 1px dashed #333;
+  padding-bottom: 4px;
 }
-.mini-tag {
-  font-size: 0.6rem;
-  padding: 1px 4px;
+.meal-badge {
+  font-size: 0.7rem;
+  padding: 2px 6px;
   border-radius: 3px;
   color: #000;
+  font-weight: bold;
+  min-width: 40px;
+  text-align: center;
 }
-.mini-tag.cal {
-  background: #ccc;
+.meal-badge.morning {
+  background: #ffd700;
+}
+.meal-badge.lunch {
+  background: #00e5ff;
+}
+.meal-badge.dinner {
+  background: #ff0055;
+}
+
+.meal-text {
+  color: #fff;
+  flex: 1;
+  word-break: keep-all;
 }
 
 .quest-row {
