@@ -473,7 +473,23 @@ const confirmDietPlan = async () => {
           <div class="plan-list">
             <div v-for="p in generatedPlan" :key="p.day" class="plan-item">
               <div class="day">DAY {{ p.day }}</div>
-              <div class="menu">{{ p.menu }}</div>
+
+              <div class="menu-container" v-if="p.menu && typeof p.menu === 'object'">
+                <div class="meal-row">
+                  <span class="meal-label morning">아침</span>
+                  <span class="meal-text">{{ p.menu.breakfast }}</span>
+                </div>
+                <div class="meal-row">
+                  <span class="meal-label lunch">점심</span>
+                  <span class="meal-text">{{ p.menu.lunch }}</span>
+                </div>
+                <div class="meal-row">
+                  <span class="meal-label dinner">저녁</span>
+                  <span class="meal-text">{{ p.menu.dinner }}</span>
+                </div>
+              </div>
+              <div class="menu" v-else>{{ p.menu }}</div>
+
               <div class="quest-row">
                 <span class="badge" :class="p.difficulty">{{ p.difficulty }}</span>
                 <span class="quest">🎯 {{ p.quest }}</span>
@@ -1121,7 +1137,7 @@ const confirmDietPlan = async () => {
 }
 
 /* -------------------------------------------
-   7. 식단 결과 리스트
+   7. 식단 결과 리스트 (수정됨)
 ------------------------------------------- */
 .summary {
   text-align: center;
@@ -1155,6 +1171,43 @@ const confirmDietPlan = async () => {
   font-weight: bold;
   margin-bottom: 8px;
 }
+
+/* [추가] 아침/점심/저녁 스타일 */
+.menu-container {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+.meal-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 0.9rem;
+}
+.meal-label {
+  font-size: 0.7rem;
+  font-weight: bold;
+  color: #000;
+  padding: 2px 5px;
+  border-radius: 3px;
+  min-width: 35px;
+  text-align: center;
+}
+.meal-label.morning {
+  background: #ffd700;
+}
+.meal-label.lunch {
+  background: #00e5ff;
+}
+.meal-label.dinner {
+  background: #ff0055;
+}
+.meal-text {
+  color: #fff;
+  flex: 1;
+}
+
 .plan-item .quest-row {
   display: flex;
   align-items: center;
