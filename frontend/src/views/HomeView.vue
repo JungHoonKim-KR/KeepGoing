@@ -13,10 +13,7 @@
             <span class="val">{{ currentEnergy }} / {{ maxEnergy }}</span>
           </div>
           <div class="retro-progress-container" @click="triggerLevelUp">
-            <div
-              class="retro-progress-bar hp-bar"
-              :style="{ width: hpPercent + '%' }"
-            ></div>
+            <div class="retro-progress-bar hp-bar" :style="{ width: hpPercent + '%' }"></div>
             <div class="click-hint">CLICK BAR TO LEVEL UP!</div>
           </div>
         </div>
@@ -24,10 +21,7 @@
         <div class="game-screen-container" @click="handleScreenClick">
           <div class="pixel-border">
             <div class="screen-bg">
-              <div
-                class="level-badge"
-                :class="{ 'level-up-anim': isLevelingUp }"
-              >
+              <div class="level-badge" :class="{ 'level-up-anim': isLevelingUp }">
                 {{ isLevelingUp ? "LEVEL UP!" : `Lv.${currentLevel}` }}
               </div>
 
@@ -41,10 +35,7 @@
               <div class="screen-xp-area">
                 <div class="screen-xp-label">EXP</div>
                 <div class="screen-xp-bar">
-                  <div
-                    class="screen-xp-fill"
-                    :style="{ width: currentLevelExpPercent + '%' }"
-                  ></div>
+                  <div class="screen-xp-fill" :style="{ width: currentLevelExpPercent + '%' }"></div>
                 </div>
               </div>
 
@@ -59,11 +50,7 @@
             <div class="stat-icon">{{ stat.label }}</div>
             <div class="stat-bar-group">
               <div class="retro-bar-bg">
-                <div
-                  class="retro-bar-fill"
-                  :class="stat.class"
-                  :style="{ width: stat.percent }"
-                ></div>
+                <div class="retro-bar-fill" :class="stat.class" :style="{ width: stat.percent }"></div>
               </div>
               <span class="stat-val">{{ stat.val }}</span>
             </div>
@@ -74,11 +61,42 @@
 
     <section class="page meal-page">
       <div class="page-content">
-        <div
-          v-if="todayMeals.length === 0"
-          class="pixel-card interactive"
-          @click="handleMealClick"
-        >
+        <button class="quest-trigger-btn" @click="showQuestModal = true">
+          <span class="blink-icon">📜</span> VIEW DAILY QUEST
+        </button>
+
+        <Teleport to="body">
+          <div v-if="showQuestModal" class="quest-modal-overlay" @click.self="showQuestModal = false">
+            <div class="quest-paper pixel-box">
+              <div class="retro-header-sm" style="border-color: #5d4037; color: #3e2723; margin-bottom: 15px">
+                <span style="font-weight: bold">📜 DAILY QUEST LOG</span>
+                <button class="close-quest-btn" @click="showQuestModal = false">✖</button>
+              </div>
+
+              <div class="rec-list">
+                <div v-for="(rec, idx) in recommendedMeals" :key="idx" class="rec-item dark-mode">
+                  <div class="rec-icon-badge">{{ rec.icon }}</div>
+                  <div class="rec-info">
+                    <div class="rec-type">{{ rec.type }}</div>
+                    <div class="rec-menu">{{ rec.menu }}</div>
+                  </div>
+                  <div class="rec-cal">{{ rec.cal }}kcal</div>
+                </div>
+
+                <div v-if="recommendedMeals.length === 0" class="rec-empty dark-text">
+                  <span>QUEST LOADING...</span>
+                </div>
+              </div>
+
+              <div class="quest-footer">
+                <p>"이대로 먹으면 경험치 보너스!"</p>
+                <button class="retro-btn sm-btn quest-confirm-btn" @click="showQuestModal = false">확인 (OK)</button>
+              </div>
+            </div>
+          </div>
+        </Teleport>
+
+        <div v-if="todayMeals.length === 0" class="pixel-card interactive" @click="handleMealClick">
           <div class="card-inner">
             <h2>식단 기록</h2>
             <div class="icon-8bit">🍗</div>
@@ -90,19 +108,11 @@
         <div v-else class="meal-log-container">
           <div class="retro-header-sm">
             <span>INVENTORY (MEALS)</span>
-            <span class="total-xp"
-              >TOTAL XP:
-              {{ todayMeals.reduce((acc, cur) => acc + cur.cal, 0) }}</span
-            >
+            <span class="total-xp">TOTAL XP: {{ todayMeals.reduce((acc, cur) => acc + cur.cal, 0) }}</span>
           </div>
 
           <div class="meal-list">
-            <div
-              v-for="meal in todayMeals"
-              :key="meal.id"
-              class="meal-slot"
-              @click="handleMealClick"
-            >
+            <div v-for="meal in todayMeals" :key="meal.id" class="meal-slot" @click="handleMealClick">
               <div class="slot-icon-box">{{ meal.icon }}</div>
               <div class="slot-info">
                 <div class="slot-top">
@@ -113,11 +123,7 @@
               </div>
             </div>
 
-            <div
-              v-if="!isAllMealsRecorded"
-              class="meal-slot add-slot"
-              @click="handleMealClick"
-            >
+            <div v-if="!isAllMealsRecorded" class="meal-slot add-slot" @click="handleMealClick">
               <span class="plus-icon">+</span>
               <span class="add-text">ADD NEW ITEM</span>
             </div>
@@ -139,11 +145,7 @@
                 <template v-else>🔒</template>
               </span>
               <span class="btn-text">
-                {{
-                  isAllMealsRecorded
-                    ? "AI STRATEGY ANALYSIS"
-                    : `LOCKED (${recordedCount}/4)`
-                }}
+                {{ isAllMealsRecorded ? "AI STRATEGY ANALYSIS" : `LOCKED (${recordedCount}/4)` }}
               </span>
             </div>
 
@@ -156,10 +158,7 @@
 
     <section class="page water-page">
       <div class="page-content split-layout">
-        <div
-          class="pixel-card interactive blue-theme half-card"
-          @click="handleWaterClick"
-        >
+        <div class="pixel-card interactive blue-theme half-card" @click="handleWaterClick">
           <template v-if="waterData.water === 0">
             <h1 class="page-title pixel-font">수분 섭취</h1>
             <div class="empty-state-icon">💧</div>
@@ -174,28 +173,20 @@
               <div
                 class="mana-bar-fill"
                 :style="{
-                  width:
-                    Math.min((waterData.water / waterData.goal) * 100, 100) +
-                    '%',
+                  width: Math.min((waterData.water / waterData.goal) * 100, 100) + '%',
                 }"
               >
                 <div class="glare-effect"></div>
               </div>
               <div class="mana-text-overlay">
-                {{ waterData.water }}L <span class="divider">/</span>
-                {{ waterData.goal }}L
+                {{ waterData.water }}L <span class="divider">/</span> {{ waterData.goal }}L
               </div>
             </div>
-            <button class="retro-btn blue-btn sm-btn" style="margin-top: auto">
-              DRINK
-            </button>
+            <button class="retro-btn blue-btn sm-btn" style="margin-top: auto">DRINK</button>
           </template>
         </div>
 
-        <div
-          class="pixel-card interactive green-theme half-card"
-          @click="handleWeightClick"
-        >
+        <div class="pixel-card interactive green-theme half-card" @click="handleWeightClick">
           <template v-if="weightData.weight == 0.0">
             <h1 class="page-title pixel-font">체중 기록</h1>
             <div class="empty-state-icon">⚖️</div>
@@ -209,33 +200,20 @@
               <div class="score-display">
                 <span class="score-val">{{ weightData.weight }}</span>
                 <span class="score-unit">KG</span>
-                <div
-                  class="score-change"
-                  :class="weightData.diff > 0 ? 'bad' : 'good'"
-                >
-                  <span class="change-icon">{{
-                    weightData.diff > 0 ? "▲" : "▼"
-                  }}</span>
+                <div class="score-change" :class="weightData.diff > 0 ? 'bad' : 'good'">
+                  <span class="change-icon">{{ weightData.diff > 0 ? "▲" : "▼" }}</span>
                   {{ Math.abs(weightData.diff) }}kg
-                  <span class="change-text">{{
-                    weightData.diff > 0 ? "(WARN)" : "(GOOD)"
-                  }}</span>
+                  <span class="change-text">{{ weightData.diff > 0 ? "(WARN)" : "(GOOD)" }}</span>
                 </div>
               </div>
             </div>
-            <button class="retro-btn green-btn sm-btn" style="margin-top: auto">
-              UPDATE
-            </button>
+            <button class="retro-btn green-btn sm-btn" style="margin-top: auto">UPDATE</button>
           </template>
         </div>
       </div>
     </section>
 
-    <div
-      v-if="showCharModal"
-      class="modal-overlay"
-      @click.self="showCharModal = false"
-    >
+    <div v-if="showCharModal" class="modal-overlay" @click.self="showCharModal = false">
       <div class="pixel-card char-select-modal" @click.stop>
         <div class="retro-header-sm">SELECT CHARACTER</div>
         <div class="char-grid">
@@ -279,6 +257,7 @@
       @update-weight="handleWeightUpdate"
       :date-to-use="formattedDate"
     />
+
     <Transition name="fade">
       <div v-if="isAiLoading" class="loading-overlay">
         <div class="loading-content">
@@ -290,39 +269,25 @@
         </div>
       </div>
     </Transition>
+
     <template>
       <Teleport to="body">
         <Transition name="retro-modal">
-          <div
-            v-if="isResultModalOpen"
-            class="ai-result-overlay"
-            @click.self="closeResultModal"
-          >
+          <div v-if="isResultModalOpen" class="ai-result-overlay" @click.self="closeResultModal">
             <div class="ai-result-modal retro-pixel-border">
-
               <div class="modal-header-section">
                 <h2 class="modal-main-title">
-                  <span
-                    class="glitch"
-                    :data-text="analysisResult?.dailyTitle"
-                    >{{ analysisResult?.dailyTitle }}</span
-                  >
+                  <span class="glitch" :data-text="analysisResult?.dailyTitle">{{ analysisResult?.dailyTitle }}</span>
                 </h2>
               </div>
 
               <div class="modal-body-scroll">
                 <div class="score-card-retro premium-border">
                   <div class="rank-aura-container">
-                    <div
-                      class="rank-aura"
-                      :class="'aura-' + analysisResult?.rank"
-                    ></div>
+                    <div class="rank-aura" :class="'aura-' + analysisResult?.rank"></div>
                     <div class="rank-container">
                       <div class="rank-label">CLASS</div>
-                      <div
-                        class="rank-visual-mega"
-                        :class="'rank-' + analysisResult?.rank"
-                      >
+                      <div class="rank-visual-mega" :class="'rank-' + analysisResult?.rank">
                         {{ analysisResult?.rank }}
                       </div>
                     </div>
@@ -330,10 +295,7 @@
 
                   <div class="score-container-mega">
                     <div class="score-label-neon">TOTAL GAINED XP</div>
-                    <div
-                      class="score-number-glitch"
-                      :data-text="analysisResult?.score"
-                    >
+                    <div class="score-number-glitch" :data-text="analysisResult?.score">
                       {{ analysisResult?.score }}
                     </div>
                     <div class="xp-bar-mini">
@@ -357,25 +319,22 @@
                     <div class="physical-stats-retro">
                       <div class="training-grid">
                         <div
-                          v-for="(
-                            ex, i
-                          ) in analysisResult?.recommendedExercises"
+                          v-for="(ex, i) in analysisResult?.recommendedExercises"
                           :key="i"
                           class="training-card interactive-card"
-                          @click="searchAndPlayYoutube(ex.name, ex.time)"
+                          @click="searchAndPlayYoutube(ex.name, ex.time, i)"
                         >
                           <div class="card-icon floating">{{ ex.emoji }}</div>
                           <div class="card-info">
                             <div class="card-name">{{ ex.name }}</div>
                             <div class="card-time">{{ ex.time }}분</div>
                           </div>
+                          <div class="youtube-hint">▶ Play</div>
                         </div>
                       </div>
                     </div>
-                    <div
-                      v-if="currentVideoId || isVideoLoading"
-                      class="video-player-section"
-                    >
+
+                    <div v-if="currentVideoId || isVideoLoading" class="video-player-section">
                       <div class="pixel-box video-box">
                         <div v-if="isVideoLoading" class="video-loading">
                           <span class="blink-text">SEARCHING SATELLITE...</span>
@@ -392,17 +351,12 @@
                           allowfullscreen
                         ></iframe>
 
-                        <button
-                          class="close-video-btn"
-                          @click="currentVideoId = null"
-                        >
-                          ✖ CLOSE VIDEO
-                        </button>
+                        <button class="close-video-btn" @click="closeVideo">✖ CLOSE VIDEO</button>
                       </div>
                     </div>
-                    
                   </div>
                 </div>
+
                 <div class="insights-section">
                   <h3 class="section-title-retro">▶ ANALYSIS_LOG</h3>
                   <div class="insight-list-retro">
@@ -429,9 +383,7 @@
                 </div>
               </div>
 
-              <button class="retro-confirm-btn" @click="closeResultModal">
-                RETURN TO MENU (A)
-              </button>
+              <button class="retro-confirm-btn" @click="closeResultModal">RETURN TO MENU (A)</button>
             </div>
           </div>
         </Transition>
@@ -442,188 +394,120 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { useConfigStore } from "@/stores/configStore";
 import { useAuthStore } from "@/stores/authStore";
 import { useRoute } from "vue-router";
+import { useDietStore } from "@/stores/dietStore"; // import 추가
 import { analyzeDiet } from "@/api/diet/dietApi";
 import Footer from "@/components/utils/Footer.vue";
 import dayjs from "dayjs";
 import confetti from "canvas-confetti";
+import axios from "axios";
 
 import WaterRecordModal from "@/components/record/WaterRecordModal.vue";
 import WeightRecordModal from "@/components/record/WeightRecordModal.vue";
 import MealRecordModal from "@/components/record/MealRecordModal.vue";
 
-/*-------------------------------------------------- */
-import axios from "axios";
-
 const YOUTUBE_API_KEY = "AIzaSyBwl61AGUcuiXLBjEv6d9I8cHsCPtJpU94";
+const dietStore = useDietStore(); // 스토어 사용
+const authStore = useAuthStore();
+const config = useConfigStore();
+const route = useRoute();
+const MEMBER_ID = authStore.memberId;
+const API_ENDPOINT = config.API_ENDPOINT;
 
-const currentVideoId = ref(null); // 영상 ID (URL 아님)
-const currentPlayingIndex = ref(-1); // 현재 재생 중인 카드 번호
-const isVideoLoading = ref(false); // 로딩 중인지 여부
+// 캐릭터 유지 로직
+const selectedCharId = ref(authStore.profileCharacter || 1);
+watch(
+  () => authStore.profileCharacter,
+  (newVal) => {
+    if (newVal) selectedCharId.value = newVal;
+  }
+);
 
-// API 호출 함수
+const recommendedMeals = computed(() => {
+  // 1. 오늘 날짜 데이터 가져오기
+  const todayData = dietStore.getTodayQuest(formattedDate.value);
+
+  if (!todayData || !todayData.menu) return [];
+
+  // 2. 화면에 맞게 변환 (menu 객체 -> 리스트)
+  // 백엔드 데이터 구조에 따라 키값(breakfast 등) 확인 필요
+  return [
+    { type: "아침", menu: todayData.menu.breakfast || "식단 없음", cal: 0, icon: "🥪" },
+    { type: "점심", menu: todayData.menu.lunch || "식단 없음", cal: 0, icon: "🍱" },
+    { type: "저녁", menu: todayData.menu.dinner || "식단 없음", cal: 0, icon: "🥗" },
+  ];
+  // 참고: 퀘스트 텍스트가 필요하면 todayData.quest 사용
+});
+
+// [NEW] 추천 식단 & 모달 로직
+const showQuestModal = ref(false);
+const recommendedMeals = ref([]);
+
+const fetchRecommendedDiet = async () => {
+  try {
+    // API 연결 시: await fetch(`${API_ENDPOINT}/diets/recommendation...`)
+    recommendedMeals.value = [
+      { type: "아침", menu: "통밀빵 샌드위치 & 아메리카노", cal: 450, icon: "🥪" },
+      { type: "점심", menu: "현미밥, 닭가슴살 장조림, 김치", cal: 700, icon: "🍱" },
+      { type: "저녁", menu: "연어 샐러드 & 오리엔탈 드레싱", cal: 500, icon: "🥗" },
+    ];
+  } catch (e) {
+    console.error("추천 식단 로드 실패", e);
+  }
+};
+
+/* --- 기존 로직 --- */
+const currentVideoId = ref(null);
+const currentPlayingIndex = ref(-1);
+const isVideoLoading = ref(false);
+
 const searchAndPlayYoutube = async (name, time, index) => {
   if (!name) return;
-
-  // 1. UI 상태 변경 (로딩 시작, 클릭한 카드 활성화)
   currentPlayingIndex.value = index;
   isVideoLoading.value = true;
   currentVideoId.value = null;
 
-  // 2. 검색어 생성
   const query = `${name} ${time}분 운동`;
-
   try {
-    // 3. 유튜브 API 호출 (GET)
-    const response = await axios.get(
-      "https://www.googleapis.com/youtube/v3/search",
-      {
-        params: {
-          part: "snippet",
-          q: query,
-          type: "video",
-          maxResults: 1, // 가장 정확한 1개만
-          key: YOUTUBE_API_KEY,
-        },
-      }
-    );
-
-    // 4. 결과 처리
+    const response = await axios.get("https://www.googleapis.com/youtube/v3/search", {
+      params: {
+        part: "snippet",
+        q: query,
+        type: "video",
+        maxResults: 1,
+        key: YOUTUBE_API_KEY,
+      },
+    });
     if (response.data.items.length > 0) {
       currentVideoId.value = response.data.items[0].id.videoId;
     } else {
       alert("관련 영상을 찾을 수 없습니다.");
-      currentPlayingIndex.value = -1; // 선택 취소
+      currentPlayingIndex.value = -1;
     }
   } catch (error) {
     console.error("API Error:", error);
-    // 403 에러(하루 할당량 초과) 등의 경우 대비
     alert("영상 검색에 실패했습니다.");
     currentPlayingIndex.value = -1;
   } finally {
-    isVideoLoading.value = false; // 로딩 끝
+    isVideoLoading.value = false;
   }
 };
 
-// 닫기 버튼
 const closeVideo = () => {
   currentVideoId.value = null;
   currentPlayingIndex.value = -1;
 };
 
-/*----------------------------------------------- */
-
-/* --- 기존 import 아래에 추가 --- */
-const isAiLoading = ref(false); // 로딩 상태
-const loadingText = ref("AI 분석 서버 연결 중..."); // 로딩 멘트
-
-// [수정] 4가지 식사가 모두 기록되었는지 확인
-const isAllMealsRecorded = computed(() => {
-  // 'todayDiet'가 아니라 'todayMeals'를 사용해야 합니다.
-  if (!todayMeals.value) return false;
-
-  // 프로젝트에서 사용하는 한글 키값 기준
-  const requiredTypes = ["아침", "점심", "저녁", "간식"];
-
-  // 현재 기록된 식사 타입들 추출 (meal.mealType이 아니라 meal.type)
-  const recordedTypes = todayMeals.value.map((d) => d.type);
-
-  // 4가지가 모두 있는지 확인
-  return requiredTypes.every((type) => recordedTypes.includes(type));
-});
-
-// [수정] 기록된 식사 개수 (버튼 표시용)
-const recordedCount = computed(() => {
-  return todayMeals.value ? todayMeals.value.length : 0;
-});
-
-/* --- 기존 ref 선언부에 추가 --- */
-const isResultModalOpen = ref(false);
-const analysisResult = ref(null);
-
-const closeResultModal = () => {
-  isResultModalOpen.value = false;
-};
-
-const authStore = useAuthStore();
-const config = useConfigStore();
-const route = useRoute();
-const MEMBER_ID = authStore.memberId;
-const TODAY_DATE = new Date().toISOString().split("T")[0];
-const API_ENDPOINT = config.API_ENDPOINT;
+const isAiLoading = ref(false);
+const loadingText = ref("AI 분석 서버 연결 중...");
 
 const formattedDate = computed(() => {
   const routeDate = route.query.date;
-  return routeDate
-    ? dayjs(routeDate).format("YYYY-MM-DD")
-    : dayjs().format("YYYY-MM-DD");
+  return routeDate ? dayjs(routeDate).format("YYYY-MM-DD") : dayjs().format("YYYY-MM-DD");
 });
-
-const currentLevel = computed(() => authStore.level || 1);
-const currentLevelExpPercent = computed(() => authStore.exp || 0);
-const selectedCharId = ref(1);
-const showCharModal = ref(false);
-
-const getCharImage = (id) => {
-  return new URL(`../assets/images/characters/${id}.png`, import.meta.url).href;
-};
-
-const currentCharacterImage = computed(() =>
-  getCharImage(selectedCharId.value)
-);
-
-const characterList = computed(() => {
-  return Array.from({ length: 16 }, (_, i) => {
-    const id = i + 1;
-    return {
-      id,
-      src: getCharImage(id),
-      isLocked: id > currentLevel.value,
-    };
-  });
-});
-
-const selectCharacter = async (char) => {
-  if (char.isLocked) return;
-
-  try {
-    // 1. API 호출 (캐릭터 변경 반영)
-    // URL은 프로젝트 설정에 따라 /api/member/character 등으로 수정될 수 있습니다.
-    const response = await fetch(`${API_ENDPOINT}/api/member/character`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      // Java 컨트롤러에서 @RequestBody Integer로 받으므로 char.id만 보냄
-      body: JSON.stringify({
-        memberId: MEMBER_ID,
-        characterNumber: char.id,
-      }),
-    });
-
-    if (response.ok) {
-      selectedCharId.value = char.id;
-
-      playRetroSound("coin");
-      showCharModal.value = false;
-
-      console.log(`Character changed to NO.${char.id}`);
-    } else {
-      console.error("캐릭터 변경 실패:", response.status);
-      alert("캐릭터를 변경할 수 없습니다.");
-    }
-  } catch (error) {
-    console.error("API 호출 중 에러 발생:", error);
-    alert("서버 통신 중 오류가 발생했습니다.");
-  }
-};
-
-const handleScreenClick = () => {
-  showCharModal.value = true;
-};
 
 const todayMealMap = ref({ 아침: null, 점심: null, 저녁: null, 간식: null });
 const todayMeals = computed(() => {
@@ -639,23 +523,34 @@ const todayMeals = computed(() => {
       name: meal.foods?.map((f) => f.name).join(", ") || "단식",
     }));
 });
+
+const isAllMealsRecorded = computed(() => {
+  if (!todayMeals.value) return false;
+  const requiredTypes = ["아침", "점심", "저녁", "간식"];
+  const recordedTypes = todayMeals.value.map((d) => d.type);
+  return requiredTypes.every((type) => recordedTypes.includes(type));
+});
+
+const recordedCount = computed(() => {
+  return todayMeals.value ? todayMeals.value.length : 0;
+});
+
+const isResultModalOpen = ref(false);
+const analysisResult = ref(null);
+
+const closeResultModal = () => {
+  isResultModalOpen.value = false;
+};
+
 const startAIAnalysis = async () => {
   if (!isAllMealsRecorded.value) {
-    alert(
-      "오늘의 4가지 식단(아침, 점심, 저녁, 간식)을 모두 기록해야 분석이 가능합니다!"
-    );
+    alert("오늘의 4가지 식단(아침, 점심, 저녁, 간식)을 모두 기록해야 분석이 가능합니다!");
     return;
   }
   if (isAiLoading.value) return;
 
   isAiLoading.value = true;
-
-  const messages = [
-    "🎯 데이터 스캔 중...",
-    "🥩 영양 분석 중...",
-    "🤖 AI 전략 수립 중...",
-    "✨ 결과 정리 중...",
-  ];
+  const messages = ["🎯 데이터 스캔 중...", "🥩 영양 분석 중...", "🤖 AI 전략 수립 중...", "✨ 결과 정리 중..."];
   let msgIndex = 0;
   loadingText.value = messages[0];
   const msgInterval = setInterval(() => {
@@ -674,20 +569,15 @@ const startAIAnalysis = async () => {
       totalCalories: data.totalCalories,
       recommendedExercises: data.recommendedExercises,
     };
-    console.log(analysisResult.value);
-
     await new Promise((resolve) => setTimeout(resolve, 2500));
     isResultModalOpen.value = true;
   } catch (error) {
     console.error("AI 분석 호출 실패:", error);
-
-    // 💡 백엔드 연결 실패 시 보여줄 Mock 데이터
     analysisResult.value = {
       score: 85,
       rank: "A",
       dailyTitle: "균형잡힌 하루였습니다!",
-      oneLineSummary:
-        "단백질 섭취가 우수하고, 전체적인 영양 밸런스가 좋습니다. 내일도 화이팅!",
+      oneLineSummary: "단백질 섭취가 우수하고, 전체적인 영양 밸런스가 좋습니다. 내일도 화이팅!",
       insights: [
         {
           type: "good",
@@ -701,14 +591,8 @@ const startAIAnalysis = async () => {
           title: "탄수화물 다소 높음",
           description: "권장량보다 15% 높습니다. 저녁 식사량을 조절해보세요.",
         },
-        {
-          type: "good",
-          iconType: "check",
-          title: "수분 섭취 적정",
-          description: "하루 2L 목표를 달성했습니다.",
-        },
+        { type: "good", iconType: "check", title: "수분 섭취 적정", description: "하루 2L 목표를 달성했습니다." },
       ],
-      // ▼▼▼ [추가] 현실적인 예시 데이터 ▼▼▼
       totalCalories: 2150,
       recommendedExercises: [
         { name: "가벼운 조깅", time: 30, emoji: "🏃" },
@@ -716,13 +600,60 @@ const startAIAnalysis = async () => {
         { name: "전신 스트레칭", time: 10, emoji: "🧘" },
       ],
     };
-
     await new Promise((resolve) => setTimeout(resolve, 1000));
     isResultModalOpen.value = true;
   } finally {
     clearInterval(msgInterval);
     isAiLoading.value = false;
   }
+};
+
+const currentLevel = computed(() => authStore.level || 1);
+const currentLevelExpPercent = computed(() => authStore.exp || 0);
+const showCharModal = ref(false);
+
+const getCharImage = (id) => {
+  return new URL(`../assets/images/characters/${id}.png`, import.meta.url).href;
+};
+
+const currentCharacterImage = computed(() => getCharImage(selectedCharId.value));
+
+const characterList = computed(() => {
+  return Array.from({ length: 16 }, (_, i) => {
+    const id = i + 1;
+    return {
+      id,
+      src: getCharImage(id),
+      isLocked: id > currentLevel.value,
+    };
+  });
+});
+
+const selectCharacter = async (char) => {
+  if (char.isLocked) return;
+  try {
+    const response = await fetch(`${API_ENDPOINT}/api/member/character`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ memberId: MEMBER_ID, characterNumber: char.id }),
+    });
+
+    if (response.ok) {
+      selectedCharId.value = char.id;
+      authStore.profileCharacter = char.id;
+      playRetroSound("coin");
+      showCharModal.value = false;
+    } else {
+      alert("변경 실패");
+    }
+  } catch (error) {
+    console.error("API 호출 중 에러 발생:", error);
+    alert("서버 통신 중 오류가 발생했습니다.");
+  }
+};
+
+const handleScreenClick = () => {
+  showCharModal.value = true;
 };
 
 const waterData = ref({ water: 0, goal: 2.0 });
@@ -743,44 +674,18 @@ const currentEnergy = computed(() => {
     .reduce((acc, meal) => acc + (meal ? meal.energy : 0), 0)
     .toFixed(0);
 });
-const hpPercent = computed(() =>
-  Math.min((currentEnergy.value / maxEnergy) * 100, 100).toFixed(0)
-);
+const hpPercent = computed(() => Math.min((currentEnergy.value / maxEnergy) * 100, 100).toFixed(0));
 
 const stats = computed(() => {
-  const tProtein = Object.values(todayMealMap.value).reduce(
-    (acc, meal) => acc + (meal ? meal.protein : 0),
-    0
-  );
-  const tCarb = Object.values(todayMealMap.value).reduce(
-    (acc, meal) => acc + (meal ? meal.carbohydrate : 0),
-    0
-  );
-  const tFat = Object.values(todayMealMap.value).reduce(
-    (acc, meal) => acc + (meal ? meal.fat : 0),
-    0
-  );
+  const tProtein = Object.values(todayMealMap.value).reduce((acc, meal) => acc + (meal ? meal.protein : 0), 0);
+  const tCarb = Object.values(todayMealMap.value).reduce((acc, meal) => acc + (meal ? meal.carbohydrate : 0), 0);
+  const tFat = Object.values(todayMealMap.value).reduce((acc, meal) => acc + (meal ? meal.fat : 0), 0);
   const total = tProtein + tCarb + tFat;
   const getP = (v) => (total > 0 ? ((v / total) * 100).toFixed(0) : 0);
   return [
-    {
-      label: "⚡탄수화물",
-      class: "carb",
-      percent: `${getP(tCarb)}%`,
-      val: `${tCarb.toFixed(1)}g`,
-    },
-    {
-      label: "🛡️단백질",
-      class: "protein",
-      percent: `${getP(tProtein)}%`,
-      val: `${tProtein.toFixed(1)}g`,
-    },
-    {
-      label: "🔮지방",
-      class: "fat",
-      percent: `${getP(tFat)}%`,
-      val: `${tFat.toFixed(1)}g`,
-    },
+    { label: "⚡탄수화물", class: "carb", percent: `${getP(tCarb)}%`, val: `${tCarb.toFixed(1)}g` },
+    { label: "🛡️단백질", class: "protein", percent: `${getP(tProtein)}%`, val: `${tProtein.toFixed(1)}g` },
+    { label: "🔮지방", class: "fat", percent: `${getP(tFat)}%`, val: `${tFat.toFixed(1)}g` },
   ];
 });
 
@@ -811,8 +716,7 @@ const closeWaterModal = () => (showWaterModal.value = false);
 const closeWeightModal = () => (showWeightModal.value = false);
 const handleWaterClick = () => (showWaterModal.value = true);
 const handleWeightClick = () => (showWeightModal.value = true);
-const handleWaterUpdate = async (newAmount) =>
-  (waterData.value.water = newAmount);
+const handleWaterUpdate = async (newAmount) => (waterData.value.water = newAmount);
 const handleWeightUpdate = async (newWeight) => {
   if (newWeight) weightData.value.weight = newWeight;
   await fetchWeightData();
@@ -857,25 +761,8 @@ onMounted(async () => {
   await fetchDailyDiet();
   await fetchHydrationData();
   await fetchWeightData();
+  // await fetchRecommendedDiet(); // 추천 식단
 });
-
-// <script setup> 내부에 추가하세요
-
-const openYoutubeSearch = (name, time) => {
-  if (!name) return;
-
-  // 검색어 조합 예: "요가 15분", "스쿼트 10분"
-  const query = `${name} ${time}분`;
-
-  // URL 인코딩 (한글 깨짐 방지)
-  const encodedQuery = encodeURIComponent(query);
-
-  // 유튜브 검색 결과 페이지로 이동 (새 탭)
-  window.open(
-    `https://www.youtube.com/results?search_query=${encodedQuery}`,
-    "_blank"
-  );
-};
 </script>
 
 <style scoped>
@@ -895,6 +782,158 @@ const openYoutubeSearch = (name, time) => {
   scroll-snap-type: y mandatory;
 }
 
+/* --- [NEW] 퀘스트 트리거 버튼 --- */
+.quest-trigger-btn {
+  width: 100%;
+  background: #2d2d3a;
+  border: 2px dashed #ffd700;
+  color: #ffd700;
+  padding: 12px;
+  font-family: "NeoDunggeunmo";
+  font-size: 0.9rem;
+  cursor: pointer;
+  margin-bottom: 15px;
+  transition: all 0.2s;
+  text-shadow: 1px 1px 0 #000;
+}
+.quest-trigger-btn:hover {
+  background: rgba(255, 215, 0, 0.1);
+  transform: scale(1.02);
+}
+.blink-icon {
+  animation: blink 1s infinite;
+  margin-right: 5px;
+}
+
+/* --- [NEW] 퀘스트 모달 오버레이 (z-index 높음) --- */
+.quest-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.85);
+  z-index: 20000; /* 🔥 매우 높은 z-index */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  backdrop-filter: blur(3px);
+  animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.quest-paper {
+  width: 90%;
+  max-width: 350px;
+  background: #e6dac3; /* 종이 색상 */
+  color: #3e2723; /* 글자 어둡게 */
+  border: 4px solid #5d4037;
+  padding: 15px;
+  box-shadow: 10px 10px 0 rgba(0, 0, 0, 0.5);
+}
+
+.close-quest-btn {
+  background: transparent;
+  border: none;
+  font-size: 1.2rem;
+  color: #5d4037;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.rec-item.dark-mode {
+  background: rgba(93, 64, 55, 0.1);
+  border: 1px solid rgba(93, 64, 55, 0.3);
+  margin-bottom: 8px;
+}
+.rec-item.dark-mode .rec-type {
+  color: #8d6e63;
+  font-weight: bold;
+}
+.rec-item.dark-mode .rec-menu {
+  color: #3e2723;
+}
+.rec-item.dark-mode .rec-cal {
+  color: #d84315;
+}
+.rec-empty.dark-text {
+  color: #8d6e63;
+}
+
+.quest-footer {
+  margin-top: 15px;
+  text-align: center;
+  font-size: 0.8rem;
+  color: #5d4037;
+}
+.quest-confirm-btn {
+  margin-top: 10px;
+  background: #5d4037;
+  border-color: #8d6e63;
+}
+
+@keyframes popIn {
+  from {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* --- [기존 스타일들 - rec-item 등은 공용 사용] --- */
+.rec-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+.rec-item {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 6px 10px;
+  border-radius: 4px;
+  border: 1px dashed rgba(255, 255, 255, 0.3);
+}
+.rec-icon-badge {
+  font-size: 1.2rem;
+  margin-right: 10px;
+  filter: drop-shadow(2px 2px 0 rgba(0, 0, 0, 0.5));
+}
+.rec-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.rec-type {
+  font-size: 0.65rem;
+  color: #ffd700;
+  margin-bottom: 2px;
+}
+.rec-menu {
+  font-size: 0.85rem;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rec-cal {
+  font-size: 0.75rem;
+  color: #00ff00;
+  margin-left: 10px;
+  font-weight: bold;
+}
+.rec-empty {
+  text-align: center;
+  color: #aaa;
+  font-size: 0.8rem;
+  padding: 10px;
+}
+
+/* ... (나머지 기존 스타일 유지) ... */
 .section-title-tag {
   display: inline-block;
   background-color: #000;
@@ -908,7 +947,6 @@ const openYoutubeSearch = (name, time) => {
   box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.5);
   letter-spacing: 1px;
 }
-
 .daily-page .section-title-tag {
   border-color: var(--secondary-color);
   color: var(--secondary-color);
@@ -925,7 +963,6 @@ const openYoutubeSearch = (name, time) => {
   border-color: #d500f9;
   color: #d500f9;
 }
-
 .meal-type-badge {
   font-size: 0.65rem;
   background: #ff0055;
@@ -936,7 +973,6 @@ const openYoutubeSearch = (name, time) => {
   line-height: 1;
   text-shadow: 1px 1px 0 #000;
 }
-
 .slot-top {
   display: flex;
   align-items: center;
@@ -944,33 +980,18 @@ const openYoutubeSearch = (name, time) => {
   gap: 8px;
   margin-bottom: 4px;
 }
-
 .meal-cal {
   font-size: 0.75rem;
   color: #00e5ff;
 }
-
-/* .scanlines {
-  position: fixed;
-  top: 0; left: 0; width: 100%; height: 100%;
-  pointer-events: none;
-  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
-    linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
-  background-size: 100% 4px, 6px 100%;
-  z-index: 999;
-} */
-
 .page {
   min-height: 100vh;
   scroll-snap-align: start;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start; /* 세로 중앙 정렬 */
-
-  /* 헤더와 푸터 높이만큼 패딩을 넉넉하게 줍니다 */
-  /* padding-top: 5rem;    상단 헤더 공간 확보 */
-  padding-bottom: 6rem; /* 하단 푸터 공간 확보 */
+  justify-content: flex-start;
+  padding-bottom: 6rem;
   padding-left: 1rem;
   padding-right: 1rem;
   box-sizing: border-box;
@@ -984,35 +1005,28 @@ const openYoutubeSearch = (name, time) => {
 }
 .page-content.split-layout {
   height: 100%;
-  max-height: 70vh; /* 너무 길어지지 않게 제한 */
+  max-height: 70vh;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 1.5rem; /* 두 카드 사이의 간격 */
+  gap: 1.5rem;
 }
-
-/* 반반 카드 스타일 (Flex로 공간 균등 분배) */
 .half-card {
-  flex: 1; /* 남은 공간을 1:1로 차지 */
+  flex: 1;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  min-height: 0; /* Flexbox 내부 스크롤 방지 */
+  min-height: 0;
 }
-
-/* 내부 요소들이 너무 붙지 않게 여백 조정 */
 .half-card .page-title {
   margin-bottom: 0.5rem;
   font-size: 1.1rem;
 }
-
 .empty-state-icon {
   font-size: 2.5rem;
   margin: 0.5rem 0;
 }
-
-/* 체중 대시보드 스타일 미세 조정 */
 .weight-dashboard {
   font-size: 2rem;
   display: flex;
@@ -1021,7 +1035,6 @@ const openYoutubeSearch = (name, time) => {
   gap: 5px;
   width: 100%;
 }
-
 .score-display {
   background: rgba(0, 0, 0, 0.2);
   padding: 5px 15px;
@@ -1033,11 +1046,9 @@ const openYoutubeSearch = (name, time) => {
   color: #fff;
   font-weight: bold;
   line-height: 1;
-  text-shadow: 2px 2px 0 #000; /* 글자 입체감 */
+  text-shadow: 2px 2px 0 #000;
   letter-spacing: 2px;
 }
-
-/* 단위 (KG) */
 .score-unit {
   font-size: 1rem;
   color: #888;
@@ -1045,8 +1056,6 @@ const openYoutubeSearch = (name, time) => {
   margin-bottom: 10px;
   font-family: monospace;
 }
-
-/* 증감 표시 박스 (가장 아래 배치) */
 .score-change {
   display: flex;
   align-items: center;
@@ -1056,36 +1065,28 @@ const openYoutubeSearch = (name, time) => {
   font-size: 0.85rem;
   background: rgba(0, 0, 0, 0.4);
   border: 1px solid transparent;
-  width: 100%; /* 박스 꽉 채우기 */
+  width: 100%;
   justify-content: center;
   box-sizing: border-box;
 }
-
-/* 체중 감소 (좋음 - 파란색/민트색 계열) */
 .score-change.good {
   color: #ffd700;
   border-color: #ffd700;
   background: rgba(0, 229, 255, 0.1);
 }
-
-/* 체중 증가 (나쁨 - 붉은색 계열) */
 .score-change.bad {
   color: #ff0055;
   border-color: #ff0055;
   background: rgba(255, 0, 85, 0.1);
 }
-
 .change-icon {
   font-size: 0.7rem;
 }
-
 .change-text {
   font-size: 0.7rem;
   opacity: 0.8;
-  margin-left: auto; /* 텍스트를 오른쪽 끝으로 밀어줌 (선택사항) */
+  margin-left: auto;
 }
-
-/* 반응형: 화면이 너무 작으면 갭을 줄임 */
 @media (max-height: 700px) {
   .page-content.split-layout {
     gap: 0.8rem;
@@ -1107,7 +1108,6 @@ const openYoutubeSearch = (name, time) => {
   transition: transform 0.1s;
   cursor: pointer;
 }
-
 .pixel-box {
   background: #2d2d3a;
   padding: 0.8rem;
@@ -1123,7 +1123,6 @@ const openYoutubeSearch = (name, time) => {
   transform: translate(2px, 2px);
   box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.5);
 }
-
 .page.daily-page {
   background: #222034;
 }
@@ -1136,7 +1135,6 @@ const openYoutubeSearch = (name, time) => {
 .weight-page {
   background: #2a0a29;
 }
-
 .retro-header {
   text-align: center;
   color: var(--secondary-color);
@@ -1151,7 +1149,6 @@ const openYoutubeSearch = (name, time) => {
     opacity: 0;
   }
 }
-
 .retro-progress-container {
   height: 20px;
   background: #333;
@@ -1173,7 +1170,6 @@ const openYoutubeSearch = (name, time) => {
   color: var(--accent-color);
   animation: blink 0.5s infinite alternate;
 }
-
 .game-screen-container .pixel-border {
   border: 6px solid #444;
   background: #8fb8ca;
@@ -1181,8 +1177,7 @@ const openYoutubeSearch = (name, time) => {
   overflow: hidden;
 }
 .screen-bg {
-  background: url("https://i.pinimg.com/originals/10/78/3f/10783f947938361b02390a382c44843b.png")
-    repeat-x bottom;
+  background: url("https://i.pinimg.com/originals/10/78/3f/10783f947938361b02390a382c44843b.png") repeat-x bottom;
   background-size: cover;
   width: 100%;
   height: 150px;
@@ -1192,7 +1187,6 @@ const openYoutubeSearch = (name, time) => {
   justify-content: center;
   position: relative;
 }
-
 .edit-hint {
   position: absolute;
   top: 5px;
@@ -1202,12 +1196,12 @@ const openYoutubeSearch = (name, time) => {
   animation: blink 2s infinite;
 }
 .character-gif {
-  width: auto; /* 너비를 강제하지 않고 원본 비율에 따름 */
-  max-width: 90%; /* 혹시 너무 넓은 이미지가 와도 화면을 넘지 않게 제한 */
-  height: 200px; /* 높이를 고정하여 게임 화면 내에서 일정한 크기 유지 (max-height 대신 height 권장) */
+  width: auto;
+  max-width: 90%;
+  height: 200px;
   image-rendering: pixelated;
   margin-bottom: 5px;
-  object-fit: contain; /* 비율을 유지하며 영역 안에 쏙 들어가게 함 (안전장치) */
+  object-fit: contain;
 }
 .bounce {
   animation: bounce 0.5s infinite alternate;
@@ -1220,7 +1214,6 @@ const openYoutubeSearch = (name, time) => {
     transform: translateY(-10px);
   }
 }
-
 .level-badge {
   position: absolute;
   top: 8px;
@@ -1262,7 +1255,6 @@ const openYoutubeSearch = (name, time) => {
   transition: width 0.5s;
   box-shadow: 0 0 5px #00e5ff;
 }
-
 .box-title {
   margin: 0 0 0.5rem 0;
   font-size: 0.9rem;
@@ -1307,7 +1299,6 @@ const openYoutubeSearch = (name, time) => {
   min-width: 35px;
   text-align: right;
 }
-
 .retro-btn {
   margin-top: 0.8rem;
   background: #ff0055;
@@ -1318,49 +1309,36 @@ const openYoutubeSearch = (name, time) => {
   box-shadow: 3px 3px 0 #000;
   font-size: 0.9rem;
 }
-
 .blue-theme {
   border-color: #00ffff;
   color: #00ffff;
-  background: rgba(0, 20, 40, 0.6); /* 투명도 살짝 줌 */
+  background: rgba(0, 20, 40, 0.6);
 }
 .blue-btn {
   background: #00ffff;
   color: #000;
   box-shadow: 3px 3px 0 rgba(0, 255, 255, 0.4);
 }
-.purple-theme {
-  border-color: #d500f9;
-  color: #d500f9;
-  background: #000;
-}
-.purple-btn {
-  background: #d500f9;
-  color: #fff;
-}
 .green-theme {
-  border-color: #39ff14; /* 네온 라임 */
+  border-color: #39ff14;
   color: #39ff14;
   background: rgba(10, 30, 10, 0.6);
 }
-
 .green-btn {
   background: #39ff14;
   color: #000;
   box-shadow: 3px 3px 0 rgba(57, 255, 20, 0.4);
 }
 .green-theme .score-display {
-  border-color: #39ff14; /* 박스 테두리도 초록색으로 통일 */
+  border-color: #39ff14;
   box-shadow: inset 0 0 10px rgba(57, 255, 20, 0.1);
 }
-
 .green-theme .score-val {
   color: #fff;
-  text-shadow: 0 0 5px rgba(57, 255, 20, 0.5); /* 초록색 글로우 효과 */
+  text-shadow: 0 0 5px rgba(57, 255, 20, 0.5);
 }
-
 .green-theme .score-unit {
-  color: #8fbc8f; /* 약간 채도 낮춘 초록색 */
+  color: #8fbc8f;
 }
 .meal-log-container {
   width: 100%;
@@ -1401,7 +1379,6 @@ const openYoutubeSearch = (name, time) => {
   text-overflow: ellipsis;
   max-width: 200px;
 }
-
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -1414,8 +1391,6 @@ const openYoutubeSearch = (name, time) => {
   justify-content: center;
   align-items: center;
 }
-
-/* --- [수정 핵심] 캐릭터 모달 최적화 스타일 --- */
 .char-select-modal {
   width: 90%;
   max-width: 400px;
@@ -1428,17 +1403,15 @@ const openYoutubeSearch = (name, time) => {
   padding: 1rem;
   box-sizing: border-box;
 }
-
 .char-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr); /* 4열 배치 */
+  grid-template-columns: repeat(4, 1fr);
   gap: 10px;
   margin: 15px 0;
   overflow-y: auto;
   padding-right: 5px;
   flex: 1;
 }
-
 .char-grid::-webkit-scrollbar {
   width: 6px;
 }
@@ -1448,7 +1421,6 @@ const openYoutubeSearch = (name, time) => {
 .char-grid::-webkit-scrollbar-thumb {
   background: var(--secondary-color);
 }
-
 .char-slot {
   position: relative;
   aspect-ratio: 1 / 1;
@@ -1461,26 +1433,22 @@ const openYoutubeSearch = (name, time) => {
   transition: all 0.2s;
   overflow: hidden;
 }
-
 .char-slot.selected {
   border-color: var(--secondary-color);
   background: rgba(0, 229, 255, 0.1);
   box-shadow: inset 0 0 8px var(--secondary-color);
 }
-
 .char-slot.locked {
   filter: grayscale(1);
   cursor: not-allowed;
   opacity: 0.5;
 }
-
 .grid-char-img {
   width: 85%;
   height: 85%;
   object-fit: contain;
   image-rendering: pixelated;
 }
-
 .lock-overlay {
   position: absolute;
   top: 0;
@@ -1494,7 +1462,6 @@ const openYoutubeSearch = (name, time) => {
   font-size: 1rem;
   z-index: 2;
 }
-
 .char-num {
   position: absolute;
   bottom: 1px;
@@ -1502,32 +1469,23 @@ const openYoutubeSearch = (name, time) => {
   font-size: 0.5rem;
   color: #777;
 }
-/* --- 수분(마나) 바 스타일 --- */
 .mana-bar-container {
   position: relative;
   width: 100%;
-  height: 35px; /* 바 두께를 키워서 잘 보이게 함 */
-  background-color: #001133; /* 빈 공간은 어두운 남색 */
-  border: 4px solid #fff; /* 픽셀 테두리 */
+  height: 35px;
+  background-color: #001133;
+  border: 4px solid #fff;
   margin: 15px 0;
-  box-shadow: inset 2px 2px 4px rgba(0, 0, 0, 0.8); /* 안쪽 그림자로 깊이감 */
+  box-shadow: inset 2px 2px 4px rgba(0, 0, 0, 0.8);
   overflow: hidden;
 }
-
 .mana-bar-fill {
   height: 100%;
-  background: linear-gradient(
-    180deg,
-    #40e0d0 0%,
-    #00e5ff 40%,
-    #0077be 100%
-  ); /* 입체적인 파란색 */
-  transition: width 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94); /* 부드럽게 차오르는 애니메이션 */
+  background: linear-gradient(180deg, #40e0d0 0%, #00e5ff 40%, #0077be 100%);
+  transition: width 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   position: relative;
-  box-shadow: 0 0 10px #00e5ff; /* 빛나는 효과 */
+  box-shadow: 0 0 10px #00e5ff;
 }
-
-/* 유리 질감 효과 */
 .glare-effect {
   position: absolute;
   top: 0;
@@ -1537,37 +1495,25 @@ const openYoutubeSearch = (name, time) => {
   background: rgba(255, 255, 255, 0.3);
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
-
-/* 바 중앙에 위치하는 텍스트 */
 .mana-text-overlay {
   position: absolute;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%); /* 정중앙 정렬 */
+  transform: translate(-50%, -50%);
   color: #fff;
   font-size: 1rem;
   font-weight: bold;
-  text-shadow: 2px 2px 0 #000, -1px -1px 0 #003366; /* 글자 가독성을 위한 테두리 */
+  text-shadow: 2px 2px 0 #000, -1px -1px 0 #003366;
   z-index: 5;
   letter-spacing: 1px;
 }
-
 .mana-text-overlay .divider {
   color: #aaddff;
   margin: 0 4px;
 }
-
 .blink-text {
   animation: pulse-opacity 2s infinite;
 }
-
-.pixel-desc {
-  font-size: 0.8rem;
-  color: #88ccff;
-  margin-top: -5px;
-  margin-bottom: 10px;
-}
-
 @keyframes pulse-opacity {
   0% {
     opacity: 1;
@@ -1579,7 +1525,6 @@ const openYoutubeSearch = (name, time) => {
     opacity: 1;
   }
 }
-/* --- 세련된 사이버 펑크 AI 버튼 --- */
 .ai-btn-container {
   width: 100%;
   padding: 30px 20px;
@@ -1587,7 +1532,6 @@ const openYoutubeSearch = (name, time) => {
   justify-content: center;
   background: transparent;
 }
-
 .ai-analyze-btn {
   position: relative;
   width: 100%;
@@ -1595,12 +1539,11 @@ const openYoutubeSearch = (name, time) => {
   height: 60px;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 4px; /* 너무 둥글지 않게 하여 날카로운 느낌 강조 */
+  border-radius: 4px;
   overflow: hidden;
   cursor: not-allowed;
   transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
-
 .btn-content {
   position: relative;
   z-index: 2;
@@ -1609,42 +1552,31 @@ const openYoutubeSearch = (name, time) => {
   justify-content: center;
   gap: 12px;
   color: black;
-  font-family: "Orbitron", sans-serif; /* 게이밍 폰트가 없다면 기본 고딕 */
+  font-family: "Orbitron", sans-serif;
   letter-spacing: 2px;
   font-size: 0.9rem;
   font-weight: 800;
 }
-
-/* 활성화 상태 (Active) */
 .ai-analyze-btn.active {
   cursor: pointer;
   background: rgba(110, 69, 226, 0.1);
   border: 1px solid rgba(0, 229, 255, 0.5);
   box-shadow: 0 0 20px rgba(0, 229, 255, 0.2);
 }
-
 .ai-analyze-btn.active .btn-content {
   color: #00e5ff;
   text-shadow: 0 0 8px rgba(0, 229, 255, 0.8);
 }
-
-/* 내부 빛 흐름 효과 (Shimmer) */
 .btn-shimmer {
   position: absolute;
   top: 0;
   left: -100%;
   width: 50%;
   height: 100%;
-  background: linear-gradient(
-    120deg,
-    transparent,
-    rgba(0, 229, 255, 0.2),
-    transparent
-  );
+  background: linear-gradient(120deg, transparent, rgba(0, 229, 255, 0.2), transparent);
   transition: all 0.6s;
   animation: shimmer 3s infinite;
 }
-
 @keyframes shimmer {
   0% {
     left: -100%;
@@ -1656,8 +1588,6 @@ const openYoutubeSearch = (name, time) => {
     left: 100%;
   }
 }
-
-/* 코너 장식 라인 */
 .corner-line {
   position: absolute;
   width: 10px;
@@ -1677,7 +1607,6 @@ const openYoutubeSearch = (name, time) => {
   border-bottom-color: #444;
   border-right-color: #444;
 }
-
 .ai-analyze-btn.active .top-left {
   border-top-color: #00e5ff;
   border-left-color: #00e5ff;
@@ -1686,18 +1615,14 @@ const openYoutubeSearch = (name, time) => {
   border-bottom-color: #00e5ff;
   border-right-color: #00e5ff;
 }
-
-/* 호버 시 반응 */
 .ai-analyze-btn.active:hover {
   transform: translateY(-2px);
   background: rgba(0, 229, 255, 0.15);
   box-shadow: 0 0 30px rgba(0, 229, 255, 0.4);
 }
-
 .ai-analyze-btn.active:active {
   transform: scale(0.97);
 }
-/* --- 로딩 오버레이 스타일 (추가) --- */
 .loading-overlay {
   position: fixed;
   top: 0;
@@ -1705,23 +1630,20 @@ const openYoutubeSearch = (name, time) => {
   width: 100%;
   height: 100%;
   background: rgba(0, 0, 20, 0.95);
-  z-index: 15000; /* 모달보다 높게 설정 */
+  z-index: 15000;
   display: flex;
   justify-content: center;
   align-items: center;
   backdrop-filter: blur(5px);
 }
-
 .loading-content {
   text-align: center;
 }
-
 .loading-icon {
   font-size: 3rem;
   margin-bottom: 20px;
   animation: pulse 1s infinite;
 }
-
 .loading-status-bar {
   width: 200px;
   height: 4px;
@@ -1730,14 +1652,12 @@ const openYoutubeSearch = (name, time) => {
   position: relative;
   overflow: hidden;
 }
-
 .status-fill {
   width: 100%;
   height: 100%;
   background: #00e5ff;
   animation: loading-scan 1.5s infinite;
 }
-
 @keyframes loading-scan {
   0% {
     transform: translateX(-100%);
@@ -1746,252 +1666,11 @@ const openYoutubeSearch = (name, time) => {
     transform: translateX(100%);
   }
 }
-
-/* --- 모달 오버레이 스타일 --- */
-.result-modal-overlay {
-  position: fixed; /* 화면에 고정 */
-  top: 0;
-  left: 0;
-  width: 100vw; /* 너비 전체 */
-  height: 100vh; /* 높이 전체 */
-  background: rgba(0, 0, 10, 0.9); /* 배경 어둡게 */
-  backdrop-filter: blur(10px); /* 배경 흐림 효과 */
-  z-index: 99999; /* 다른 어떤 요소보다 위에 뜨도록 아주 높은 값 설정 */
-  display: flex;
-  justify-content: center;
-  align-items: center; /* 수직/수평 중앙 정렬 */
-  padding: 20px;
-  box-sizing: border-box;
-  overflow-y: auto; /* 내용이 너무 길면 모달 내부에서 스크롤 가능하게 함 */
-}
-
-/* --- 모달 컨텐츠 스타일 --- */
-.result-modal-content {
-  position: relative;
-  width: 100%;
-  max-width: 380px;
-  background: #1a1a24;
-  border: 1px solid #00e5ff;
-  padding: 25px;
-  color: #fff;
-  box-shadow: 0 0 30px rgba(0, 229, 255, 0.2);
-  margin-top: auto; /* 화면보다 길어질 경우 대비 */
-  margin-bottom: auto;
-}
-
-/* 크롬/사파리용 스크롤바 디자인 (선택) */
-.result-modal-content::-webkit-scrollbar {
-  width: 4px;
-}
-.result-modal-content::-webkit-scrollbar-thumb {
-  background: #00e5ff;
-}
-
-@keyframes pulse {
-  0% {
-    transform: scale(1);
-    opacity: 1;
-  }
-  50% {
-    transform: scale(1.1);
-    opacity: 0.7;
-  }
-  100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
-
-/* 페이드 애니메이션 */
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.5s;
-}
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
-
-.report-title {
-  font-size: 0.75rem;
-  color: #00e5ff;
-  letter-spacing: 2px;
-  font-weight: bold;
-}
-
-.header-line {
-  height: 2px;
-  background: linear-gradient(90deg, #00e5ff, transparent);
-  margin-top: 5px;
-  margin-bottom: 20px;
-}
-
-.result-main {
-  display: flex;
-  align-items: center;
-  justify-content: space-around;
-  margin-bottom: 30px;
-  background: rgba(255, 255, 255, 0.03);
-  padding: 20px;
-  border-radius: 4px;
-}
-
-.rank-badge {
-  font-size: 4.5rem;
-  font-weight: 900;
-  text-shadow: 0 0 20px currentColor;
-}
-.rank-S {
-  color: #ffcc00;
-}
-.rank-A {
-  color: #00e5ff;
-}
-.rank-B {
-  color: #00ff99;
-}
-
-.score-label {
-  font-size: 0.6rem;
-  color: #888;
-  margin-bottom: 5px;
-}
-.score-value {
-  font-size: 2.5rem;
-  font-weight: 800;
-  color: #fff;
-}
-.small-pt {
-  font-size: 1rem;
-  margin-left: 4px;
-  color: #00e5ff;
-}
-
-.result-stats {
-  margin-bottom: 25px;
-}
-.stat-item {
-  margin-bottom: 12px;
-}
-.stat-info {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.75rem;
-  margin-bottom: 6px;
-  color: #aaa;
-}
-.stat-bar-bg {
-  width: 100%;
-  height: 4px;
-  background: #333;
-}
-.stat-bar-fill {
-  height: 100%;
-  box-shadow: 0 0 10px currentColor;
-  transition: width 1.5s ease-out;
-}
-
-.result-comment {
-  background: rgba(0, 229, 255, 0.05);
-  border-left: 3px solid #00e5ff;
-  padding: 15px;
-  margin-bottom: 30px;
-  text-align: left;
-}
-.comment-label {
-  color: #00e5ff;
-  font-size: 0.65rem;
-  font-weight: bold;
-  margin-bottom: 10px;
-}
-.comment-text {
-  font-size: 0.9rem;
-  line-height: 1.5;
-  margin-bottom: 10px;
-  color: #eee;
-}
-.advice-text {
-  font-size: 0.85rem;
-  color: #00ff99;
-  font-style: italic;
-  opacity: 0.9;
-}
-
-.result-close-btn {
-  width: 100%;
-  padding: 16px;
-  background: transparent;
-  border: 1px solid #00e5ff;
-  color: #00e5ff;
-  font-family: "NeoDunggeunmo";
-  font-weight: bold;
-  cursor: pointer;
-  transition: all 0.3s;
-}
-.result-close-btn:hover {
-  background: #00e5ff;
-  color: #1a1a24;
-  box-shadow: 0 0 20px rgba(0, 229, 255, 0.4);
-}
-
-/* 장식용 코너 */
-.modal-corner {
-  position: absolute;
-  width: 12px;
-  height: 12px;
-  border: 2px solid #00e5ff;
-}
-.tl {
-  top: -2px;
-  left: -2px;
-  border-right: none;
-  border-bottom: none;
-}
-.tr {
-  top: -2px;
-  right: -2px;
-  border-left: none;
-  border-bottom: none;
-}
-.bl {
-  bottom: -2px;
-  left: -2px;
-  border-right: none;
-  border-top: none;
-}
-.br {
-  bottom: -2px;
-  right: -2px;
-  border-left: none;
-  border-top: none;
-}
-
-/* 모달 애니메이션 */
-.modal-bounce-enter-active {
-  animation: modal-bounce-in 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-}
-.modal-bounce-leave-active {
-  animation: modal-bounce-in 0.3s reverse ease-in;
-}
-@keyframes modal-bounce-in {
-  0% {
-    transform: scale(0.5);
-    opacity: 0;
-  }
-  100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
-
-/* --- 모바일 최적화 수정 버전 --- */
-
 .ai-result-overlay {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
-  /* dvh는 모바일 브라우저 UI를 제외한 실제 가시 영역 높이를 잡습니다 */
   height: 100dvh;
   background: rgba(0, 0, 0, 0.85);
   backdrop-filter: blur(5px);
@@ -1999,35 +1678,27 @@ const openYoutubeSearch = (name, time) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 16px; /* 모바일 여백 */
+  padding: 16px;
 }
-
 .ai-result-modal {
   background: #1a1a1a;
   border: 4px solid #fff;
   width: 100%;
   max-width: 420px;
-  /* 화면 높이에 맞춰 최대 높이 설정 */
   max-height: 90dvh;
   position: relative;
   display: flex;
-  flex-direction: column; /* 세로 배치 */
+  flex-direction: column;
   overflow: hidden;
   box-shadow: 8px 8px 0px 0px rgba(0, 0, 0, 0.5);
 }
-
-/* 내부 스크롤 영역 */
 .modal-body-scroll {
-  flex: 1; /* 남은 공간 모두 차지 */
-  overflow-y: auto; /* 내용이 많으면 스크롤 생성 */
+  flex: 1;
+  overflow-y: auto;
   padding: 10px 15px;
-
-  /* 레트로 스타일 스크롤바 */
   scrollbar-width: thin;
   scrollbar-color: #ff0055 #222;
 }
-
-/* 크롬, 사파리용 스크롤바 디자인 */
 .modal-body-scroll::-webkit-scrollbar {
   width: 6px;
 }
@@ -2038,274 +1709,50 @@ const openYoutubeSearch = (name, time) => {
   background: #ff0055;
   border: 1px solid #fff;
 }
-
-/* 헤더 & 버튼 고정 스타일링 */
 .modal-header-section {
   padding: 15px 15px 10px;
   border-bottom: 2px dashed #444;
-  flex-shrink: 0; /* 높이 고정 */
+  flex-shrink: 0;
+  text-align: center;
 }
-
 .retro-confirm-btn {
-  margin: 10px 15px 15px; /* 하단 고정 버튼 여백 */
-  flex-shrink: 0; /* 높이 고정 */
+  margin: 10px 15px 15px;
+  flex-shrink: 0;
   padding: 12px;
   font-size: 0.9rem;
+  background: #ff0055;
+  color: #fff;
+  border: none;
+  font-family: "NeoDunggeunmo";
+  cursor: pointer;
+  box-shadow: 0 4px 0 #990033;
+  transition: all 0.1s;
 }
-
-/* 모바일 텍스트 크기 미세 조정 */
-@media (max-height: 700px) {
-  .rank-visual {
-    font-size: 2.5rem;
-  }
-  .score-number-retro {
-    font-size: 1.8rem;
-  }
-  .modal-main-title {
-    font-size: 1rem;
-  }
+.retro-confirm-btn:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 #990033;
 }
-
-/* 픽셀 느낌을 위한 테두리 효과 추가 */
 .retro-pixel-border {
   image-rendering: pixelated;
   position: relative;
 }
-
-/* CRT 스캔라인 효과 */
-.scanline {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%),
-    linear-gradient(
-      90deg,
-      rgba(255, 0, 0, 0.03),
-      rgba(0, 255, 0, 0.01),
-      rgba(0, 0, 255, 0.03)
-    );
-  background-size: 100% 3px, 3px 100%;
-  pointer-events: none;
-  z-index: 10;
-}
-
-/* 헤더 섹션 */
-.modal-header-section {
-  text-align: center;
-  margin-bottom: 20px;
-  border-bottom: 2px dashed #444;
-  padding-bottom: 15px;
-}
-
-.pixel-tag {
-  display: inline-block;
-  background: #ff0055;
-  color: #fff;
-  font-size: 0.7rem;
-  padding: 2px 8px;
-  margin-bottom: 10px;
-}
-
 .modal-main-title {
   font-size: 1.2rem;
   color: #00e5ff;
   text-shadow: 2px 2px 0 #000;
 }
-
-/* 랭크 & 점수 카드 */
-.score-card-retro {
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
-  background: #000;
-  border: 2px solid #333;
-  padding: 15px;
-  margin-bottom: 20px;
-}
-
-.rank-visual {
-  font-size: 3.5rem;
-  font-weight: 900;
-  line-height: 1;
-  margin-top: 5px;
-  animation: rankPop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-.rank-S {
-  color: #ffcc00;
-  text-shadow: 0 0 15px #ffcc00;
-}
-.rank-A {
-  color: #ff0055;
-  text-shadow: 0 0 15px #ff0055;
-}
-.rank-B {
-  color: #00e5ff;
-  text-shadow: 0 0 15px #00e5ff;
-}
-
-.score-number-retro {
-  font-size: 2.5rem;
-  color: #fff;
-  text-shadow: 2px 2px 0 #444;
-}
-
-/* 인사이트 로그 스타일 */
-.section-title-retro {
-  font-size: 0.8rem;
-  color: #888;
-  margin-bottom: 10px;
-}
-
-.insight-list-retro {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-bottom: 20px;
-}
-
-.insight-card-retro {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid #333;
-  padding: 10px;
-  position: relative;
-}
-
-.insight-card-retro.good {
-  border-left: 4px solid #00ff88;
-}
-.insight-card-retro.warning {
-  border-left: 4px solid #ffaa00;
-}
-
-.status-dot {
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  background: currentColor;
-  margin-right: 8px;
-  vertical-align: middle;
-}
-
-.insight-title {
-  font-size: 0.9rem;
-  display: inline-block;
-  color: #eee;
-}
-
-.insight-description {
-  font-size: 0.8rem;
-  color: #aaa;
-  margin-top: 5px;
-  line-height: 1.4;
-}
-
-/* 요약 박스 (NPC 대화 스타일) */
-.summary-box-retro {
-  background: #222;
-  border: 2px solid #444;
-  padding: 12px;
-  display: flex;
-  gap: 12px;
-  align-items: center;
-}
-
-.npc-thumb {
-  font-size: 1.5rem;
-  background: #333;
-  padding: 5px;
-  border: 1px solid #555;
-}
-
-.summary-text {
-  font-size: 0.85rem;
-  color: #00ff88;
-  line-height: 1.4;
-}
-
-/* 확인 버튼 */
-.retro-confirm-btn {
-  margin-top: 20px;
-  background: #ff0055;
-  color: #fff;
-  border: none;
-  padding: 15px;
-  font-family: "NeoDunggeunmo";
-  font-size: 1rem;
-  cursor: pointer;
-  box-shadow: 0 4px 0 #990033;
-  transition: all 0.1s;
-}
-
-.retro-confirm-btn:active {
-  transform: translateY(2px);
-  box-shadow: 0 2px 0 #990033;
-}
-
-/* 애니메이션 정의 */
-@keyframes rankPop {
-  0% {
-    transform: scale(0);
-    opacity: 0;
-  }
-  80% {
-    transform: scale(1.2);
-  }
-  100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
-
-/* 모달 등장 애니메이션 */
-.retro-modal-enter-active {
-  animation: modalSlideIn 0.3s steps(5);
-}
-.retro-modal-leave-active {
-  animation: modalSlideIn 0.2s steps(5) reverse;
-}
-
-@keyframes modalSlideIn {
-  from {
-    transform: translateY(30px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-
-/* 모바일 대응 */
-@media (max-width: 400px) {
-  .ai-result-modal {
-    padding: 15px;
-  }
-  .rank-visual {
-    font-size: 2.8rem;
-  }
-  .score-number-retro {
-    font-size: 2rem;
-  }
-}
-/* --- 점수 & 랭크 강조 스타일 --- */
-
 .score-card-retro.premium-border {
   display: flex;
   justify-content: space-around;
   align-items: center;
   background: linear-gradient(135deg, #000 0%, #1a1a1a 100%);
-  border: 3px solid #ffd700; /* 황금색 테두리 */
+  border: 3px solid #ffd700;
   padding: 25px 15px;
   margin-bottom: 25px;
   position: relative;
   overflow: hidden;
   box-shadow: inset 0 0 15px rgba(255, 215, 0, 0.2);
 }
-
-/* 랭크 뒤에서 회전하는 후광(Aura) 효과 */
 .rank-aura-container {
   position: relative;
   display: flex;
@@ -2313,7 +1760,6 @@ const openYoutubeSearch = (name, time) => {
   align-items: center;
   z-index: 1;
 }
-
 .rank-aura {
   position: absolute;
   width: 120px;
@@ -2323,8 +1769,6 @@ const openYoutubeSearch = (name, time) => {
   opacity: 0.6;
   animation: rotateAura 4s linear infinite;
 }
-
-/* 등급별 아우라 색상 */
 .aura-S {
   background: conic-gradient(#ff0055, #ffd700, #ff0055);
 }
@@ -2334,7 +1778,6 @@ const openYoutubeSearch = (name, time) => {
 .aura-B {
   background: conic-gradient(#00ff88, #0085ff, #00ff88);
 }
-
 @keyframes rotateAura {
   from {
     transform: rotate(0deg) scale(1);
@@ -2346,38 +1789,31 @@ const openYoutubeSearch = (name, time) => {
     transform: rotate(360deg) scale(1);
   }
 }
-
-/* 랭크 글자 효과: 금속 느낌 그라데이션 + 강한 글로우 */
 .rank-visual-mega {
   font-size: 4.5rem;
   font-weight: 900;
   line-height: 1;
   position: relative;
   z-index: 2;
-  font-family: "Arial Black", sans-serif; /* 더 두꺼운 폰트 추천 */
+  font-family: "Arial Black", sans-serif;
   animation: rankPulse 1.5s ease-in-out infinite;
 }
-
 .rank-S {
   background: linear-gradient(to bottom, #fff 20%, #ffd700 50%, #b8860b 80%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   filter: drop-shadow(0 0 15px rgba(255, 215, 0, 0.8));
 }
-
 .rank-A {
   background: linear-gradient(to bottom, #fff 20%, #ff0055 50%, #8b0000 80%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   filter: drop-shadow(0 0 15px rgba(255, 0, 85, 0.8));
 }
-
-/* 점수 숫자 효과: 네온 사인 느낌 */
 .score-container-mega {
   text-align: right;
   z-index: 2;
 }
-
 .score-label-neon {
   font-size: 0.7rem;
   color: #ffd700;
@@ -2385,7 +1821,6 @@ const openYoutubeSearch = (name, time) => {
   margin-bottom: 5px;
   text-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
 }
-
 .score-number-glitch {
   font-size: 3rem;
   color: #fff;
@@ -2393,8 +1828,6 @@ const openYoutubeSearch = (name, time) => {
   text-shadow: 3px 3px 0px #ff0055, -3px -3px 0px #00e5ff;
   animation: scoreFloat 3s ease-in-out infinite;
 }
-
-/* XP 바 애니메이션 (게이미피케이션 요소) */
 .xp-bar-mini {
   width: 100%;
   height: 4px;
@@ -2403,7 +1836,6 @@ const openYoutubeSearch = (name, time) => {
   border-radius: 2px;
   overflow: hidden;
 }
-
 .xp-bar-fill {
   width: 100%;
   height: 100%;
@@ -2411,8 +1843,6 @@ const openYoutubeSearch = (name, time) => {
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite linear;
 }
-
-/* 신규 애니메이션들 */
 @keyframes rankPulse {
   0%,
   100% {
@@ -2424,7 +1854,6 @@ const openYoutubeSearch = (name, time) => {
     filter: brightness(1.3) drop-shadow(0 0 25px currentColor);
   }
 }
-
 @keyframes scoreFloat {
   0%,
   100% {
@@ -2434,54 +1863,24 @@ const openYoutubeSearch = (name, time) => {
     transform: translateY(-5px);
   }
 }
-
-@keyframes shimmer {
-  0% {
-    background-position: -200% 0;
-  }
-  100% {
-    background-position: 200% 0;
-  }
-}
-
-/* 모바일 텍스트 크기 최적화 */
-@media (max-width: 400px) {
-  .rank-visual-mega {
-    font-size: 3.5rem;
-  }
-  .score-number-glitch {
-    font-size: 2.2rem;
-  }
-  .rank-aura {
-    width: 90px;
-    height: 90px;
-  }
-}
-
-/* --- [NEW] 에너지 & 트레이닝 스타일 --- */
-
 .physical-stats-retro {
   margin: 20px 0;
   padding: 0 5px;
 }
-
 .energy-dashboard {
   display: flex;
   flex-direction: column;
   gap: 5px;
 }
-
-/* 칼로리 게이지 (배터리 느낌) */
 .calorie-gauge {
   background: #0a0a0a;
-  border: 2px solid #ffaa00; /* 에너지 색상 */
+  border: 2px solid #ffaa00;
   padding: 15px;
   text-align: center;
   position: relative;
   box-shadow: 0 0 10px rgba(255, 170, 0, 0.2);
 }
 .calorie-gauge::before {
-  /* 픽셀 모서리 효과 */
   content: "";
   position: absolute;
   top: -4px;
@@ -2491,7 +1890,6 @@ const openYoutubeSearch = (name, time) => {
   border: 2px solid rgba(255, 170, 0, 0.3);
   z-index: -1;
 }
-
 .gauge-label {
   display: block;
   font-size: 0.8rem;
@@ -2499,7 +1897,6 @@ const openYoutubeSearch = (name, time) => {
   letter-spacing: 2px;
   margin-bottom: 5px;
 }
-
 .gauge-val {
   font-size: 2rem;
   font-weight: bold;
@@ -2511,14 +1908,11 @@ const openYoutubeSearch = (name, time) => {
   font-size: 1rem;
   color: #ccc;
 }
-
-/* 운동 그리드 */
 .training-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr); /* 3개 나란히 */
+  grid-template-columns: repeat(3, 1fr);
   gap: 8px;
 }
-
 .training-card {
   background: rgba(0, 255, 0, 0.05);
   border: 1px dashed #00ff00;
@@ -2535,7 +1929,6 @@ const openYoutubeSearch = (name, time) => {
   transform: translateY(-2px);
   border-style: solid;
 }
-
 .card-icon {
   font-size: 1.8rem;
 }
@@ -2551,54 +1944,22 @@ const openYoutubeSearch = (name, time) => {
 .card-time {
   font-size: 0.9rem;
   font-weight: bold;
-  color: #00ff00; /* 네온 그린 */
+  color: #00ff00;
 }
-
-/* 애니메이션 유틸 */
-.blink-text {
-  animation: blink 1.5s infinite;
-}
-.floating {
-  animation: float 3s ease-in-out infinite;
-}
-
-@keyframes blink {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.7;
-  }
-}
-@keyframes float {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-3px);
-  }
-}
-
 .interactive-card {
-  cursor: pointer; /* 손가락 모양 커서 */
+  cursor: pointer;
   position: relative;
   transition: all 0.2s ease;
 }
-
 .interactive-card:hover {
-  transform: translateY(-3px); /* 살짝 떠오르는 효과 */
-  border-color: #ff0000; /* 유튜브 레드 컬러 포인트 */
-  box-shadow: 0 4px 15px rgba(255, 0, 0, 0.3); /* 붉은색 네온 광선 */
+  transform: translateY(-3px);
+  border-color: #ff0000;
+  box-shadow: 0 4px 15px rgba(255, 0, 0, 0.3);
   background-color: rgba(255, 255, 255, 0.1);
 }
-
 .interactive-card:active {
-  transform: scale(0.98); /* 클릭 시 살짝 눌리는 효과 */
+  transform: scale(0.98);
 }
-
-/* 오른쪽 상단에 작게 플레이 버튼 표시 */
 .youtube-hint {
   position: absolute;
   top: 5px;
@@ -2608,35 +1969,30 @@ const openYoutubeSearch = (name, time) => {
   opacity: 0;
   transition: opacity 0.2s;
 }
-
 .interactive-card:hover .youtube-hint {
   opacity: 1;
   color: #ff0000;
 }
-
 .video-player-section {
   margin: 20px 0;
   animation: slideDown 0.3s ease;
 }
-
 .video-box {
   background: #000;
   padding: 10px;
   position: relative;
-  border: 2px solid #0f0; /* 레트로 그린 테두리 */
+  border: 2px solid #0f0;
   box-shadow: 0 0 10px #0f0;
 }
-
 .video-loading {
   height: 315px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: #0f0;
-  font-family: "DungGeunMo", sans-serif; /* 레트로 폰트 */
+  font-family: "DungGeunMo", sans-serif;
   font-size: 1.2rem;
 }
-
 .close-video-btn {
   width: 100%;
   background: #333;
@@ -2647,11 +2003,9 @@ const openYoutubeSearch = (name, time) => {
   cursor: pointer;
   font-family: "DungGeunMo", sans-serif;
 }
-
 .close-video-btn:hover {
   background: #f00;
 }
-
 @keyframes slideDown {
   from {
     opacity: 0;
@@ -2660,6 +2014,126 @@ const openYoutubeSearch = (name, time) => {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+.insight-list-retro {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.insight-card-retro {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid #333;
+  padding: 10px;
+  position: relative;
+}
+.insight-card-retro.good {
+  border-left: 4px solid #00ff88;
+}
+.insight-card-retro.warning {
+  border-left: 4px solid #ffaa00;
+}
+.status-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  background: currentColor;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+.insight-title {
+  font-size: 0.9rem;
+  display: inline-block;
+  color: #eee;
+}
+.insight-description {
+  font-size: 0.8rem;
+  color: #aaa;
+  margin-top: 5px;
+  line-height: 1.4;
+}
+.summary-box-retro {
+  background: #222;
+  border: 2px solid #444;
+  padding: 12px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.npc-thumb {
+  font-size: 1.5rem;
+  background: #333;
+  padding: 5px;
+  border: 1px solid #555;
+}
+.summary-text {
+  font-size: 0.85rem;
+  color: #00ff88;
+  line-height: 1.4;
+}
+.section-title-retro {
+  font-size: 0.8rem;
+  color: #888;
+  margin-bottom: 10px;
+}
+.retro-modal-enter-active {
+  animation: modalSlideIn 0.3s steps(5);
+}
+.retro-modal-leave-active {
+  animation: modalSlideIn 0.2s steps(5) reverse;
+}
+@keyframes modalSlideIn {
+  from {
+    transform: translateY(30px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.5s;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+@media (max-width: 400px) {
+  .ai-result-modal {
+    padding: 15px;
+  }
+  .rank-visual {
+    font-size: 2.8rem;
+  }
+  .score-number-retro {
+    font-size: 2rem;
+  }
+  .rank-visual-mega {
+    font-size: 3.5rem;
+  }
+  .score-number-glitch {
+    font-size: 2.2rem;
+  }
+  .rank-aura {
+    width: 90px;
+    height: 90px;
   }
 }
 </style>
