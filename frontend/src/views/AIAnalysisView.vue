@@ -1,14 +1,7 @@
 <script setup>
 import { ref } from "vue";
 import { useRouter } from "vue-router";
-// [수정] applyDietPlanApi 추가
-import {
-  analyzeDiet,
-  generateDietPlanApi,
-  scanBodyApi,
-  scanFoodImageApi,
-  applyDietPlanApi,
-} from "../api/diet/dietApi";
+import { analyzeDiet, generateDietPlanApi, scanBodyApi, scanFoodImageApi, applyDietPlanApi } from "../api/diet/dietApi";
 import Footer from "../components/utils/Footer.vue";
 import { useConfigStore } from "@/stores/configStore";
 import { useAuthStore } from "@/stores/authStore";
@@ -21,42 +14,31 @@ const currentVideoId = ref(null); // 재생할 영상 ID
 const activeExerciseType = ref(null); // 현재 클릭된 운동 (running, walking, swimming)
 
 // [YouTube 검색 및 재생 함수]
-// [최적화] YouTube 검색 함수
 const searchAndPlayYoutube = async (exerciseName, minutes, type) => {
-  // 1. 중복 클릭 방지 및 토글 로직
   if (activeExerciseType.value === type && currentVideoId.value) {
     currentVideoId.value = null;
     activeExerciseType.value = null;
     return;
   }
 
-  // 2. 상태 초기화
   activeExerciseType.value = type;
   isVideoLoading.value = true;
   currentVideoId.value = null;
 
-  // ---------------------------------------------------------
-  // 🎯 [검색 최적화 핵심]
-  // 1. "루틴", "가이드", "따라하기" 키워드 추가 -> 정보성 긴 영상 유도
-  // 2. "-shorts" 키워드 추가 -> 제목이나 태그에 shorts가 들어간 영상 제외 요청
-  // ---------------------------------------------------------
+  // 검색 최적화
   const query = `${minutes}분 ${exerciseName} 운동 루틴 가이드 -shorts`;
 
   try {
-    const response = await axios.get(
-      "https://www.googleapis.com/youtube/v3/search",
-      {
-        params: {
-          part: "snippet",
-          q: query, // 최적화된 검색어
-          type: "video",
-          maxResults: 1, // 가장 정확한 1개
-          key: YOUTUBE_API_KEY,
-          videoEmbeddable: "true", // 퍼가기 허용된 영상만 (재생 오류 방지)
-          // videoDuration 파라미터는 제거했습니다 (길이는 상관없음)
-        },
-      }
-    );
+    const response = await axios.get("https://www.googleapis.com/youtube/v3/search", {
+      params: {
+        part: "snippet",
+        q: query,
+        type: "video",
+        maxResults: 1,
+        key: YOUTUBE_API_KEY,
+        videoEmbeddable: "true",
+      },
+    });
 
     if (response.data.items.length > 0) {
       currentVideoId.value = response.data.items[0].id.videoId;
@@ -66,7 +48,6 @@ const searchAndPlayYoutube = async (exerciseName, minutes, type) => {
     }
   } catch (error) {
     console.error("YouTube API Error:", error);
-    // 할당량 초과(403) 등을 대비해 사용자에게 알림
     alert("영상 검색 중 오류가 발생했습니다.");
     activeExerciseType.value = null;
   } finally {
@@ -96,6 +77,9 @@ const surveyAnswers = ref({});
 const generatedPlan = ref([]);
 const selectedDuration = ref(3);
 
+// [추가] 사용자 입력값을 저장할 변수 (특식 입력용)
+const customFoodInput = ref("");
+
 const scanStep = ref("upload");
 const scannedImage = ref(null);
 const currentFile = ref(null);
@@ -108,7 +92,7 @@ const MEMBER_ID = authStore.memberId;
 const TODAY_DATE = new Date().toISOString().split("T")[0];
 
 // ------------------------------------------------------------------
-// 2. 설문 데이터
+// 2. 설문 데이터 (수정됨: 6번째 질문 input 타입 변경)
 // ------------------------------------------------------------------
 const surveyQuestions = [
   {
@@ -161,15 +145,13 @@ const surveyQuestions = [
       { value: 5, label: "5끼", desc: "조금씩 자주" },
     ],
   },
+  // [수정] 6번째 질문: 입력형(input)으로 변경
   {
     id: "favorite",
     question: "식단에 포함하고 싶은 특식은?",
     emoji: "❤️",
-    options: [
-      { value: "none", label: "없음", desc: "클린하게" },
-      { value: "chicken", label: "치킨", desc: "단백질..이죠?" },
-      { value: "pizza", label: "피자", desc: "치즈 못 참아" },
-    ],
+    type: "input", // 입력 타입 지정
+    placeholder: "예: 마라탕, 치킨 (없으면 '없음' 입력)",
   },
 ];
 
@@ -217,16 +199,30 @@ const openDietPlanModal = () => {
   dietPlanStep.value = "survey";
   surveyStep.value = 0;
   surveyAnswers.value = {};
+  customFoodInput.value = ""; // 입력 필드 초기화
 };
 
-const selectAnswer = (questionId, value) => {
-  surveyAnswers.value[questionId] = value;
-  if (questionId === "duration") selectedDuration.value = value;
+// [공통] 다음 단계 진행 함수 (리팩토링)
+const proceedToNextStep = () => {
   if (surveyStep.value < surveyQuestions.length - 1) {
     setTimeout(() => surveyStep.value++, 250);
   } else {
     setTimeout(() => generateDietPlan(), 250);
   }
+};
+
+const selectAnswer = (questionId, value) => {
+  surveyAnswers.value[questionId] = value;
+  if (questionId === "duration") selectedDuration.value = value;
+  proceedToNextStep();
+};
+
+// [추가] 텍스트 입력 제출 로직
+const submitInputAnswer = () => {
+  const currentQ = surveyQuestions[surveyStep.value];
+  const value = customFoodInput.value.trim() || "없음"; // 빈 값이면 '없음' 처리
+  surveyAnswers.value[currentQ.id] = value;
+  proceedToNextStep();
 };
 
 const generateDietPlan = async () => {
@@ -308,12 +304,7 @@ const analyzeBodyStats = async () => {
 };
 
 const runBootSequence = () => {
-  const logs = [
-    "INITIALIZING SYSTEM...",
-    "CONNECTING NEURAL NET...",
-    "LOADING BIOMETRICS...",
-    "ACCESS GRANTED.",
-  ];
+  const logs = ["INITIALIZING SYSTEM...", "CONNECTING NEURAL NET...", "LOADING BIOMETRICS...", "ACCESS GRANTED."];
   let logIndex = 0;
   const interval = setInterval(() => {
     if (logIndex < logs.length) {
@@ -324,36 +315,28 @@ const runBootSequence = () => {
   }, 300);
 };
 
-// [추가] 시스템 적용 (DB 저장) 함수
 const confirmDietPlan = async () => {
-  // 1. 데이터 검증
   if (!generatedPlan.value || generatedPlan.value.length === 0) {
     alert("SYSTEM ERROR: 저장할 식단 데이터가 없습니다.");
     return;
   }
 
-  // 2. 사용자 확인
   const isConfirmed = confirm(
     `[SYSTEM NOTICE]\n생성된 ${selectedDuration.value}일치 식단을 스케쥴 데이터베이스에 동기화하시겠습니까?`
   );
 
   if (!isConfirmed) return;
 
-  // 3. 로딩 상태 전환
   dietPlanStep.value = "loading";
 
   try {
-    // 4. API 호출
     await applyDietPlanApi(MEMBER_ID, generatedPlan.value);
-
-    // 5. 성공 시
     alert("SYNC COMPLETE: 식단이 스케쥴에 정상적으로 등록되었습니다.");
-    showDietPlanModal.value = false; // 모달 닫기
+    showDietPlanModal.value = false;
   } catch (error) {
-    // 6. 실패 시
     console.error(error);
     alert("SYNC FAILED: 서버 통신 중 오류가 발생했습니다.");
-    dietPlanStep.value = "result"; // 다시 결과 화면으로 복귀
+    dietPlanStep.value = "result";
   }
 };
 </script>
@@ -365,9 +348,7 @@ const confirmDietPlan = async () => {
     <div class="content-wrapper">
       <div v-if="isLoading" class="loading-terminal">
         <div class="terminal-screen">
-          <div v-for="(log, index) in bootLogs" :key="index" class="log-line">
-            > {{ log }}
-          </div>
+          <div v-for="(log, index) in bootLogs" :key="index" class="log-line">> {{ log }}</div>
           <div class="cursor-line">> <span class="blink-cursor">_</span></div>
         </div>
         <div class="loading-bar-container"><div class="loading-bar"></div></div>
@@ -384,9 +365,7 @@ const confirmDietPlan = async () => {
             </div>
           </div>
           <div class="ai-message">
-            <p v-if="!analysisData" class="typing-text">
-              "시스템 준비 완료. 터치하여 분석 시작."
-            </p>
+            <p v-if="!analysisData" class="typing-text">"시스템 준비 완료. 터치하여 분석 시작."</p>
             <p v-else class="result-text">
               "분석 완료. 랭크 [
               <span class="rank-highlight">{{ analysisData.rank }}</span> ]"
@@ -415,11 +394,7 @@ const confirmDietPlan = async () => {
             <div class="btn-arrow">→</div>
           </button>
 
-          <button
-            class="hero-btn body"
-            @click="analyzeBodyStats"
-            :disabled="isScanningBody"
-          >
+          <button class="hero-btn body" @click="analyzeBodyStats" :disabled="isScanningBody">
             <div class="btn-bg"></div>
             <div class="btn-icon">🧬</div>
             <div class="btn-text">
@@ -434,16 +409,10 @@ const confirmDietPlan = async () => {
 
         <div v-if="analysisData" class="result-section">
           <div class="power-card fade-in-up">
-            <div
-              class="rank-badge"
-              :style="{ color: getRankColor(analysisData.overallScore) }"
-            >
+            <div class="rank-badge" :style="{ color: getRankColor(analysisData.overallScore) }">
               RANK {{ analysisData.rank }}
             </div>
-            <div
-              class="score-val"
-              :style="{ color: getRankColor(analysisData.overallScore) }"
-            >
+            <div class="score-val" :style="{ color: getRankColor(analysisData.overallScore) }">
               {{ analysisData.overallScore }} <span class="max">/ 100</span>
             </div>
             <div class="retro-progress">
@@ -455,9 +424,7 @@ const confirmDietPlan = async () => {
                 }"
               ></div>
             </div>
-            <div class="ai-summary-text">
-              "{{ analysisData.recommendation }}"
-            </div>
+            <div class="ai-summary-text">"{{ analysisData.recommendation }}"</div>
           </div>
         </div>
       </div>
@@ -465,21 +432,13 @@ const confirmDietPlan = async () => {
 
     <Footer />
 
-    <div
-      v-if="showDietPlanModal"
-      class="modal-overlay"
-      @click.self="showDietPlanModal = false"
-    >
+    <div v-if="showDietPlanModal" class="modal-overlay" @click.self="showDietPlanModal = false">
       <div class="modal-win survey-modal pop-in">
         <div class="modal-header">
           <span>{{
-            dietPlanStep === "survey"
-              ? `DATA INPUT ${surveyStep + 1}/${surveyQuestions.length}`
-              : "PROCESSING..."
+            dietPlanStep === "survey" ? `DATA INPUT ${surveyStep + 1}/${surveyQuestions.length}` : "PROCESSING..."
           }}</span>
-          <button class="close-btn" @click="showDietPlanModal = false">
-            ✕
-          </button>
+          <button class="close-btn" @click="showDietPlanModal = false">✕</button>
         </div>
 
         <div v-if="dietPlanStep === 'survey'" class="modal-body">
@@ -489,7 +448,11 @@ const confirmDietPlan = async () => {
             </div>
             <h3>{{ surveyQuestions[surveyStep].question }}</h3>
           </div>
-          <div class="options">
+
+          <div
+            v-if="!surveyQuestions[surveyStep].type || surveyQuestions[surveyStep].type === 'select'"
+            class="options"
+          >
             <button
               v-for="opt in surveyQuestions[surveyStep].options"
               :key="opt.value"
@@ -499,6 +462,17 @@ const confirmDietPlan = async () => {
               <div class="opt-label">{{ opt.label }}</div>
               <div class="opt-desc">{{ opt.desc }}</div>
             </button>
+          </div>
+
+          <div v-else-if="surveyQuestions[surveyStep].type === 'input'" class="input-section fade-in">
+            <input
+              type="text"
+              v-model="customFoodInput"
+              class="retro-input"
+              :placeholder="surveyQuestions[surveyStep].placeholder"
+              @keyup.enter="submitInputAnswer"
+            />
+            <button class="apply-btn" @click="submitInputAnswer">확인</button>
           </div>
         </div>
 
@@ -513,10 +487,7 @@ const confirmDietPlan = async () => {
             <div v-for="p in generatedPlan" :key="p.day" class="plan-item">
               <div class="day">DAY {{ p.day }}</div>
 
-              <div
-                class="menu-container"
-                v-if="p.menu && typeof p.menu === 'object'"
-              >
+              <div class="menu-container" v-if="p.menu && typeof p.menu === 'object'">
                 <div class="meal-row">
                   <span class="meal-label morning">아침</span>
                   <span class="meal-text">{{ p.menu.breakfast }}</span>
@@ -533,44 +504,26 @@ const confirmDietPlan = async () => {
               <div class="menu" v-else>{{ p.menu }}</div>
 
               <div class="quest-row">
-                <span class="badge" :class="p.difficulty">{{
-                  p.difficulty
-                }}</span>
+                <span class="badge" :class="p.difficulty">{{ p.difficulty }}</span>
                 <span class="quest">🎯 {{ p.quest }}</span>
               </div>
               <div class="cal-info">⚡ {{ p.cal }} kcal</div>
             </div>
           </div>
-          <button class="apply-btn" @click="confirmDietPlan">
-            시스템 적용
-          </button>
+          <button class="apply-btn" @click="confirmDietPlan">시스템 적용</button>
         </div>
       </div>
     </div>
 
-    <div
-      v-if="showFoodScanModal"
-      class="modal-overlay"
-      @click.self="showFoodScanModal = false"
-    >
+    <div v-if="showFoodScanModal" class="modal-overlay" @click.self="showFoodScanModal = false">
       <div class="modal-win scan-modal pop-in">
         <div class="modal-header">
-          <span>{{
-            scanStep === "result" ? "ANALYSIS COMPLETE" : "VISUAL SCANNER"
-          }}</span>
-          <button class="close-btn" @click="showFoodScanModal = false">
-            ✕
-          </button>
+          <span>{{ scanStep === "result" ? "ANALYSIS COMPLETE" : "VISUAL SCANNER" }}</span>
+          <button class="close-btn" @click="showFoodScanModal = false">✕</button>
         </div>
 
         <div v-if="scanStep === 'upload'" class="modal-body upload-section">
-          <input
-            type="file"
-            accept="image/*"
-            id="food-img"
-            @change="handleImageUpload"
-            style="display: none"
-          />
+          <input type="file" accept="image/*" id="food-img" @change="handleImageUpload" style="display: none" />
           <label for="food-img" class="viewfinder-label">
             <div class="corner top-left"></div>
             <div class="corner top-right"></div>
@@ -602,28 +555,15 @@ const confirmDietPlan = async () => {
         <div v-if="scanStep === 'result'" class="modal-body result">
           <img :src="scannedImage" class="preview" />
 
-          <div class="food-name bounce-in">
-            {{ scanResult.emoji }} {{ scanResult.name }}
-          </div>
-          <div class="calorie-big pulse-text">
-            🔥 {{ scanResult.calories }} kcal
-          </div>
-          <div v-if="scanResult.dietTip" class="diet-tip slide-up">
-  💡 {{ scanResult.dietTip }}
-</div>
-
+          <div class="food-name bounce-in">{{ scanResult.emoji }} {{ scanResult.name }}</div>
+          <div class="calorie-big pulse-text">🔥 {{ scanResult.calories }} kcal</div>
+          <div v-if="scanResult.dietTip" class="diet-tip slide-up">💡 {{ scanResult.dietTip }}</div>
 
           <div class="exercise-grid">
             <div
               class="ex-card clickable"
               :class="{ active: activeExerciseType === 'running' }"
-              @click="
-                searchAndPlayYoutube(
-                  '러닝',
-                  scanResult.exercise.running,
-                  'running'
-                )
-              "
+              @click="searchAndPlayYoutube('러닝', scanResult.exercise.running, 'running')"
             >
               <div>🏃 러닝</div>
               <div class="time">{{ scanResult.exercise.running }}분</div>
@@ -632,13 +572,7 @@ const confirmDietPlan = async () => {
             <div
               class="ex-card clickable"
               :class="{ active: activeExerciseType === 'walking' }"
-              @click="
-                searchAndPlayYoutube(
-                  '걷기',
-                  scanResult.exercise.walking,
-                  'walking'
-                )
-              "
+              @click="searchAndPlayYoutube('걷기', scanResult.exercise.walking, 'walking')"
             >
               <div>🚶 걷기</div>
               <div class="time">{{ scanResult.exercise.walking }}분</div>
@@ -647,13 +581,7 @@ const confirmDietPlan = async () => {
             <div
               class="ex-card clickable"
               :class="{ active: activeExerciseType === 'swimming' }"
-              @click="
-                searchAndPlayYoutube(
-                  '수영',
-                  scanResult.exercise.swimming,
-                  'swimming'
-                )
-              "
+              @click="searchAndPlayYoutube('수영', scanResult.exercise.swimming, 'swimming')"
             >
               <div>🏊 수영</div>
               <div class="time">{{ scanResult.exercise.swimming }}분</div>
@@ -695,17 +623,11 @@ const confirmDietPlan = async () => {
       </div>
     </div>
 
-    <div
-      v-if="showBodyScanModal && bodyScanResult"
-      class="modal-overlay"
-      @click.self="showBodyScanModal = false"
-    >
+    <div v-if="showBodyScanModal && bodyScanResult" class="modal-overlay" @click.self="showBodyScanModal = false">
       <div class="modal-win scan-modal pop-in">
         <div class="modal-header">
           <span>CHARACTER STATUS</span>
-          <button class="close-btn" @click="showBodyScanModal = false">
-            ✕
-          </button>
+          <button class="close-btn" @click="showBodyScanModal = false">✕</button>
         </div>
         <div class="modal-body result">
           <div class="rpg-class-title glitch" :data-text="bodyScanResult.class">
@@ -716,26 +638,16 @@ const confirmDietPlan = async () => {
           <div class="bmi-info">BMI: {{ bodyScanResult.bmi }}</div>
 
           <div class="stats-container">
-            <div
-              class="stat-row"
-              v-for="(val, key) in bodyScanResult.stats"
-              :key="key"
-            >
+            <div class="stat-row" v-for="(val, key) in bodyScanResult.stats" :key="key">
               <span class="stat-label">{{ key.toUpperCase() }}</span>
               <div class="stat-bar">
-                <div
-                  class="stat-fill"
-                  :class="key"
-                  :style="{ width: val + '%' }"
-                ></div>
+                <div class="stat-fill" :class="key" :style="{ width: val + '%' }"></div>
               </div>
               <span class="stat-val">{{ val }}</span>
             </div>
           </div>
 
-          <button class="apply-btn" @click="showBodyScanModal = false">
-            확인
-          </button>
+          <button class="apply-btn" @click="showBodyScanModal = false">확인</button>
         </div>
       </div>
     </div>
@@ -1233,6 +1145,38 @@ const confirmDietPlan = async () => {
   font-size: 0.8rem;
   color: #888;
   margin-top: 2px;
+}
+
+/* [추가] 텍스트 입력 필드 스타일 */
+.input-section {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.retro-input {
+  width: 100%;
+  padding: 15px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid #333;
+  border-radius: 5px;
+  color: #fff;
+  font-family: "NeoDunggeunmo", monospace;
+  font-size: 1.1rem;
+  outline: none;
+  transition: all 0.3s;
+  text-align: center;
+}
+
+.retro-input:focus {
+  border-color: #00e5ff;
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.3);
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.retro-input::placeholder {
+  color: #666;
+  font-size: 0.9rem;
 }
 
 /* -------------------------------------------
@@ -1951,5 +1895,4 @@ const confirmDietPlan = async () => {
     transform: translateY(0);
   }
 }
-
 </style>
