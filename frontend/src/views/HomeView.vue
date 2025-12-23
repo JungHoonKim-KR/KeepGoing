@@ -441,7 +441,7 @@ const todayMeals = computed(() => {
       type,
       icon: mealIcons[type] || "🍽️",
       cal: Math.round(meal.energy || 0),
-      name: meal.foods?.map((f) => f.name).join(", ") || "기록된 음식 없음",
+      name: meal.foods?.map((f) => f.name).join(", ") || "단식",
     }));
 });
 const startAIAnalysis = async () => {
