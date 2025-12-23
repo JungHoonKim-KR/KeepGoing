@@ -2,57 +2,72 @@
 import { ref } from "vue";
 import { useRouter } from "vue-router";
 // [수정] applyDietPlanApi 추가
-import { analyzeDiet, generateDietPlanApi, scanBodyApi, scanFoodImageApi, applyDietPlanApi } from "../api/diet/dietApi";
+import {
+  analyzeDiet,
+  generateDietPlanApi,
+  scanBodyApi,
+  scanFoodImageApi,
+  applyDietPlanApi,
+} from "../api/diet/dietApi";
 import Footer from "../components/utils/Footer.vue";
 import { useConfigStore } from "@/stores/configStore";
 import { useAuthStore } from "@/stores/authStore";
 import axios from "axios";
 
-const YOUTUBE_API_KEY = "AIzaSyBwl61AGUcuiXLBjEv6d9I8cHsCPtJpU94"; 
+const YOUTUBE_API_KEY = "AIzaSyBwl61AGUcuiXLBjEv6d9I8cHsCPtJpU94";
 
-const isVideoLoading = ref(false);     // 로딩 상태
-const currentVideoId = ref(null);      // 재생할 영상 ID
-const activeExerciseType = ref(null);  // 현재 클릭된 운동 (running, walking, swimming)
+const isVideoLoading = ref(false); // 로딩 상태
+const currentVideoId = ref(null); // 재생할 영상 ID
+const activeExerciseType = ref(null); // 현재 클릭된 운동 (running, walking, swimming)
 
 // [YouTube 검색 및 재생 함수]
+// [최적화] YouTube 검색 함수
 const searchAndPlayYoutube = async (exerciseName, minutes, type) => {
-  // 이미 같은 걸 보고 있으면 닫기
+  // 1. 중복 클릭 방지 및 토글 로직
   if (activeExerciseType.value === type && currentVideoId.value) {
     currentVideoId.value = null;
     activeExerciseType.value = null;
     return;
   }
 
-  // 1. 상태 초기화
+  // 2. 상태 초기화
   activeExerciseType.value = type;
   isVideoLoading.value = true;
   currentVideoId.value = null;
-  
-  // 2. 검색어 조합 (예: "30분 러닝 다이어트")
-  const query = `${minutes}분 ${exerciseName} 운동 다이어트`;
+
+  // ---------------------------------------------------------
+  // 🎯 [검색 최적화 핵심]
+  // 1. "루틴", "가이드", "따라하기" 키워드 추가 -> 정보성 긴 영상 유도
+  // 2. "-shorts" 키워드 추가 -> 제목이나 태그에 shorts가 들어간 영상 제외 요청
+  // ---------------------------------------------------------
+  const query = `${minutes}분 ${exerciseName} 운동 루틴 가이드 -shorts`;
 
   try {
-    // 3. YouTube API 호출
-    const response = await axios.get("https://www.googleapis.com/youtube/v3/search", {
-      params: {
-        part: "snippet",
-        q: query,
-        type: "video",
-        maxResults: 1, // 가장 관련성 높은 1개
-        key: YOUTUBE_API_KEY,
-      },
-    });
+    const response = await axios.get(
+      "https://www.googleapis.com/youtube/v3/search",
+      {
+        params: {
+          part: "snippet",
+          q: query, // 최적화된 검색어
+          type: "video",
+          maxResults: 1, // 가장 정확한 1개
+          key: YOUTUBE_API_KEY,
+          videoEmbeddable: "true", // 퍼가기 허용된 영상만 (재생 오류 방지)
+          // videoDuration 파라미터는 제거했습니다 (길이는 상관없음)
+        },
+      }
+    );
 
-    // 4. 결과 처리
     if (response.data.items.length > 0) {
       currentVideoId.value = response.data.items[0].id.videoId;
     } else {
-      alert("관련 영상을 찾을 수 없습니다.");
+      alert("적절한 영상을 찾지 못했습니다.");
       activeExerciseType.value = null;
     }
   } catch (error) {
     console.error("YouTube API Error:", error);
-    alert("영상 검색 중 오류가 발생했습니다. (API 키 할당량을 확인하세요)");
+    // 할당량 초과(403) 등을 대비해 사용자에게 알림
+    alert("영상 검색 중 오류가 발생했습니다.");
     activeExerciseType.value = null;
   } finally {
     isVideoLoading.value = false;
@@ -293,7 +308,12 @@ const analyzeBodyStats = async () => {
 };
 
 const runBootSequence = () => {
-  const logs = ["INITIALIZING SYSTEM...", "CONNECTING NEURAL NET...", "LOADING BIOMETRICS...", "ACCESS GRANTED."];
+  const logs = [
+    "INITIALIZING SYSTEM...",
+    "CONNECTING NEURAL NET...",
+    "LOADING BIOMETRICS...",
+    "ACCESS GRANTED.",
+  ];
   let logIndex = 0;
   const interval = setInterval(() => {
     if (logIndex < logs.length) {
@@ -343,14 +363,11 @@ const confirmDietPlan = async () => {
     <div class="crt-overlay"></div>
 
     <div class="content-wrapper">
-      <div class="retro-header">
-        <div class="system-status"><span class="status-light blink"></span> SYSTEM ONLINE</div>
-        <h1 class="page-title glitch" data-text="AI HEALTH LAB">AI HEALTH LAB</h1>
-      </div>
-
       <div v-if="isLoading" class="loading-terminal">
         <div class="terminal-screen">
-          <div v-for="(log, index) in bootLogs" :key="index" class="log-line">> {{ log }}</div>
+          <div v-for="(log, index) in bootLogs" :key="index" class="log-line">
+            > {{ log }}
+          </div>
           <div class="cursor-line">> <span class="blink-cursor">_</span></div>
         </div>
         <div class="loading-bar-container"><div class="loading-bar"></div></div>
@@ -367,7 +384,9 @@ const confirmDietPlan = async () => {
             </div>
           </div>
           <div class="ai-message">
-            <p v-if="!analysisData" class="typing-text">"시스템 준비 완료. 터치하여 분석 시작."</p>
+            <p v-if="!analysisData" class="typing-text">
+              "시스템 준비 완료. 터치하여 분석 시작."
+            </p>
             <p v-else class="result-text">
               "분석 완료. 랭크 [
               <span class="rank-highlight">{{ analysisData.rank }}</span> ]"
@@ -396,7 +415,11 @@ const confirmDietPlan = async () => {
             <div class="btn-arrow">→</div>
           </button>
 
-          <button class="hero-btn body" @click="analyzeBodyStats" :disabled="isScanningBody">
+          <button
+            class="hero-btn body"
+            @click="analyzeBodyStats"
+            :disabled="isScanningBody"
+          >
             <div class="btn-bg"></div>
             <div class="btn-icon">🧬</div>
             <div class="btn-text">
@@ -411,10 +434,16 @@ const confirmDietPlan = async () => {
 
         <div v-if="analysisData" class="result-section">
           <div class="power-card fade-in-up">
-            <div class="rank-badge" :style="{ color: getRankColor(analysisData.overallScore) }">
+            <div
+              class="rank-badge"
+              :style="{ color: getRankColor(analysisData.overallScore) }"
+            >
               RANK {{ analysisData.rank }}
             </div>
-            <div class="score-val" :style="{ color: getRankColor(analysisData.overallScore) }">
+            <div
+              class="score-val"
+              :style="{ color: getRankColor(analysisData.overallScore) }"
+            >
               {{ analysisData.overallScore }} <span class="max">/ 100</span>
             </div>
             <div class="retro-progress">
@@ -426,7 +455,9 @@ const confirmDietPlan = async () => {
                 }"
               ></div>
             </div>
-            <div class="ai-summary-text">"{{ analysisData.recommendation }}"</div>
+            <div class="ai-summary-text">
+              "{{ analysisData.recommendation }}"
+            </div>
           </div>
         </div>
       </div>
@@ -434,13 +465,21 @@ const confirmDietPlan = async () => {
 
     <Footer />
 
-    <div v-if="showDietPlanModal" class="modal-overlay" @click.self="showDietPlanModal = false">
+    <div
+      v-if="showDietPlanModal"
+      class="modal-overlay"
+      @click.self="showDietPlanModal = false"
+    >
       <div class="modal-win survey-modal pop-in">
         <div class="modal-header">
           <span>{{
-            dietPlanStep === "survey" ? `DATA INPUT ${surveyStep + 1}/${surveyQuestions.length}` : "PROCESSING..."
+            dietPlanStep === "survey"
+              ? `DATA INPUT ${surveyStep + 1}/${surveyQuestions.length}`
+              : "PROCESSING..."
           }}</span>
-          <button class="close-btn" @click="showDietPlanModal = false">✕</button>
+          <button class="close-btn" @click="showDietPlanModal = false">
+            ✕
+          </button>
         </div>
 
         <div v-if="dietPlanStep === 'survey'" class="modal-body">
@@ -474,7 +513,10 @@ const confirmDietPlan = async () => {
             <div v-for="p in generatedPlan" :key="p.day" class="plan-item">
               <div class="day">DAY {{ p.day }}</div>
 
-              <div class="menu-container" v-if="p.menu && typeof p.menu === 'object'">
+              <div
+                class="menu-container"
+                v-if="p.menu && typeof p.menu === 'object'"
+              >
                 <div class="meal-row">
                   <span class="meal-label morning">아침</span>
                   <span class="meal-text">{{ p.menu.breakfast }}</span>
@@ -491,26 +533,44 @@ const confirmDietPlan = async () => {
               <div class="menu" v-else>{{ p.menu }}</div>
 
               <div class="quest-row">
-                <span class="badge" :class="p.difficulty">{{ p.difficulty }}</span>
+                <span class="badge" :class="p.difficulty">{{
+                  p.difficulty
+                }}</span>
                 <span class="quest">🎯 {{ p.quest }}</span>
               </div>
               <div class="cal-info">⚡ {{ p.cal }} kcal</div>
             </div>
           </div>
-          <button class="apply-btn" @click="confirmDietPlan">시스템 적용</button>
+          <button class="apply-btn" @click="confirmDietPlan">
+            시스템 적용
+          </button>
         </div>
       </div>
     </div>
 
-    <div v-if="showFoodScanModal" class="modal-overlay" @click.self="showFoodScanModal = false">
+    <div
+      v-if="showFoodScanModal"
+      class="modal-overlay"
+      @click.self="showFoodScanModal = false"
+    >
       <div class="modal-win scan-modal pop-in">
         <div class="modal-header">
-          <span>{{ scanStep === "result" ? "ANALYSIS COMPLETE" : "VISUAL SCANNER" }}</span>
-          <button class="close-btn" @click="showFoodScanModal = false">✕</button>
+          <span>{{
+            scanStep === "result" ? "ANALYSIS COMPLETE" : "VISUAL SCANNER"
+          }}</span>
+          <button class="close-btn" @click="showFoodScanModal = false">
+            ✕
+          </button>
         </div>
 
         <div v-if="scanStep === 'upload'" class="modal-body upload-section">
-          <input type="file" accept="image/*" id="food-img" @change="handleImageUpload" style="display: none" />
+          <input
+            type="file"
+            accept="image/*"
+            id="food-img"
+            @change="handleImageUpload"
+            style="display: none"
+          />
           <label for="food-img" class="viewfinder-label">
             <div class="corner top-left"></div>
             <div class="corner top-right"></div>
@@ -539,84 +599,113 @@ const confirmDietPlan = async () => {
           </div>
         </div>
 
-        
         <div v-if="scanStep === 'result'" class="modal-body result">
-  <img :src="scannedImage" class="preview" />
-  
-  <div class="food-name bounce-in">{{ scanResult.emoji }} {{ scanResult.name }}</div>
-  <div class="calorie-big pulse-text">🔥 {{ scanResult.calories }} kcal</div>
+          <img :src="scannedImage" class="preview" />
 
-  <div class="exercise-grid">
-    
-    <div 
-      class="ex-card clickable"
-      :class="{ active: activeExerciseType === 'running' }"
-      @click="searchAndPlayYoutube('러닝', scanResult.exercise.running, 'running')"
-    >
-      <div>🏃 러닝</div>
-      <div class="time">{{ scanResult.exercise.running }}분</div>
-    </div>
-
-    <div 
-      class="ex-card clickable"
-      :class="{ active: activeExerciseType === 'walking' }"
-      @click="searchAndPlayYoutube('걷기', scanResult.exercise.walking, 'walking')"
-    >
-      <div>🚶 걷기</div>
-      <div class="time">{{ scanResult.exercise.walking }}분</div>
-    </div>
-
-    <div 
-      class="ex-card clickable"
-      :class="{ active: activeExerciseType === 'swimming' }"
-      @click="searchAndPlayYoutube('수영', scanResult.exercise.swimming, 'swimming')"
-    >
-      <div>🏊 수영</div>
-      <div class="time">{{ scanResult.exercise.swimming }}분</div>
-    </div>
-  </div>
-
-  <div v-if="activeExerciseType" class="video-section fade-in">
-    
-    <div v-if="isVideoLoading" class="video-loading">
-      <div class="hex-spinner small"></div>
-      <span>영상 검색 중...</span>
-    </div>
-
-    <div v-else-if="currentVideoId" class="video-wrapper">
-      <iframe
-        width="100%"
-        height="100%"
-        :src="`https://www.youtube.com/embed/${currentVideoId}?autoplay=1`"
-        title="YouTube video player"
-        frameborder="0"
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-        allowfullscreen
-      ></iframe>
-    </div>
-  </div>
-
-  <button
-    class="apply-btn"
-    @click="
-      scanStep = 'upload';
-      scannedImage = null;
-      currentFile = null;
-      currentVideoId = null; 
-      activeExerciseType = null;
-    "
-  >
-    재스캔
-  </button>
+          <div class="food-name bounce-in">
+            {{ scanResult.emoji }} {{ scanResult.name }}
+          </div>
+          <div class="calorie-big pulse-text">
+            🔥 {{ scanResult.calories }} kcal
+          </div>
+          <div v-if="scanResult.dietTip" class="diet-tip slide-up">
+  💡 {{ scanResult.dietTip }}
 </div>
+
+
+          <div class="exercise-grid">
+            <div
+              class="ex-card clickable"
+              :class="{ active: activeExerciseType === 'running' }"
+              @click="
+                searchAndPlayYoutube(
+                  '러닝',
+                  scanResult.exercise.running,
+                  'running'
+                )
+              "
+            >
+              <div>🏃 러닝</div>
+              <div class="time">{{ scanResult.exercise.running }}분</div>
+            </div>
+
+            <div
+              class="ex-card clickable"
+              :class="{ active: activeExerciseType === 'walking' }"
+              @click="
+                searchAndPlayYoutube(
+                  '걷기',
+                  scanResult.exercise.walking,
+                  'walking'
+                )
+              "
+            >
+              <div>🚶 걷기</div>
+              <div class="time">{{ scanResult.exercise.walking }}분</div>
+            </div>
+
+            <div
+              class="ex-card clickable"
+              :class="{ active: activeExerciseType === 'swimming' }"
+              @click="
+                searchAndPlayYoutube(
+                  '수영',
+                  scanResult.exercise.swimming,
+                  'swimming'
+                )
+              "
+            >
+              <div>🏊 수영</div>
+              <div class="time">{{ scanResult.exercise.swimming }}분</div>
+            </div>
+          </div>
+
+          <div v-if="activeExerciseType" class="video-section fade-in">
+            <div v-if="isVideoLoading" class="video-loading">
+              <div class="hex-spinner small"></div>
+              <span>영상 검색 중...</span>
+            </div>
+
+            <div v-else-if="currentVideoId" class="video-wrapper">
+              <iframe
+                width="100%"
+                height="100%"
+                :src="`https://www.youtube.com/embed/${currentVideoId}?autoplay=1`"
+                title="YouTube video player"
+                frameborder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowfullscreen
+              ></iframe>
+            </div>
+          </div>
+
+          <button
+            class="apply-btn"
+            @click="
+              scanStep = 'upload';
+              scannedImage = null;
+              currentFile = null;
+              currentVideoId = null;
+              activeExerciseType = null;
+            "
+          >
+            재스캔
+          </button>
+        </div>
       </div>
     </div>
 
-    <div v-if="showBodyScanModal && bodyScanResult" class="modal-overlay" @click.self="showBodyScanModal = false">
+    <div
+      v-if="showBodyScanModal && bodyScanResult"
+      class="modal-overlay"
+      @click.self="showBodyScanModal = false"
+    >
       <div class="modal-win scan-modal pop-in">
         <div class="modal-header">
           <span>CHARACTER STATUS</span>
-          <button class="close-btn" @click="showBodyScanModal = false">✕</button>
+          <button class="close-btn" @click="showBodyScanModal = false">
+            ✕
+          </button>
         </div>
         <div class="modal-body result">
           <div class="rpg-class-title glitch" :data-text="bodyScanResult.class">
@@ -627,16 +716,26 @@ const confirmDietPlan = async () => {
           <div class="bmi-info">BMI: {{ bodyScanResult.bmi }}</div>
 
           <div class="stats-container">
-            <div class="stat-row" v-for="(val, key) in bodyScanResult.stats" :key="key">
+            <div
+              class="stat-row"
+              v-for="(val, key) in bodyScanResult.stats"
+              :key="key"
+            >
               <span class="stat-label">{{ key.toUpperCase() }}</span>
               <div class="stat-bar">
-                <div class="stat-fill" :class="key" :style="{ width: val + '%' }"></div>
+                <div
+                  class="stat-fill"
+                  :class="key"
+                  :style="{ width: val + '%' }"
+                ></div>
               </div>
               <span class="stat-val">{{ val }}</span>
             </div>
           </div>
 
-          <button class="apply-btn" @click="showBodyScanModal = false">확인</button>
+          <button class="apply-btn" @click="showBodyScanModal = false">
+            확인
+          </button>
         </div>
       </div>
     </div>
@@ -1036,7 +1135,7 @@ const confirmDietPlan = async () => {
   width: 100%;
   height: 100%;
   background: rgba(0, 0, 0, 0.85); /* 배경 더 어둡게 */
-  z-index: 999;
+  z-index: 999999999;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1351,6 +1450,7 @@ const confirmDietPlan = async () => {
   grid-template-columns: repeat(3, 1fr);
   gap: 10px;
   margin-bottom: 20px;
+  margin-top: 20px;
 }
 .ex-card {
   background: #111;
@@ -1826,4 +1926,30 @@ const confirmDietPlan = async () => {
   width: 100%;
   height: 100%;
 }
+.diet-tip {
+  margin-top: 12px;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.08);
+  /* border-left: 4px solid #4caf50; */
+  border-radius: 8px;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  color: #eaeaea;
+}
+
+.slide-up {
+  animation: slideUp 0.4s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 </style>
