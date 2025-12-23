@@ -359,9 +359,47 @@ const confirmDietPlan = async () => {
   if (!isConfirmed) return;
 
   dietPlanStep.value = "loading";
-
+  
   try {
+    // 1. 서버 저장 (기존 로직)
     await applyDietPlanApi(MEMBER_ID, generatedPlan.value);
+
+    // -----------------------------------------------------------
+    // 2. LocalStorage 동기화 로직 추가 (날짜 변환)
+    // -----------------------------------------------------------
+    
+    // (1) 기존에 저장된 스케줄 가져오기 (기존 기록 유지하려면 필요)
+    const existingScheduleStr = localStorage.getItem('schedule');
+    const scheduleMap = existingScheduleStr ? JSON.parse(existingScheduleStr) : {};
+
+    // (2) 기준일 설정 (내일부터 시작한다고 가정)
+    const startDate = new Date(); 
+    startDate.setDate(startDate.getDate() + 1);
+
+    // (3) plans 배열을 순회하며 날짜 키 생성
+    generatedPlan.value.forEach((plan) => { 
+      // day: 1 이면 오늘(0일 후), day: 2 이면 내일(1일 후)
+      const targetDate = new Date(startDate);
+      targetDate.setDate(startDate.getDate() + (plan.day - 1));
+
+      // YYYY-MM-DD 형식으로 변환 함수
+      const yyyy = targetDate.getFullYear();
+      const mm = String(targetDate.getMonth() + 1).padStart(2, '0');
+      const dd = String(targetDate.getDate()).padStart(2, '0');
+      const dateKey = `${yyyy}-${mm}-${dd}`;
+
+      // (4) Map에 저장 (덮어쓰기)
+      scheduleMap[dateKey] = {
+        menu: plan.menu,
+        cal: plan.cal || 0 // cal이 혹시 없으면 0 처리
+      };
+    });
+
+    // (5) LocalStorage에 다시 저장
+    localStorage.setItem('schedule', JSON.stringify(scheduleMap));
+    
+    // -----------------------------------------------------------
+
     alert("SYNC COMPLETE: 식단이 스케쥴에 정상적으로 등록되었습니다.");
     showDietPlanModal.value = false;
   } catch (error) {
@@ -878,6 +916,7 @@ const confirmDietPlan = async () => {
    2. AI 아바타 (Eye)
 ------------------------------------------- */
 .ai-avatar-container {
+  padding: 15px;
   display: flex;
   flex-direction: column;
   align-items: center;

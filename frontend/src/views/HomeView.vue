@@ -60,9 +60,11 @@
     </section>
 
     <section class="page meal-page">
-      <div class="page-content">
-        <button class="quest-trigger-btn" @click="showQuestModal = true">
-          <span class="blink-icon">📜</span> VIEW DAILY QUEST
+      <div class="page-content">  
+        
+        <button v-if="recommendedMeals.length > 0" class="quest-trigger-btn" @click="showQuestModal = true">
+          >
+          <span>📜</span> VIEW DAILY QUEST
         </button>
 
         <Teleport to="body">
@@ -84,11 +86,11 @@
                 </div>
 
                 <div v-if="recommendedMeals.length === 0" class="rec-empty dark-text">
-                  <span>QUEST LOADING...</span>
+                  <span>오늘의 추천 식단은 없습니다!</span>
                 </div>
               </div>
 
-              <div class="quest-footer">
+              <div v-if="recommendedMeals.length != 0"class="quest-footer">
                 <p>"이대로 먹으면 경험치 보너스!"</p>
                 <button class="retro-btn sm-btn quest-confirm-btn" @click="showQuestModal = false">확인 (OK)</button>
               </div>
@@ -427,28 +429,78 @@ watch(
 );
 
 const recommendedMeals = computed(() => {
-  // 1. 오늘 날짜 데이터 가져오기
-  const todayData = dietStore.getTodayQuest(formattedDate.value);
+  // 0. 오늘 날짜 키값 준비 (YYYY-MM-DD 형식이라고 가정)
+  // formattedDate.value가 "2025-12-24" 형태여야 합니다.
+  const todayKey = formattedDate.value; 
 
-  if (!todayData || !todayData.menu) return [];
+  // 1. LocalStorage에서 schedule 가져오기
+  const storedJson = localStorage.getItem('schedule');
 
-  // 2. 화면에 맞게 변환 (menu 객체 -> 리스트)
-  // 백엔드 데이터 구조에 따라 키값(breakfast 등) 확인 필요
-  return [
-    { type: "아침", menu: todayData.menu.breakfast || "식단 없음", cal: 0, icon: "🥪" },
-    { type: "점심", menu: todayData.menu.lunch || "식단 없음", cal: 0, icon: "🍱" },
-    { type: "저녁", menu: todayData.menu.dinner || "식단 없음", cal: 0, icon: "🥗" },
-  ];
-  // 참고: 퀘스트 텍스트가 필요하면 todayData.quest 사용
+  // 데이터가 아예 없으면 빈 배열 반환
+  if (!storedJson) return [];
+
+  try {
+    const schedule = JSON.parse(storedJson);
+    
+    // 객체의 키(날짜들)를 추출하고 정렬
+    const dateKeys = Object.keys(schedule).sort();
+
+    // 요구사항: 스케줄이 비어있거나, "첫 번째 식단의 날짜가 오늘이 아니면" 없는 것으로 처리
+    if (dateKeys.length === 0 || dateKeys[0] !== todayKey) {
+      return [];
+    }
+
+    // 오늘 날짜 데이터 가져오기
+    const todayData = schedule[todayKey];
+
+    // 방어 코드: 오늘 날짜 키는 있는데 내용(menu)이 잘못되었을 경우
+    if (!todayData || !todayData.menu) return [];
+
+    // 칼로리 숫자만 추출하는 헬퍼 함수
+    // 예: "오트밀... (약 350kcal)" -> 350 반환
+    const extractCal = (text) => {
+      const match = text.match(/약\s*(\d+)kcal/);
+      return match ? parseInt(match[1], 10) : 0;
+    };
+
+    // 2. 화면에 맞게 매핑
+    const { breakfast, lunch, dinner } = todayData.menu;
+
+    return [
+      { 
+        type: "아침", 
+        menu: breakfast || "식단 없음", 
+        cal: extractCal(breakfast || ""), 
+        icon: "🥪" 
+      },
+      { 
+        type: "점심", 
+        menu: lunch || "식단 없음", 
+        cal: extractCal(lunch || ""), 
+        icon: "🍱" 
+      },
+      { 
+        type: "저녁", 
+        menu: dinner || "식단 없음", 
+        cal: extractCal(dinner || ""), 
+        icon: "🥗" 
+      },
+    ];
+
+  } catch (e) {
+    console.error("스케줄 파싱 중 오류 발생:", e);
+    return [];
+  }
 });
 
 // [NEW] 추천 식단 & 모달 로직
 const showQuestModal = ref(false);
-const recommendedMeals = ref([]);
 
-const fetchRecommendedDiet = async () => {
+const fetchRecommendedDietToday = async () => {
   try {
-    // API 연결 시: await fetch(`${API_ENDPOINT}/diets/recommendation...`)
+    
+
+
     recommendedMeals.value = [
       { type: "아침", menu: "통밀빵 샌드위치 & 아메리카노", cal: 450, icon: "🥪" },
       { type: "점심", menu: "현미밥, 닭가슴살 장조림, 김치", cal: 700, icon: "🍱" },
@@ -559,7 +611,7 @@ const startAIAnalysis = async () => {
   }, 800);
 
   try {
-    const data = await analyzeDiet(MEMBER_ID, TODAY_DATE);
+    const data = await analyzeDiet(MEMBER_ID, formattedDate.value);
     analysisResult.value = {
       score: data.score,
       rank: data.rank,
@@ -757,10 +809,38 @@ async function fetchWeightData() {
   }
 }
 
+
+// [API] 식단 스케쥴 조회 (수정됨: 객체 매핑)
+async function fetchSchedules() {
+  try {
+    const response = await fetch(`${API_ENDPOINT}/diets/schedule?memberId=${MEMBER_ID}`);
+    if (!response.ok) throw new Error("Failed to fetch schedules");
+
+    const data = await response.json();
+
+    // List -> Map 변환
+    const planMap = {};
+    data.forEach((item) => {
+      planMap[item.date] = {
+        // 백엔드에서 menu가 이미 객체 {breakfast:..., lunch:..., dinner:...} 로 옴
+        menu: item.menu,
+        quest: item.quest,
+        totalCal: item.totalCal,
+      };
+    });
+
+    localStorage.setItem("schedule", JSON.stringify(planMap));
+  } catch (error) {
+    console.error("스케쥴 로딩 실패:", error);
+    dailyPlanMap.value = {};
+  }
+};
+
 onMounted(async () => {
   await fetchDailyDiet();
   await fetchHydrationData();
   await fetchWeightData();
+  await fetchSchedules();
   // await fetchRecommendedDiet(); // 추천 식단
 });
 </script>
@@ -856,7 +936,7 @@ onMounted(async () => {
   color: #d84315;
 }
 .rec-empty.dark-text {
-  color: #8d6e63;
+  color:black;
 }
 
 .quest-footer {
@@ -1109,7 +1189,7 @@ onMounted(async () => {
   cursor: pointer;
 }
 .pixel-box {
-  background: #2d2d3a;
+  /* background: #2d2d3a; */
   padding: 0.8rem;
 }
 .pixel-card {
@@ -1214,6 +1294,7 @@ onMounted(async () => {
     transform: translateY(-10px);
   }
 }
+
 .level-badge {
   position: absolute;
   top: 8px;
@@ -1527,7 +1608,7 @@ onMounted(async () => {
 }
 .ai-btn-container {
   width: 100%;
-  padding: 30px 20px;
+  padding: 15px;
   display: flex;
   justify-content: center;
   background: transparent;
@@ -2136,4 +2217,5 @@ onMounted(async () => {
     height: 90px;
   }
 }
+
 </style>

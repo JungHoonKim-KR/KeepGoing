@@ -406,7 +406,7 @@ onMounted(() => {
 }
 
 .header {
-  padding: 1rem 1rem 0 1rem;
+  padding: 2rem 1rem 0 1rem;
 }
 .retro-box {
   background: #000;
