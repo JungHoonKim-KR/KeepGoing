@@ -233,15 +233,15 @@ const saveProfile = async () => {
             <div class="trait-text-group">
               <div class="text-block">
                 <span class="sub-label">HEALTH CONDITION</span>
-                <p>{{ profile.health_condition || "NONE" }}</p>
+                <p>{{ profile.health_condition || "" }}</p>
               </div>
               <div class="text-block">
                 <span class="sub-label">ALLERGIES</span>
-                <p>{{ profile.allergies || "NONE" }}</p>
+                <p>{{ profile.allergies || "" }}</p>
               </div>
               <div class="text-block">
                 <span class="sub-label">BANNED FOOD</span>
-                <p>{{ profile.disliked_food || "NONE" }}</p>
+                <p>{{ profile.disliked_food || "" }}</p>
               </div>
             </div>
           </div>

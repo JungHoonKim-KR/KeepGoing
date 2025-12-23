@@ -708,7 +708,7 @@ const handleScreenClick = () => {
   showCharModal.value = true;
 };
 
-const waterData = ref({ water: 0, goal: 2.0 });
+const waterData = ref({ water: 0, goal: authStore.targetWater });
 const weightData = ref({ weight: 0.0, diff: 0.0 });
 
 const showModal = ref(false);
