@@ -139,30 +139,49 @@ def generate_diet_plan(request: DietGenerationRequest):
     print(f"📅 [식단 생성 요청] 기간: {request.duration}일, 목표: {request.favorite}")
 
     try:
+    # [들여쓰기 중요] try 내부이므로 4칸 들여쓰기 시작
         system_instruction = f"""
         너는 전문 영양사야. 사용자의 생활 습관 설문을 바탕으로 {request.duration}일치 식단표를 짜줘.
 
         [사용자 정보]
-        - 운동: {request.exercise}
+        - 운동: {request.exercise} (운동량에 따라 칼로리를 조절할 것)
         - 수면: {request.sleep}
-        - 선호 음식: {request.favorite} (건강하게 포함할 것)
+        - 선호 음식: {request.favorite} (건강하게 변형해서 포함할 것)
+
+        [중요 지침]
+        1. "cal" (칼로리) 필드는 절대 1500으로 고정하지 마.
+        2. 그 날짜의 아침, 점심, 저녁 메뉴 구성을 보고 실제 대략적인 총 칼로리를 계산해서 정수값으로 넣어. (예: 1450, 1620, 1800 등 다양하게)
+        3. 메뉴의 키 값은 반드시 영어 소문자("breakfast", "lunch", "dinner")를 사용해. (한글 "아침" 금지)
 
         [응답 포맷 (JSON Only)]
         반드시 최상위 키 "plans" 안에 배열을 담아서 반환해.
         {{
             "plans": [
                 {{ 
-                  "day": 1, 
-                  "menu": "메뉴 이름", 
-                  "cal": 500, 
-                  "difficulty": "EASY", 
-                  "quest": "식전 물 한 컵 마시기"
+                    "day": 1,
+                    "menu": {{
+                        "breakfast": "오트밀과 블루베리 (약 350kcal)",
+                        "lunch": "닭가슴살 샐러드와 고구마 (약 500kcal)",
+                        "dinner": "연어 스테이크와 아스파라거스 (약 600kcal)"
+                    }},
+                    "cal": 1450,
+                    "difficulty": "EASY",
+                    "quest": "식전 물 한 컵 마시기"
                 }},
-                ...
+                {{
+                    "day": 2,
+                    "menu": {{
+                        "breakfast": "그릭 요거트",
+                        "lunch": "현미밥과 불고기",
+                        "dinner": "두부 쉐이크"
+                    }},
+                    "cal": 1620,
+                    "difficulty": "NORMAL",
+                    "quest": "스쿼트 20회 하기"
+                }}
             ]
         }}
         """
-
         completion = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
