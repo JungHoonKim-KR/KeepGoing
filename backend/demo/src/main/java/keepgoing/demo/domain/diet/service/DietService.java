@@ -42,11 +42,7 @@ public class DietService {
         List<Diet> dietList = dietMapper.findAllByDate(memberId, date);
         if(dietList.isEmpty()) throw new IllegalArgumentException("식단 기록 없음");
 
-        // 3. [변경] AI 전송용 요약 문자열 만들기 (PromptGenerator 사용)
-        // (만약 PromptGenerator를 아직 안 만들었다면, 기존 StringBuilder 로직을 유지해도 됩니다)
-        // String summary = promptGenerator.createDailyAnalysisPrompt(dietList);
-
-        // -> PromptGenerator가 없다면 기존 로직 유지:
+        // 3. AI 전송용 요약 문자열 만들기
         StringBuilder summary = new StringBuilder();
         for (Diet d : dietList) {
             String foodNames = d.getFoods().stream()
@@ -56,63 +52,57 @@ public class DietService {
                     d.getMealTime(), foodNames, d.getCarbohydrate(), d.getProtein(), d.getFat()));
         }
 
-        // 4. [핵심] AI 요청 객체 생성 (Null 방어 로직 추가 + 필드 10개 맞추기)
-        String healthCondition = (member.getHealthCondition() != null && !member.getHealthCondition().isBlank())
-                ? member.getHealthCondition() : "없음";
-        String allergies = (member.getAllergies() != null && !member.getAllergies().isBlank())
-                ? member.getAllergies() : "없음";
-        String dislikedFood = (member.getDislikedFood() != null && !member.getDislikedFood().isBlank())
-                ? member.getDislikedFood() : "없음";
+        // 4. AI 요청 객체 생성 (Null 방어)
+        String healthCondition = (member.getHealthCondition() != null && !member.getHealthCondition().isBlank()) ? member.getHealthCondition() : "없음";
+        String allergies = (member.getAllergies() != null && !member.getAllergies().isBlank()) ? member.getAllergies() : "없음";
+        String dislikedFood = (member.getDislikedFood() != null && !member.getDislikedFood().isBlank()) ? member.getDislikedFood() : "없음";
 
         AiRequestDto request = new AiRequestDto(
                 new AiRequestDto.UserProfile(
-                        member.getHeight(),
-                        member.getWeight(),
-                        member.getAge(),
-                        member.getGender(),
-                        member.getActivity(),
-                        member.getGoal(),
-                        healthCondition,
-                        allergies,
-                        dislikedFood,
-                        member.getTargetWeight()
+                        member.getHeight(), member.getWeight(), member.getAge(),
+                        member.getGender(), member.getActivity(), member.getGoal(),
+                        healthCondition, allergies, dislikedFood, member.getTargetWeight()
                 ),
-                new AiRequestDto.DailyLog(
-                        date.toString(),
-                        summary.toString()
-                ),
-
-
-                null // [중요] 식단 분석에서는 SurveyData가 필요 없으므로 null 전달
+                new AiRequestDto.DailyLog(date.toString(), summary.toString()),
+                null
         );
 
         // 5. AI 호출
         AiAnalyzeDto result = aiClient.requestAnalysis(request);
-        // 6. 결과 저장 (구조 변경 반영)
+
+        // 6. 결과 저장 (방법 2 적용: 전체 결과를 JSON화 하여 feedbackText에 저장)
         try {
+            // [수정 포인트] AiAnalyzeDto(result) 전체를 JSON 문자열로 변환
+            String fullAnalysisJson = objectMapper.writeValueAsString(result);
 
             String exerciseJson = "[]";
             if (result.recommendedExercises() != null) {
-                // List -> JSON String 변환
                 exerciseJson = objectMapper.writeValueAsString(result.recommendedExercises());
             }
+
             dietMapper.saveAiReport(AiReport.builder()
                     .memberId(memberId)
                     .date(date)
-                    .score(result.score())               // 수정됨
+                    .score(result.score())
                     .rank(result.rank())
-                    .feedbackText(result.oneLineSummary()) // 수정됨
+                    // [핵심] feedbackText 컬럼에 상세 데이터가 포함된 JSON 전체를 넣음
+                    .feedbackText(fullAnalysisJson)
                     .totalCalories(result.totalCalories())
                     .exerciseJson(exerciseJson)
                     .build());
-            dietMapper.upsertEvaluation(memberId,date, result.rank());
+
+            dietMapper.upsertEvaluation(memberId, date, result.rank());
             updateExp(memberId, member.getExp());
+
         } catch (Exception e) {
-            e.printStackTrace(); // (가급적 log.error 사용 권장)
-            throw new RuntimeException("결과 저장 실패", e); // 트랜잭션 롤백을 위해 예외 던지기
+            throw new RuntimeException("AI 분석 결과 저장 중 오류 발생", e);
         }
 
         return result;
+    }
+
+    public AiReport getExistingReport(Long memberId, LocalDate date) {
+        return dietMapper.findByMemberIdAndDate(memberId, date);
     }
 
     // -------------------------------------------------------------------------

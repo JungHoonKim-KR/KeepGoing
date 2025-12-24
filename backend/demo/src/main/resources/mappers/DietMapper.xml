@@ -155,6 +155,18 @@
 
     </insert>
 
+    <select id="findByMemberIdAndDate" resultType="keepgoing.demo.domain.diet.entity.AiReport">
+        SELECT
+        report_id AS id,        member_id AS memberId,
+        date,
+        score,
+        `rank`,                 feedback_text AS feedbackText,
+        exercise_json AS exerciseJson,
+        total_calories AS totalCalories
+        FROM ai_report
+        WHERE member_id = #{memberId} AND date = #{date}
+    </select>
+
     <insert id="saveAiReport" parameterType="keepgoing.demo.domain.diet.entity.AiReport">
         INSERT INTO ai_report (
         member_id,

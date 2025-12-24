@@ -95,3 +95,19 @@ export const applyDietPlanApi = async (memberId, planList) => {
   const response = await api.post("/diets/schedule", payload);
   return response.data;
 };
+
+/**
+ * 해당 날짜의 AI 분석 리포트가 이미 존재하는지 확인
+ */
+export const getAiReportApi = async (memberId, date) => {
+  try {
+    const response = await api.get("/diets/report/check", {
+      params: { memberId, date },
+    });
+    // 204 No Content면 null, 데이터가 있으면 response.data 반환
+    return response.status === 204 ? null : response.data;
+  } catch (error) {
+    console.error("분석 확인 중 오류:", error);
+    return null;
+  }
+};
