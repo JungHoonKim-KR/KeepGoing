@@ -14,6 +14,7 @@ import keepgoing.demo.domain.diet.norm.MealTime;
 import keepgoing.demo.domain.member.dto.LevelUpResponseDto;
 import keepgoing.demo.domain.member.entity.Member;
 import keepgoing.demo.domain.member.mapper.MemberMapper;
+import keepgoing.demo.domain.member.service.MemberService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -32,6 +33,7 @@ public class DietService {
     private final MemberMapper memberMapper;
     private final AiClient aiClient;
     private final ObjectMapper objectMapper;
+    private final MemberService memberService;
     @Transactional
     public AiAnalyzeDto analyzeDailyDiet(Long memberId, LocalDate date) {
         // 1. 회원 조회
@@ -92,7 +94,7 @@ public class DietService {
                     .build());
 
             dietMapper.upsertEvaluation(memberId, date, result.rank());
-            updateExp(memberId, member.getExp());
+            memberService.updateExp(memberId, member.getExp());
 
         } catch (Exception e) {
             throw new RuntimeException("AI 분석 결과 저장 중 오류 발생", e);
@@ -358,19 +360,6 @@ public class DietService {
                 .totalFat(totalFat).totalProtein(totalProtein).totalSodium(totalSodium)
                 .totalSugars(totalSugars).totalWater(totalWater)
                 .build();
-    }
-
-    private LevelUpResponseDto updateExp(Long memberId, Integer exp){
-        Member member = memberMapper.findById(memberId).get();
-
-        int memberExp = member.getExp() + exp;
-        int memberLevel = member.getLevel();
-        if(memberExp >= 100){
-            memberExp %= 100;
-            memberLevel += 1;
-        }
-        memberMapper.updateExp(memberId, memberLevel, memberExp);
-        return new LevelUpResponseDto(memberId, memberLevel, memberExp);
     }
 
 }

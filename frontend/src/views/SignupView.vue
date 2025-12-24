@@ -1,7 +1,8 @@
 <script setup>
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import { useRouter } from "vue-router";
 import { signupApi } from "../api/auth/auth";
+import SignUpSuccessModal from "@/components/common/SignUpSuccessModal.vue";
 
 const router = useRouter();
 
@@ -12,8 +13,18 @@ const currentStep = ref(1);
 const totalSteps = 4;
 const isLoading = ref(false);
 
+// Modal related state
+const showSuccessModal = ref(false);
+const successMessage = ref("");
+
 // 에러 상태 관리 (어떤 필드가 에러인지 체크)
 const errors = ref({});
+
+// Computed property for the character image
+const signupCharacterImage = computed(() => {
+  // Assuming character 1 is the default for signup success
+  return new URL(`../assets/images/gifCharacters/1.gif`, import.meta.url).href;
+});
 
 const signupData = ref({
   email: "",
@@ -167,6 +178,11 @@ const prevStep = () => {
   if (currentStep.value > 1) currentStep.value--;
 };
 
+const handleModalClose = () => {
+  showSuccessModal.value = false;
+  router.push("/login");
+};
+
 const handleSignup = async () => {
   // 마지막 단계 유효성 검사 (필요 시)
 
@@ -192,14 +208,14 @@ const handleSignup = async () => {
 
   try {
     await signupApi(payload);
-    alert("캐릭터 생성 완료! 로그인해주세요.");
-    router.push("/login");
+    successMessage.value = "캐릭터 생성 완료! 로그인해주세요.";
+    showSuccessModal.value = true;
   } catch (error) {
     console.error("회원가입 실패:", error);
     playSound("error");
     const msg =
       error.response?.data?.message || "회원가입 중 오류가 발생했습니다.";
-    alert("SYSTEM ERROR: " + msg);
+    alert("SYSTEM ERROR: " + msg); // Keep alert for system error
   } finally {
     isLoading.value = false;
   }
@@ -497,6 +513,13 @@ const handleSignup = async () => {
         </button>
       </div>
     </div>
+    <SignUpSuccessModal
+      :isOpen="showSuccessModal"
+      title="회원가입 완료"
+      :message="successMessage"
+      :imageSrc="signupCharacterImage"
+      @close="handleModalClose"
+    />
   </div>
 </template>
 
