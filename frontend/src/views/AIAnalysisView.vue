@@ -3,11 +3,10 @@ import { ref } from "vue";
 import { useRouter } from "vue-router";
 import { analyzeDiet, generateDietPlanApi, scanBodyApi, scanFoodImageApi, applyDietPlanApi } from "../api/diet/dietApi";
 import Footer from "../components/utils/Footer.vue";
+import ConfirmModal from "../components/utils/ConfirmModal.vue";
 import { useConfigStore } from "@/stores/configStore";
 import { useAuthStore } from "@/stores/authStore";
 import axios from "axios";
-
-
 
 const YOUTUBE_API_KEY = "AIzaSyBwl61AGUcuiXLBjEv6d9I8cHsCPtJpU94";
 
@@ -72,6 +71,9 @@ const bootLogs = ref([]);
 const showDietPlanModal = ref(false);
 const showFoodScanModal = ref(false);
 const showBodyScanModal = ref(false);
+const showConfirmModal = ref(false);
+const confirmMessage = ref("");
+let confirmPromise = null;
 
 const dietPlanStep = ref("survey");
 const surveyStep = ref(0);
@@ -96,20 +98,20 @@ const TODAY_DATE = new Date().toISOString().split("T")[0];
 // script의 methods 추가
 const getScoreLabel = (key) => {
   const labels = {
-    muscle: '💪 근력',
-    endurance: '🏃 지구력',
-    recovery: '😴 회복력',
-    nutrition: '🥗 영양',
-    metabolism: '🔥 대사'
+    muscle: "💪 근력",
+    endurance: "🏃 지구력",
+    recovery: "😴 회복력",
+    nutrition: "🥗 영양",
+    metabolism: "🔥 대사",
   };
   return labels[key] || key;
 };
 
 const getScoreColor = (value) => {
-  if (value >= 80) return '#00ff00';
-  if (value >= 60) return '#00e5ff';
-  if (value >= 40) return '#ffaa00';
-  return '#ff0055';
+  if (value >= 80) return "#00ff00";
+  if (value >= 60) return "#00e5ff";
+  if (value >= 40) return "#ffaa00";
+  return "#ff0055";
 };
 
 // ------------------------------------------------------------------
@@ -318,7 +320,7 @@ const analyzeBodyStats = async () => {
 
   try {
     const result = await scanBodyApi(MEMBER_ID);
-    
+
     // 스캔 애니메이션 충분히 보여주기 위해 딜레이
     setTimeout(() => {
       bodyScanResult.value = result;
@@ -346,20 +348,38 @@ const runBootSequence = () => {
   }, 300);
 };
 
+const showCustomConfirm = (message) => {
+  confirmMessage.value = message;
+  showConfirmModal.value = true;
+  return new Promise((resolve) => {
+    confirmPromise = resolve;
+  });
+};
+
+const handleConfirm = () => {
+  showConfirmModal.value = false;
+  if (confirmPromise) confirmPromise(true);
+};
+
+const handleCancel = () => {
+  showConfirmModal.value = false;
+  if (confirmPromise) confirmPromise(false);
+};
+
 const confirmDietPlan = async () => {
   if (!generatedPlan.value || generatedPlan.value.length === 0) {
     alert("SYSTEM ERROR: 저장할 식단 데이터가 없습니다.");
     return;
   }
 
-  const isConfirmed = confirm(
-    `[SYSTEM NOTICE]\n생성된 ${selectedDuration.value}일치 식단을 스케쥴 데이터베이스에 동기화하시겠습니까?`
+  const isConfirmed = await showCustomConfirm(
+    `생성된 ${selectedDuration.value}일치 식단을 스케쥴 데이터베이스에 동기화하시겠습니까?`
   );
 
   if (!isConfirmed) return;
 
   dietPlanStep.value = "loading";
-  
+
   try {
     // 1. 서버 저장 (기존 로직)
     await applyDietPlanApi(MEMBER_ID, generatedPlan.value);
@@ -367,40 +387,39 @@ const confirmDietPlan = async () => {
     // -----------------------------------------------------------
     // 2. LocalStorage 동기화 로직 추가 (날짜 변환)
     // -----------------------------------------------------------
-    
+
     // (1) 기존에 저장된 스케줄 가져오기 (기존 기록 유지하려면 필요)
-    const existingScheduleStr = localStorage.getItem('schedule');
+    const existingScheduleStr = localStorage.getItem("schedule");
     const scheduleMap = existingScheduleStr ? JSON.parse(existingScheduleStr) : {};
 
     // (2) 기준일 설정 (내일부터 시작한다고 가정)
-    const startDate = new Date(); 
+    const startDate = new Date();
     startDate.setDate(startDate.getDate() + 1);
 
     // (3) plans 배열을 순회하며 날짜 키 생성
-    generatedPlan.value.forEach((plan) => { 
+    generatedPlan.value.forEach((plan) => {
       // day: 1 이면 오늘(0일 후), day: 2 이면 내일(1일 후)
       const targetDate = new Date(startDate);
       targetDate.setDate(startDate.getDate() + (plan.day - 1));
 
       // YYYY-MM-DD 형식으로 변환 함수
       const yyyy = targetDate.getFullYear();
-      const mm = String(targetDate.getMonth() + 1).padStart(2, '0');
-      const dd = String(targetDate.getDate()).padStart(2, '0');
+      const mm = String(targetDate.getMonth() + 1).padStart(2, "0");
+      const dd = String(targetDate.getDate()).padStart(2, "0");
       const dateKey = `${yyyy}-${mm}-${dd}`;
 
       // (4) Map에 저장 (덮어쓰기)
       scheduleMap[dateKey] = {
         menu: plan.menu,
-        cal: plan.cal || 0 // cal이 혹시 없으면 0 처리
+        cal: plan.cal || 0, // cal이 혹시 없으면 0 처리
       };
     });
 
     // (5) LocalStorage에 다시 저장
-    localStorage.setItem('schedule', JSON.stringify(scheduleMap));
-    
+    localStorage.setItem("schedule", JSON.stringify(scheduleMap));
+
     // -----------------------------------------------------------
 
-    alert("SYNC COMPLETE: 식단이 스케쥴에 정상적으로 등록되었습니다.");
     showDietPlanModal.value = false;
   } catch (error) {
     console.error(error);
@@ -425,7 +444,7 @@ const confirmDietPlan = async () => {
 
       <div v-else class="dashboard-container">
         <!-- <div class="ai-avatar-container" @click="fetchAnalysis"> -->
-        <div class="ai-avatar-container" >
+        <div class="ai-avatar-container">
           <div class="cyber-eye-wrapper" :class="{ analyzing: isAnalyzing }">
             <div class="ring outer"></div>
             <div class="ring inner"></div>
@@ -501,6 +520,18 @@ const confirmDietPlan = async () => {
     </div>
 
     <Footer />
+
+    <AlertModal
+      v-if="showAlertModal"
+      :message="alertMessage"
+      @close="handleAlertClose"
+    />
+    <ConfirmModal
+      v-if="showConfirmModal"
+      :message="confirmMessage"
+      @confirm="handleConfirm"
+      @cancel="handleCancel"
+    />
 
     <div v-if="showDietPlanModal" class="modal-overlay" @click.self="showDietPlanModal = false">
       <div class="modal-win survey-modal pop-in">
@@ -694,90 +725,94 @@ const confirmDietPlan = async () => {
     </div>
 
     <div v-if="showBodyScanModal" class="modal-overlay fade-in" @click.self="showBodyScanModal = false">
-  <div class="modal-win scan-modal pop-in" style="max-width: 500px;">
-    <div class="modal-header">
-      <span>🧬 {{ isScanningBody ? '신체 분석 중...' : '신체 분석 완료' }}</span>
-      <button class="close-btn hover-rotate" @click="showBodyScanModal = false" v-if="!isScanningBody">✕</button>
-    </div>
-    
-    <!-- 스캔 중일 때 -->
-    <div v-if="isScanningBody" class="modal-body scanning-body">
-      <div class="body-silhouette"></div>
-      <p class="blink-text">AI가 당신의 신체를 분석하고 있습니다...</p>
-      <div class="scan-stats">
-        <div class="scan-stat">
-          <div class="stat-label">BMI</div>
-          <div class="stat-value">--</div>
+      <div class="modal-win scan-modal pop-in" style="max-width: 500px">
+        <div class="modal-header">
+          <span>🧬 {{ isScanningBody ? "신체 분석 중..." : "신체 분석 완료" }}</span>
+          <button class="close-btn hover-rotate" @click="showBodyScanModal = false" v-if="!isScanningBody">✕</button>
         </div>
-        <div class="scan-stat">
-          <div class="stat-label">체력</div>
-          <div class="stat-value">--</div>
-        </div>
-        <div class="scan-stat">
-          <div class="stat-label">등급</div>
-          <div class="stat-value">--</div>
-        </div>
-      </div>
-    </div>
-    
-    <!-- 결과 화면 -->
-    <div v-else-if="bodyScanResult" class="modal-body result body-scan-result">
-      <!-- BMI & 타이틀 -->
-      <div class="bmi-section">
-        <div class="bmi-value neon-text">BMI {{ bodyScanResult.bmi }}</div>
-        <div class="character-title glitch" :data-text="bodyScanResult.title">
-          {{ bodyScanResult.title }}
-        </div>
-        <div class="health-tier-badge" :class="bodyScanResult.healthTier">
-          {{ bodyScanResult.healthTier }}
-        </div>
-      </div>
 
-      <!-- 취약 부위 -->
-      <div class="vulnerable-section" v-if="bodyScanResult.vulnerableParts && bodyScanResult.vulnerableParts.length > 0">
-        <div class="section-title">⚠️ 주의 필요 부위</div>
-        <div class="vulnerable-parts">
-          <span v-for="part in bodyScanResult.vulnerableParts" :key="part" class="part-badge pulse">
-            {{ part }}
-          </span>
-        </div>
-      </div>
-
-      <!-- 건강 스코어 -->
-      <div class="health-scores">
-        <div class="section-title">💪 건강 지표</div>
-        <div class="score-grid">
-          <div class="score-item" v-for="(value, key) in bodyScanResult.healthScore" :key="key">
-            <div class="score-label">{{ getScoreLabel(key) }}</div>
-            <div class="score-bar">
-              <div class="score-fill shine" :style="{ width: value + '%', background: getScoreColor(value) }"></div>
+        <!-- 스캔 중일 때 -->
+        <div v-if="isScanningBody" class="modal-body scanning-body">
+          <div class="body-silhouette"></div>
+          <p class="blink-text">AI가 당신의 신체를 분석하고 있습니다...</p>
+          <div class="scan-stats">
+            <div class="scan-stat">
+              <div class="stat-label">BMI</div>
+              <div class="stat-value">--</div>
             </div>
-            <div class="score-number">{{ value }}</div>
+            <div class="scan-stat">
+              <div class="stat-label">체력</div>
+              <div class="stat-value">--</div>
+            </div>
+            <div class="scan-stat">
+              <div class="stat-label">등급</div>
+              <div class="stat-value">--</div>
+            </div>
           </div>
         </div>
-      </div>
 
-      <!-- 30일 예측 -->
-      <div class="prediction-box">
-        <div class="section-title">🔮 30일 후 예측</div>
-        <p class="prediction-text">{{ bodyScanResult.prediction }}</p>
-      </div>
+        <!-- 결과 화면 -->
+        <div v-else-if="bodyScanResult" class="modal-body result body-scan-result">
+          <!-- BMI & 타이틀 -->
+          <div class="bmi-section">
+            <div class="bmi-value neon-text">BMI {{ bodyScanResult.bmi }}</div>
+            <div class="character-title glitch" :data-text="bodyScanResult.title">
+              {{ bodyScanResult.title }}
+            </div>
+            <div class="health-tier-badge" :class="bodyScanResult.healthTier">
+              {{ bodyScanResult.healthTier }}
+            </div>
+          </div>
 
-      <!-- 태그 -->
-      <div class="tags-section" v-if="bodyScanResult.tags && bodyScanResult.tags.length > 0">
-        <span v-for="tag in bodyScanResult.tags" :key="tag" class="tag-item">{{ tag }}</span>
-      </div>
+          <!-- 취약 부위 -->
+          <div
+            class="vulnerable-section"
+            v-if="bodyScanResult.vulnerableParts && bodyScanResult.vulnerableParts.length > 0"
+          >
+            <div class="section-title">⚠️ 주의 필요 부위</div>
+            <div class="vulnerable-parts">
+              <span v-for="part in bodyScanResult.vulnerableParts" :key="part" class="part-badge pulse">
+                {{ part }}
+              </span>
+            </div>
+          </div>
 
-      <!-- 액션 팁 -->
-      <div class="action-tip-box">
-        <div class="tip-icon">💡</div>
-        <div class="tip-text">{{ bodyScanResult.actionTip }}</div>
-      </div>
+          <!-- 건강 스코어 -->
+          <div class="health-scores">
+            <div class="section-title">💪 건강 지표</div>
+            <div class="score-grid">
+              <div class="score-item" v-for="(value, key) in bodyScanResult.healthScore" :key="key">
+                <div class="score-label">{{ getScoreLabel(key) }}</div>
+                <div class="score-bar">
+                  <div class="score-fill shine" :style="{ width: value + '%', background: getScoreColor(value) }"></div>
+                </div>
+                <div class="score-number">{{ value }}</div>
+              </div>
+            </div>
+          </div>
 
-      <button class="apply-btn pulse-btn" @click="showBodyScanModal = false">확인</button>
+          <!-- 30일 예측 -->
+          <div class="prediction-box">
+            <div class="section-title">🔮 30일 후 예측</div>
+            <p class="prediction-text">{{ bodyScanResult.prediction }}</p>
+          </div>
+
+          <!-- 태그 -->
+          <div class="tags-section" v-if="bodyScanResult.tags && bodyScanResult.tags.length > 0">
+            <span v-for="tag in bodyScanResult.tags" :key="tag" class="tag-item">{{ tag }}</span>
+          </div>
+
+          <!-- 액션 팁 -->
+          <div class="action-tip-box">
+            <div class="tip-icon">💡</div>
+            <div class="tip-text">{{ bodyScanResult.actionTip }}</div>
+          </div>
+
+          <button class="apply-btn pulse-btn" @click="showBodyScanModal = false">확인</button>
+        </div>
+      </div>
     </div>
-  </div>
-</div>
+    <ConfirmModal v-if="showConfirmModal" :message="confirmMessage" @confirm="handleConfirm" @cancel="handleCancel" />
   </div>
 </template>
 
@@ -2025,7 +2060,9 @@ const confirmDietPlan = async () => {
 }
 
 /* 스타일 추가 */
-.body-scan-result { padding: 25px !important; }
+.body-scan-result {
+  padding: 25px !important;
+}
 
 .bmi-section {
   text-align: center;
@@ -2058,10 +2095,22 @@ const confirmDietPlan = async () => {
   animation: pulse 2s infinite;
 }
 
-.health-tier-badge.입문자 { color: #888; border-color: #888; }
-.health-tier-badge.아마추어 { color: #00e5ff; border-color: #00e5ff; }
-.health-tier-badge.프로 { color: #ffd700; border-color: #ffd700; }
-.health-tier-badge.월드클래스 { color: #ff00ff; border-color: #ff00ff; }
+.health-tier-badge.입문자 {
+  color: #888;
+  border-color: #888;
+}
+.health-tier-badge.아마추어 {
+  color: #00e5ff;
+  border-color: #00e5ff;
+}
+.health-tier-badge.프로 {
+  color: #ffd700;
+  border-color: #ffd700;
+}
+.health-tier-badge.월드클래스 {
+  color: #ff00ff;
+  border-color: #ff00ff;
+}
 
 .vulnerable-section {
   background: rgba(255, 0, 85, 0.1);
@@ -2093,7 +2142,9 @@ const confirmDietPlan = async () => {
   font-weight: bold;
 }
 
-.health-scores { margin-bottom: 20px; }
+.health-scores {
+  margin-bottom: 20px;
+}
 
 .score-grid {
   display: grid;
@@ -2128,18 +2179,20 @@ const confirmDietPlan = async () => {
 }
 
 .score-fill.shine::after {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
   animation: shine-sweep 2s infinite;
 }
 
 @keyframes shine-sweep {
-  to { left: 100%; }
+  to {
+    left: 100%;
+  }
 }
 
 .score-number {
@@ -2218,7 +2271,7 @@ const confirmDietPlan = async () => {
 }
 
 .body-silhouette::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: 0;
@@ -2230,13 +2283,24 @@ const confirmDietPlan = async () => {
 }
 
 @keyframes body-pulse {
-  0%, 100% { transform: scale(1); opacity: 0.3; }
-  50% { transform: scale(1.05); opacity: 0.6; }
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.3;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.6;
+  }
 }
 
 @keyframes body-scan {
-  0% { top: 0%; }
-  100% { top: 100%; }
+  0% {
+    top: 0%;
+  }
+  100% {
+    top: 100%;
+  }
 }
 
 .scan-stats {
@@ -2267,7 +2331,13 @@ const confirmDietPlan = async () => {
 }
 
 @keyframes count-up {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 </style>
