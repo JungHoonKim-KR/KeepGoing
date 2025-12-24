@@ -3,6 +3,7 @@ package keepgoing.demo.domain.ai.service;
 import keepgoing.demo.domain.ai.dto.AiAnalyzeDto;
 import keepgoing.demo.domain.ai.dto.AiRequestDto;
 import keepgoing.demo.domain.ai.dto.BodyScanResponse;
+import keepgoing.demo.domain.diet.dto.FoodAnalysisResponseDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ByteArrayResource;
@@ -206,6 +207,27 @@ public class AiClient {
         }
     }
 
+    public FoodAnalysisResponseDto requestFoodAnalysis(String foodName) {
+
+        Map<String, String> body = new HashMap<>();
+        body.put("foodName", foodName);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        HttpEntity<Map<String, String>> entity = new HttpEntity<>(body, headers);
+        try{
+            ResponseEntity<FoodAnalysisResponseDto> response = restTemplate.postForEntity(
+                    PYTHON_URL + "/api/food/create",
+                    entity,
+                    FoodAnalysisResponseDto.class
+            );
+            return response.getBody();
+        }catch (Exception e){
+            e.printStackTrace();
+            throw new RuntimeException("DTO 매핑 오류 발생: " + e.getMessage());
+        }
+    }
+
     // Helper
     private Map<String, Object> mapDtoToGenerateRequest(AiRequestDto dto) {
         log.info(String.valueOf(dto.survey().duration()));
@@ -230,4 +252,6 @@ public class AiClient {
         System.out.println("생성된 맵 데이터: " + map.toString());
         return map;
     }
+
+
 }

@@ -26,8 +26,10 @@
         </div>
 
         <div class="section-container">
-          <div class="pixel-label">2. SCAN ITEMS (FOOD)</div>
-
+          <div class="label-with-button">
+            <div class="pixel-label">2. SCAN ITEMS (FOOD)</div>
+            <button @click="manualAdd" class="retro-btn-sm">ADD</button>
+          </div>
           <div class="terminal-input-box">
             <span class="prompt">INPUT ></span>
             <input
@@ -90,12 +92,18 @@
         </div>
       </div>
     </div>
+    <FoodAnalysisModal
+      v-if="showFoodAnalysisModal"
+      @close="showFoodAnalysisModal = false"
+      @register="addVerifiedFood"
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from "vue";
 import { useAuthStore } from "@/stores/authStore";
+import FoodAnalysisModal from "./FoodAnalysisModal.vue";
 
 const authStore = useAuthStore();
 const MEMBER_ID = authStore.memberId;
@@ -128,6 +136,7 @@ const suggestions = ref([]);
 const isLoading = ref(false);
 const selectedFoodIndex = ref(0);
 const isSelectingFood = ref(false);
+const showFoodAnalysisModal = ref(false);
 
 const mealTimes = [
   { id: "breakfast", name: "아침" },
@@ -273,8 +282,11 @@ const addFood = (food) => {
 };
 
 const manualAdd = () => {
-  playSound("blip");
-  addFood();
+  showFoodAnalysisModal.value = true;
+};
+
+const addVerifiedFood = (foodData) => {
+  addFood(foodData);
 };
 
 const changeFoodCount = (index, delta) => {
@@ -462,6 +474,12 @@ onUnmounted(() => {
   font-size: 0.9rem;
   color: #ffd700;
   text-shadow: 1px 1px 0 #000;
+}
+
+.label-with-button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .mission-grid {

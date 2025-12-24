@@ -9,4 +9,6 @@ import java.util.List;
 @Mapper
 public interface FoodMapper {
     List<Food>selectByName(@Param("name")String partOfName);
+    Food selectByExactName(@Param("foodName")String foodName);
+    void save(Food food);
 }
