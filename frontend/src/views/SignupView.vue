@@ -493,7 +493,7 @@ const handleSignup = async () => {
           class="nav-btn finish"
           :disabled="isLoading"
         >
-          {{ isLoading ? "CREATING..." : "COMPLETE START ▶" }}
+          {{ isLoading ? "CREATING..." : "캐릭터 생성 " }}
         </button>
       </div>
     </div>
