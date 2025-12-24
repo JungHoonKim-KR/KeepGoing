@@ -11,9 +11,11 @@ import keepgoing.demo.domain.diet.dto.*;
 import keepgoing.demo.domain.diet.entity.*;
 import keepgoing.demo.domain.diet.mapper.DietMapper;
 import keepgoing.demo.domain.diet.norm.MealTime;
+import keepgoing.demo.domain.member.dto.LevelUpResponseDto;
 import keepgoing.demo.domain.member.entity.Member;
 import keepgoing.demo.domain.member.mapper.MemberMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +25,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class DietService {
 
     private final DietMapper dietMapper;
@@ -78,18 +81,16 @@ public class DietService {
                         date.toString(),
                         summary.toString()
                 ),
+
+
                 null // [중요] 식단 분석에서는 SurveyData가 필요 없으므로 null 전달
         );
 
         // 5. AI 호출
         AiAnalyzeDto result = aiClient.requestAnalysis(request);
-//        AiRecommendDto recommendDto = aiClient.requestRecommend(request);
         // 6. 결과 저장 (구조 변경 반영)
         try {
-            // AiResponseDto 구조가 바뀌었으므로 .dailyFeedback() 제거
-            // .score(), .oneLineSummary() 바로 접근
-            // .recommendations() 리스트를 JSON으로 변환
-//            String recommendJson = objectMapper.writeValueAsString(recommendDto.recommendations);
+
             String exerciseJson = "[]";
             if (result.recommendedExercises() != null) {
                 // List -> JSON String 변환
@@ -103,10 +104,9 @@ public class DietService {
                     .feedbackText(result.oneLineSummary()) // 수정됨
                     .totalCalories(result.totalCalories())
                     .exerciseJson(exerciseJson)
-//                    .recommendJson(recommendJson)
                     .build());
             dietMapper.upsertEvaluation(memberId,date, result.rank());
-
+            updateExp(memberId, member.getExp());
         } catch (Exception e) {
             e.printStackTrace(); // (가급적 log.error 사용 권장)
             throw new RuntimeException("결과 저장 실패", e); // 트랜잭션 롤백을 위해 예외 던지기
@@ -369,5 +369,17 @@ public class DietService {
                 .build();
     }
 
+    private LevelUpResponseDto updateExp(Long memberId, Integer exp){
+        Member member = memberMapper.findById(memberId).get();
+
+        int memberExp = member.getExp() + exp;
+        int memberLevel = member.getLevel();
+        if(memberExp >= 100){
+            memberExp %= 100;
+            memberLevel += 1;
+        }
+        memberMapper.updateExp(memberId, memberLevel, memberExp);
+        return new LevelUpResponseDto(memberId, memberLevel, memberExp);
+    }
 
 }

@@ -150,18 +150,7 @@ public class MemberService {
         // 3. DB 업데이트
         memberMapper.update(member);
     }
-    public LevelUpResponseDto updateExp(Long memberId, Integer exp){
-        Member member = memberMapper.findById(memberId).get();
 
-        int memberExp = member.getExp() + exp;
-        int memberLevel = member.getLevel();
-        if(memberExp >= 100){
-            memberExp %= 100;
-            memberLevel += 1;
-        }
-        memberMapper.updateExp(memberId, memberLevel, memberExp);
-        return new LevelUpResponseDto(memberId, memberLevel, memberExp);
-    }
 
     public void updateCharacter(Long memberId, Integer characterNumber){
 //        Member member = memberMapper.findById(memberId).get();

@@ -60,8 +60,7 @@
     </section>
 
     <section class="page meal-page">
-      <div class="page-content">  
-        
+      <div class="page-content">
         <button v-if="recommendedMeals.length > 0" class="quest-trigger-btn" @click="showQuestModal = true">
           >
           <span>📜</span> VIEW DAILY QUEST
@@ -90,7 +89,7 @@
                 </div>
               </div>
 
-              <div v-if="recommendedMeals.length != 0"class="quest-footer">
+              <div v-if="recommendedMeals.length != 0" class="quest-footer">
                 <p>"이대로 먹으면 경험치 보너스!"</p>
                 <button class="retro-btn sm-btn quest-confirm-btn" @click="showQuestModal = false">확인 (OK)</button>
               </div>
@@ -432,17 +431,17 @@ watch(
 const recommendedMeals = computed(() => {
   // 0. 오늘 날짜 키값 준비 (YYYY-MM-DD 형식이라고 가정)
   // formattedDate.value가 "2025-12-24" 형태여야 합니다.
-  const todayKey = formattedDate.value; 
+  const todayKey = formattedDate.value;
 
   // 1. LocalStorage에서 schedule 가져오기
-  const storedJson = localStorage.getItem('schedule');
+  const storedJson = localStorage.getItem("schedule");
 
   // 데이터가 아예 없으면 빈 배열 반환
   if (!storedJson) return [];
 
   try {
     const schedule = JSON.parse(storedJson);
-    
+
     // 객체의 키(날짜들)를 추출하고 정렬
     const dateKeys = Object.keys(schedule).sort();
 
@@ -468,26 +467,25 @@ const recommendedMeals = computed(() => {
     const { breakfast, lunch, dinner } = todayData.menu;
 
     return [
-      { 
-        type: "아침", 
-        menu: breakfast || "식단 없음", 
-        cal: extractCal(breakfast || ""), 
-        icon: "🥪" 
+      {
+        type: "아침",
+        menu: breakfast || "식단 없음",
+        cal: extractCal(breakfast || ""),
+        icon: "🥪",
       },
-      { 
-        type: "점심", 
-        menu: lunch || "식단 없음", 
-        cal: extractCal(lunch || ""), 
-        icon: "🍱" 
+      {
+        type: "점심",
+        menu: lunch || "식단 없음",
+        cal: extractCal(lunch || ""),
+        icon: "🍱",
       },
-      { 
-        type: "저녁", 
-        menu: dinner || "식단 없음", 
-        cal: extractCal(dinner || ""), 
-        icon: "🥗" 
+      {
+        type: "저녁",
+        menu: dinner || "식단 없음",
+        cal: extractCal(dinner || ""),
+        icon: "🥗",
       },
     ];
-
   } catch (e) {
     console.error("스케줄 파싱 중 오류 발생:", e);
     return [];
@@ -499,9 +497,6 @@ const showQuestModal = ref(false);
 
 const fetchRecommendedDietToday = async () => {
   try {
-    
-
-
     recommendedMeals.value = [
       { type: "아침", menu: "통밀빵 샌드위치 & 아메리카노", cal: 450, icon: "🥪" },
       { type: "점심", menu: "현미밥, 닭가슴살 장조림, 김치", cal: 700, icon: "🍱" },
@@ -623,6 +618,13 @@ const startAIAnalysis = async () => {
       recommendedExercises: data.recommendedExercises,
     };
     await new Promise((resolve) => setTimeout(resolve, 2500));
+
+    const response = await axios.get(`${API_ENDPOINT}/api/member/${MEMBER_ID}`);
+
+    // 2. response.data를 통해 실제 데이터 접근
+    const memberData = response.data;
+    authStore.level = memberData.level;
+    authStore.exp = memberData.exp;
     isResultModalOpen.value = true;
   } catch (error) {
     console.error("AI 분석 호출 실패:", error);
@@ -762,7 +764,7 @@ const triggerLevelUp = () => {
 
 const handleMealClick = (type) => {
   targetMealType.value = type; // 1. 클릭한 타입 저장 ("점심" 등)
-  showMealModal.value = true;  // 2. 모달 열기
+  showMealModal.value = true; // 2. 모달 열기
 };
 const closeMealModal = async () => {
   showMealModal.value = false;
@@ -813,7 +815,6 @@ async function fetchWeightData() {
   }
 }
 
-
 // [API] 식단 스케쥴 조회 (수정됨: 객체 매핑)
 async function fetchSchedules() {
   try {
@@ -838,7 +839,7 @@ async function fetchSchedules() {
     console.error("스케쥴 로딩 실패:", error);
     dailyPlanMap.value = {};
   }
-};
+}
 
 onMounted(async () => {
   await fetchDailyDiet();
@@ -940,7 +941,7 @@ onMounted(async () => {
   color: #d84315;
 }
 .rec-empty.dark-text {
-  color:black;
+  color: black;
 }
 
 .quest-footer {
@@ -2221,5 +2222,4 @@ onMounted(async () => {
     height: 90px;
   }
 }
-
 </style>
