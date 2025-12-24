@@ -215,7 +215,7 @@ const handleSignup = async () => {
         <h1 class="page-title">CHARACTER CREATION</h1>
         <div class="progress-bar-container">
           <div class="progress-label">
-            STAGE {{ currentStep }} / {{ totalSteps }}
+            STEP {{ currentStep }} / {{ totalSteps }}
           </div>
           <div class="progress-track">
             <div
@@ -228,11 +228,11 @@ const handleSignup = async () => {
 
       <div class="form-card">
         <div v-if="currentStep === 1" class="step-content fade-in">
-          <h2 class="step-title">ID REGISTRATION</h2>
+          <h2 class="step-title">회원가입</h2>
 
           <div class="input-group">
             <label :class="{ 'error-label': errors.email }">
-              EMAIL (LOGIN ID)
+              이메일
               <span v-if="errors.email" class="error-badge">!</span>
             </label>
             <input
@@ -240,7 +240,7 @@ const handleSignup = async () => {
               v-model="signupData.email"
               class="retro-input"
               :class="{ 'input-error': errors.email }"
-              placeholder="example@game.com"
+              placeholder="example@ssafy.com"
               @input="clearError('email')"
             />
             <span v-if="errors.email" class="error-text"
@@ -249,7 +249,7 @@ const handleSignup = async () => {
           </div>
 
           <div class="input-group">
-            <label :class="{ 'error-label': errors.password }">PASSWORD</label>
+            <label :class="{ 'error-label': errors.password }">비밀번호</label>
             <input
               type="password"
               v-model="signupData.password"
@@ -265,7 +265,7 @@ const handleSignup = async () => {
 
           <div class="input-group">
             <label :class="{ 'error-label': errors.confirmPassword }"
-              >CONFIRM PASSWORD</label
+              >비밀번호 확인</label
             >
             <input
               type="password"
@@ -281,9 +281,7 @@ const handleSignup = async () => {
           </div>
 
           <div class="input-group">
-            <label :class="{ 'error-label': errors.name }"
-              >CHARACTER NAME</label
-            >
+            <label :class="{ 'error-label': errors.name }">이름</label>
             <input
               type="text"
               v-model="signupData.name"
@@ -299,10 +297,10 @@ const handleSignup = async () => {
         </div>
 
         <div v-if="currentStep === 2" class="step-content fade-in">
-          <h2 class="step-title">BODY STATS</h2>
+          <h2 class="step-title">신체 정보</h2>
 
           <div class="input-group">
-            <label>GENDER</label>
+            <label>성별</label>
             <div class="radio-box">
               <label
                 class="radio-btn"
@@ -314,7 +312,7 @@ const handleSignup = async () => {
                   value="M"
                   hidden
                 />
-                MALE
+                남
               </label>
               <label
                 class="radio-btn"
@@ -326,33 +324,31 @@ const handleSignup = async () => {
                   value="F"
                   hidden
                 />
-                FEMALE
+                여
               </label>
             </div>
           </div>
 
           <div class="row">
             <div class="input-group half">
-              <label :class="{ 'error-label': errors.age }">AGE (Lv)</label>
+              <label :class="{ 'error-label': errors.age }">나이</label>
               <input
                 type="number"
                 v-model="signupData.age"
                 class="retro-input"
                 :class="{ 'input-error': errors.age }"
-                placeholder="25"
+                placeholder="Ex) 25"
                 @input="clearError('age')"
               />
             </div>
             <div class="input-group half">
-              <label :class="{ 'error-label': errors.height }"
-                >HEIGHT (cm)</label
-              >
+              <label :class="{ 'error-label': errors.height }">신장 (cm)</label>
               <input
                 type="number"
                 v-model="signupData.height"
                 class="retro-input"
                 :class="{ 'input-error': errors.height }"
-                placeholder="175"
+                placeholder="Ex) 175"
                 @input="clearError('height')"
               />
             </div>
@@ -363,15 +359,13 @@ const handleSignup = async () => {
 
           <div class="row">
             <div class="input-group half">
-              <label :class="{ 'error-label': errors.weight }"
-                >CURRENT WEIGHT</label
-              >
+              <label :class="{ 'error-label': errors.weight }">현재 체중</label>
               <input
                 type="number"
                 v-model="signupData.weight"
                 class="retro-input"
                 :class="{ 'input-error': errors.weight }"
-                placeholder="70 kg"
+                placeholder="Ex) 70"
                 @input="clearError('weight')"
               />
             </div>
@@ -382,19 +376,19 @@ const handleSignup = async () => {
                   'error-label': errors.target_weight,
                   highlight: !errors.target_weight,
                 }"
-                >TARGET WEIGHT</label
+                >목표 체중</label
               >
               <input
                 type="number"
                 v-model="signupData.target_weight"
                 class="retro-input highlight-input"
                 :class="{ 'input-error': errors.target_weight }"
-                placeholder="65 kg"
+                placeholder="Ex) 65"
                 @input="clearError('target_weight')"
               />
             </div>
             <div class="input-group half">
-              <label class="highlight">WATER GOAL (L)</label>
+              <label class="highlight">목표 수분량(L)</label>
               <input
                 type="number"
                 step="0.1"
@@ -413,9 +407,8 @@ const handleSignup = async () => {
         </div>
 
         <div v-if="currentStep === 3" class="step-content fade-in">
-          <h2 class="step-title">PLAY STYLE</h2>
           <div class="input-group">
-            <label>ACTIVITY LEVEL</label>
+            <label>활동 습관</label>
             <div class="select-grid">
               <div
                 v-for="opt in activityOptions"
@@ -433,7 +426,7 @@ const handleSignup = async () => {
             </div>
           </div>
           <div class="input-group">
-            <label>MAIN QUEST (GOAL)</label>
+            <label>식단 목표</label>
             <div class="select-grid">
               <div
                 v-for="opt in goalOptions"
@@ -453,10 +446,10 @@ const handleSignup = async () => {
         </div>
 
         <div v-if="currentStep === 4" class="step-content fade-in">
-          <h2 class="step-title">TRAITS & DEBUFFS</h2>
+          <h2 class="step-title">특이사항</h2>
           <p class="desc">입력하지 않으면 '없음'으로 처리됩니다.</p>
           <div class="input-group">
-            <label>HEALTH CONDITION (기저질환)</label>
+            <label>기저질환</label>
             <textarea
               v-model="signupData.health_condition"
               class="retro-textarea"
@@ -464,7 +457,7 @@ const handleSignup = async () => {
             ></textarea>
           </div>
           <div class="input-group">
-            <label>WEAKNESS (알레르기)</label>
+            <label>알레르기</label>
             <textarea
               v-model="signupData.allergies"
               class="retro-textarea"
@@ -472,7 +465,7 @@ const handleSignup = async () => {
             ></textarea>
           </div>
           <div class="input-group">
-            <label>BANNED ITEMS (기피 음식)</label>
+            <label>기피 음식</label>
             <textarea
               v-model="signupData.disliked_food"
               class="retro-textarea"
@@ -484,7 +477,7 @@ const handleSignup = async () => {
 
       <div class="footer-actions">
         <button v-if="currentStep > 1" @click="prevStep" class="nav-btn prev">
-          ◀ PREV
+          ◀ 이전
         </button>
         <div class="spacer"></div>
         <button
@@ -492,7 +485,7 @@ const handleSignup = async () => {
           @click="nextStep"
           class="nav-btn next"
         >
-          NEXT STAGE ▶
+          다음 ▶
         </button>
         <button
           v-else
@@ -634,7 +627,7 @@ const handleSignup = async () => {
   max-width: 500px;
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1rem;
   padding-bottom: 2rem;
 }
 .header-section {
@@ -645,7 +638,6 @@ const handleSignup = async () => {
   font-size: 1.8rem;
   color: var(--neon-yellow);
   text-shadow: 2px 2px 0 var(--neon-pink);
-  margin-bottom: 1rem;
   letter-spacing: 1px;
 }
 .progress-bar-container {
@@ -703,7 +695,6 @@ const handleSignup = async () => {
 }
 .input-group label {
   font-size: 0.85rem;
-  color: var(--text-sub);
   font-weight: bold;
 }
 .input-group label.highlight {
@@ -751,7 +742,7 @@ const handleSignup = async () => {
 }
 .radio-btn {
   flex: 1;
-  background: #222;
+  /* background: #555; */
   border: 2px solid #555;
   color: #888;
   padding: 12px;
@@ -763,7 +754,7 @@ const handleSignup = async () => {
 .radio-btn.active {
   background: rgba(0, 229, 255, 0.2);
   border-color: var(--neon-blue);
-  color: #fff;
+  color: black;
   box-shadow: 0 0 10px rgba(0, 229, 255, 0.2);
 }
 .select-grid {
@@ -780,6 +771,7 @@ const handleSignup = async () => {
   align-items: center;
   gap: 12px;
   transition: all 0.2s;
+  color: #9f9e9e;
 }
 .select-card:hover {
   background: #2a2a2a;
@@ -801,7 +793,7 @@ const handleSignup = async () => {
 .footer-actions {
   display: flex;
   margin-top: auto;
-  padding-top: 1.5rem;
+  padding-top: 0.7rem;
   gap: 10px;
 }
 .nav-btn {
@@ -832,7 +824,7 @@ const handleSignup = async () => {
 }
 .finish {
   background: var(--neon-pink);
-  color: #fff;
+  color: black;
   border-color: #fff;
   box-shadow: 4px 4px 0 #000;
 }

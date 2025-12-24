@@ -113,8 +113,8 @@ const goToSignup = () => {
 
     <div class="login-container">
       <div class="title-section">
-        <h1 class="game-title">HEALTH RPG</h1>
-        <p class="subtitle">INSERT COIN TO START</p>
+        <h1 class="game-title">우마이 COACH</h1>
+        <p class="subtitle">LOGIN TO START ...</p>
       </div>
 
       <div class="form-box">
@@ -156,11 +156,9 @@ const goToSignup = () => {
 
       <div class="footer-links">
         <button @click="goToSignup" class="link-btn">회원가입</button>
-        <span class="divider">|</span>
-        <button class="link-btn">비밀번호 찾기</button>
       </div>
 
-      <div class="copyright">© 2025 HEALTH QUEST CORP.</div>
+      <div class="copyright">© 2025 SSAFY 14th.</div>
     </div>
   </div>
 </template>
@@ -338,7 +336,7 @@ const goToSignup = () => {
 .start-btn {
   margin-top: 1rem;
   background: var(--neon-pink);
-  color: #ffffff; /* 버튼 글씨는 항상 흰색 */
+  color: black; /* 버튼 글씨는 항상 흰색 */
   border: 2px solid #fff;
   padding: 1rem;
   font-size: 1.2rem;
