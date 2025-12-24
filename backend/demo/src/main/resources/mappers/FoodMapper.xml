@@ -9,19 +9,55 @@
     </resultMap>
     <!-- 전체 목록 조회 (SELECT ALL) -->
     <select id="selectAll" resultMap="FoodResultMap">
-        SELECT
-        *
-        FROM
-        food
-        LIMIT 10
+        SELECT *
+        FROM food LIMIT 10
     </select>
     <!-- 단일 레코드 조회 (SELECT BY NAME) -->
     <select id="selectByName" resultMap="FoodResultMap">
-        SELECT
-            *
-        FROM
-            food
-        WHERE
-            name LIKE CONCAT('%',#{name}, '%');
+        SELECT *
+        FROM food
+        WHERE name LIKE CONCAT('%', #{name}, '%')
+        ORDER BY CASE
+                     WHEN name = #{name} THEN 1
+                     WHEN name LIKE CONCAT(#{name}, '%') THEN 2
+                     ELSE 3 END,
+                 name ASC  </select>
+    <select id="selectByExactName" resultMap="FoodResultMap">
+        SELECT *
+        FROM food
+        WHERE name = #{foodName}
+        LIMIT 1
     </select>
+
+    <insert id="save" parameterType="keepgoing.demo.domain.diet.entity.Food">
+        INSERT INTO food (
+            code,
+            name,
+            dataTypeName,
+            middleCategoryName,
+            foodWeight,
+            servingSize,
+            energy,
+            water,
+            protein,
+            fat,
+            carbohydrate,
+            sugars,
+            sodium
+        ) VALUES (
+                     #{code},
+                     #{name},
+                     #{dataTypeName},
+                     #{middleCategoryName},
+                     #{foodWeight},
+                     #{servingSize},
+                     #{energy},
+                     #{water},
+                     #{protein},
+                     #{fat},
+                     #{carbohydrate},
+                     #{sugars},
+                     #{sodium}
+                 )
+    </insert>
 </mapper>

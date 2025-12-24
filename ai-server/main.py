@@ -415,8 +415,85 @@ def body_scan(request: BodyScanRequest):
             "actionTip": "AI 서버 상태를 확인해주세요."
         }
 
+# =========================================================
+# 5. 음식 영양성분 분석/생성 API
+# EndPoint: /api/food/create
+# 설명: 음식 이름을 입력받아 영양성분 JSON 데이터 반환
+# =========================================================
 
+class FoodAnalyzeRequest(BaseModel):
+    foodName: str
+@app.post("/api/food/create")
+def analyze_food_info(request: FoodAnalyzeRequest):
+    print(f"🍎 [음식 분석 요청] 입력값: {request.foodName}")
+
+    try:
+        system_instruction = """
+        역할: 당신은 전문 영양사입니다.
+        
+        지시사항:
+        1. 입력값이 사람이 먹는 '음식', '음료', '영양제'인지 판단하세요.
+        2. 음식이 아니라면 "isFood": 0 를 반환하세요.
+        3. 음식이라면 "isFood": 1 와 함께, 해당 음식 1인분 기준의 영양성분을 추정하여 DB 테이블 컬럼명에 맞게 반환하세요.
+        4. 값은 숫자(Int/Double)여야 하며, 단위는 생략합니다.
+        
+        [데이터베이스 스키마 매핑 규칙]
+        - name: 음식 이름 (String)
+        - dataTypeName: "가공식품" 또는 "농축산물" 또는 "음식" 중 적절한 것 선택 (String)
+        - middleCategoryName: 음식의 대분류 (예: 면류, 밥류, 빵류, 육류 등) (String)
+        - foodWeight: 1인분 총 중량 (g 단위 숫자)
+        - servingSize: 1인분 기준 표기, 100으로 고정
+        - energy: 칼로리 (kcal 단위 숫자)
+        - water: 수분 (g 단위 숫자, 추정치)
+        - protein: 단백질 (g 단위 숫자)
+        - fat: 지방 (g 단위 숫자)
+        - carbohydrate: 탄수화물 (g 단위 숫자)
+        - sugars: 당류 (g 단위 숫자)
+        - sodium: 나트륨 (mg 단위 숫자)
+
+        [응답 형식 (JSON Only)]
+        {
+          "isFood": 1,
+          "name": "짜파구리",
+          "dataTypeName": "음식",
+          "middleCategoryName": "면류",
+          "foodWeight": 400.0,
+          "servingSize": "100",
+          "energy": 500.0,
+          "water": 200.0,
+          "protein": 12.0,
+          "fat": 15.0,
+          "carbohydrate": 80.0,
+          "sugars": 5.0,
+          "sodium": 1200.0
+        }
+        """
+
+        completion = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": system_instruction},
+                {"role": "user", "content": request.foodName}
+            ],
+            temperature=0.3,
+            response_format={"type": "json_object"}
+        )
+
+        result = json.loads(completion.choices[0].message.content)
+        print("\n🔎 [AI 응답 전체 데이터 확인]", flush=True)
+        print(json.dumps(result, indent=4, ensure_ascii=False), flush=True)
+        print("--------------------------------------------------\n", flush=True)
+        #
+
+        return result
+
+    except Exception as e:
+        print(f"❌ 음식 분석 에러: {e}")
+        # 에러 발생 시 isFood: false로 안전하게 반환하거나 500 에러 발생
+        return {"isFood": False, "error": str(e)}
 if __name__ == "__main__":
     import uvicorn
 
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
+

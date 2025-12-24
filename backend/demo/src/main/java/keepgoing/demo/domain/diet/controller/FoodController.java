@@ -1,5 +1,6 @@
 package keepgoing.demo.domain.diet.controller;
 
+import keepgoing.demo.domain.diet.dto.FoodAnalysisResponseDto;
 import keepgoing.demo.domain.diet.entity.Food;
 import keepgoing.demo.domain.diet.service.FoodService;
 import lombok.RequiredArgsConstructor;
@@ -24,5 +25,11 @@ public class FoodController {
     public ResponseEntity<?> name(@RequestParam("foodName") String foodName){
         List<Food> foods = foodService.selectByName(foodName);
         return new ResponseEntity<>(foods, HttpStatus.OK);
+    }
+
+    @GetMapping("/analyze")
+    public ResponseEntity<?> analyze(@RequestParam("foodName") String foodName){
+        FoodAnalysisResponseDto foodAnalysisResponseDto = foodService.analyzeAndSaveFood(foodName);
+        return new ResponseEntity<>(foodAnalysisResponseDto, HttpStatus.OK);
     }
 }
