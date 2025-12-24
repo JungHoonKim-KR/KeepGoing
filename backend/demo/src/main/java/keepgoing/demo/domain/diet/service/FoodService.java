@@ -4,6 +4,7 @@ import keepgoing.demo.domain.ai.service.AiClient;
 import keepgoing.demo.domain.diet.dto.FoodAnalysisResponseDto;
 import keepgoing.demo.domain.diet.entity.Food;
 import keepgoing.demo.domain.diet.mapper.FoodMapper;
+import keepgoing.demo.domain.member.service.MemberService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -19,7 +20,7 @@ public class FoodService {
 
     private final AiClient aiClient;
     private final FoodMapper foodMapper;
-
+    private final MemberService memberService;
     public List<Food> selectByName(String partOfName) {
         return foodMapper.selectByName(partOfName);
     }
@@ -64,11 +65,10 @@ public class FoodService {
 
                 // (3) DB 저장
                 foodMapper.save(foodEntity);
+            }else{
+                result.setCode(food.getCode());
             }
-        } else {
-            log.info("🚫 음식이 아님: {}, 저장을 건너뜁니다.", inputName);
         }
-
         // 3. 결과 반환 (음식이든 아니든 프론트엔드로 데이터를 보냄)
         return result;
     }

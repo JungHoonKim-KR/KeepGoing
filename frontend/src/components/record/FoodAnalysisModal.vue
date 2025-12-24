@@ -19,12 +19,16 @@
           <p>ERROR: {{ error }}</p>
         </div>
 
+        <div v-if="isLoading" class="loading-indicator">
+          <p>ANALYZING... <span class="blink-dots">>>></span></p>
+        </div>
+
         <div v-if="analysisResult" class="result-box">
           <!-- Case 2: Registrable new food -->
           <div v-if="analysisResult.isFood === 2" class="success-result">
-            <div class="result-header">ANALYSIS: NEW ITEM</div>
+            <div class="result-header">ANALYSIS: NEW FOOD</div>
             <p class="result-text">
-              <span class="food-name">'{{ analysisResult.foodName }}'</span>: 등록이 필요한 새로운 음식입니다.
+              <span class="food-name">'{{ analysisResult.name }}'</span> 등록 완료!
             </p>
             <div class="stats-grid">
               <div><span>KCAL:</span> {{ analysisResult.energy }}</div>
@@ -36,9 +40,9 @@
           </div>
           <!-- Case 1: Already existing food -->
           <div v-else-if="analysisResult.isFood === 1" class="info-result">
-            <div class="result-header">ANALYSIS: ITEM FOUND</div>
+            <div class="result-header">ANALYSIS: Existed FOOD</div>
             <p class="result-text">
-              <span class="food-name">'{{ analysisResult.foodName }}'</span>: 이미 등록된 음식입니다.
+              <span class="food-name">'{{ analysisResult.name }}'</span>: 이미 등록된 음식입니다.
             </p>
             <div class="stats-grid">
               <div><span>KCAL:</span> {{ analysisResult.energy }}</div>
@@ -63,6 +67,8 @@
 
 <script setup>
 import { ref, onMounted } from "vue";
+import { updateLevelApi } from "@/api/member/memberApi";
+import { useAuthStore } from "@/stores/authStore";
 
 const emit = defineEmits(["close", "register"]);
 
@@ -72,6 +78,7 @@ const analysisResult = ref(null);
 const error = ref("");
 const inputRef = ref(null);
 
+const authStore = useAuthStore();
 const API_ENDPOINT = "http://localhost:8080";
 
 async function analyzeFood() {
@@ -86,6 +93,18 @@ async function analyzeFood() {
       throw new Error("API Request Failed");
     }
     const data = await response.json();
+
+    if (data.isFood === 2) {
+      // New food analyzed, call the level-up API
+      const payload = {
+        id: authStore.memberId,
+        score: 50 // Award 10 EXP for new food
+      };
+      const levelUpResponse = await updateLevelApi(payload);
+      // Update the auth store with the new level/exp
+      authStore.updateLevelInfo(levelUpResponse);
+    }
+    
     analysisResult.value = data;
   } catch (e) {
     error.value = e.message || "An error occurred during analysis.";
@@ -281,5 +300,24 @@ onMounted(() => {
 
 .retro-btn-lg.add-btn {
   background: #1f6feb; /* Blue */
+}
+
+.loading-indicator {
+  text-align: center;
+  font-size: 1.2rem;
+  color: #00ff00; /* Neon green */
+  padding: 20px 0;
+  border: 1px dashed #004400;
+  background: #0d1117;
+  margin-top: 15px;
+}
+
+.blink-dots {
+  animation: blink 1s infinite step-end;
+}
+
+@keyframes blink {
+  from, to { opacity: 0; }
+  50% { opacity: 1; }
 }
 </style>

@@ -45,6 +45,19 @@ public class MemberService {
                 rank
         );
     }
+    public LevelUpResponseDto updateExp(Long memberId, Integer exp){
+        Member member = memberMapper.findById(memberId).get();
+
+        int memberExp = member.getExp() + exp;
+        int memberLevel = member.getLevel();
+        if(memberExp >= 100){
+            memberExp %= 100;
+            memberLevel += 1;
+        }
+        memberMapper.updateExp(memberId, memberLevel, memberExp);
+        return new LevelUpResponseDto(memberId, memberLevel, memberExp);
+    }
+
     @Transactional(readOnly = true)
     public MemberWeightResponseDto getWeight(Long memberId, LocalDate date) {
 
