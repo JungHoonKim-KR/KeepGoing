@@ -3,7 +3,7 @@
     <section class="page daily-page">
       <div class="page-content">
         <div class="retro-header">
-          <span class="blinking-cursor">▶</span> PLAYER_DATE:
+          <span class="blinking-cursor">▶ 날짜 : </span>
           {{ formattedDate }}
         </div>
 
@@ -54,7 +54,7 @@
         </div>
 
         <div class="pixel-box stats-box">
-          <h3 class="box-title">PLAYER STATS</h3>
+          <h3 class="box-title">섭취량</h3>
           <div class="stat-row" v-for="(stat, idx) in stats" :key="idx">
             <div class="stat-icon">{{ stat.label }}</div>
             <div class="stat-bar-group">
@@ -148,7 +148,7 @@
             <h2>식단 기록</h2>
             <div class="icon-8bit">🍗</div>
             <p class="pixel-text">오늘의 식사를<br />기록하지 않았습니다.</p>
-            <button class="retro-btn press-start">INSERT COIN</button>
+            <button class="retro-btn press-start">RECORD</button>
           </div>
         </div>
 
@@ -235,7 +235,7 @@
             <h1 class="page-title pixel-font">수분 섭취</h1>
             <div class="empty-state-icon">💧</div>
             <p class="pixel-text-center">기록이 없습니다.</p>
-            <button class="retro-btn blue-btn sm-btn">START</button>
+            <button class="retro-btn blue-btn sm-btn">RECORD</button>
           </template>
 
           <template v-else>
@@ -2237,7 +2237,8 @@ onMounted(async () => {
   gap: 5px;
   transition: transform 0.2s;
 }
-.training-card:hover, .training-card.active-card {
+.training-card:hover,
+.training-card.active-card {
   background: rgba(0, 255, 0, 0.15);
   transform: translateY(-2px);
   border-style: solid;

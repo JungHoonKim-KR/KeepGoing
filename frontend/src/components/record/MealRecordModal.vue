@@ -4,30 +4,40 @@
 
     <div class="retro-modal" @click.stop>
       <div class="modal-header">
-        <div class="header-title"><span class="icon">💾</span> DATE: {{ formattedDate }}</div>
+        <div class="header-title">
+          <span class="icon">💾</span> DATE: {{ formattedDate }}
+        </div>
         <button @click="closeModal" class="pixel-close-btn">X</button>
       </div>
 
       <div class="modal-body">
         <div class="section-container">
-          <div class="pixel-label">1. SELECT MISSION</div>
+          <div class="pixel-label">1. 식사 시간</div>
           <div class="mission-grid">
             <button
               v-for="time in mealTimes"
               :key="time.id"
-              :class="['mission-card', { active: selectedMealTime === time.name }]"
+              :class="[
+                'mission-card',
+                { active: selectedMealTime === time.name },
+              ]"
               @click="selectMealTime(time.name)"
             >
               <div class="mission-icon">{{ getPixelIcon(time.id) }}</div>
               <div class="mission-name">{{ time.name }}</div>
-              <div class="selection-indicator" v-if="selectedMealTime === time.name">◀</div>
+              <div
+                class="selection-indicator"
+                v-if="selectedMealTime === time.name"
+              >
+                ◀
+              </div>
             </button>
           </div>
         </div>
 
         <div class="section-container">
           <div class="label-with-button">
-            <div class="pixel-label">2. SCAN ITEMS (FOOD)</div>
+            <div class="pixel-label">2. 음식 추가</div>
             <button @click="manualAdd" class="retro-btn-sm">ADD</button>
           </div>
           <div class="terminal-input-box">
@@ -39,7 +49,7 @@
               @keydown.enter.prevent
               type="text"
               class="retro-input"
-              placeholder="Enter item name..."
+              placeholder="Enter food name..."
               autocomplete="off"
             />
 
@@ -52,7 +62,10 @@
                 :key="index"
                 @click="selectFood(suggestion)"
                 @mouseover="selectedFoodIndex = index"
-                :class="['dropdown-item', { active: index === selectedFoodIndex }]"
+                :class="[
+                  'dropdown-item',
+                  { active: index === selectedFoodIndex },
+                ]"
               >
                 {{ suggestion.name }}
               </li>
@@ -62,23 +75,37 @@
           <div class="inventory-box">
             <div class="inventory-header">=== CURRENT INVENTORY ===</div>
 
-            <div v-if="selectedFoodList.length === 0" class="empty-msg">NO ITEMS DETECTED.</div>
+            <div v-if="selectedFoodList.length === 0" class="empty-msg">
+              NO ITEMS DETECTED.
+            </div>
 
             <div v-else class="inventory-list">
-              <div v-for="(foodItem, index) in selectedFoodList" :key="index" class="inventory-slot">
+              <div
+                v-for="(foodItem, index) in selectedFoodList"
+                :key="index"
+                class="inventory-slot"
+              >
                 <div class="slot-info">
                   <span class="slot-icon">🍖</span>
                   <span class="slot-name">{{ foodItem.name }}</span>
                 </div>
 
                 <div class="slot-controls">
-                  <button @click="changeFoodCount(index, -1)" :disabled="foodItem.servings <= 1" class="qty-btn">
+                  <button
+                    @click="changeFoodCount(index, -1)"
+                    :disabled="foodItem.servings <= 1"
+                    class="qty-btn"
+                  >
                     -
                   </button>
                   <span class="slot-qty">x{{ foodItem.servings }}</span>
-                  <button @click="changeFoodCount(index, 1)" class="qty-btn">+</button>
+                  <button @click="changeFoodCount(index, 1)" class="qty-btn">
+                    +
+                  </button>
 
-                  <button @click="removeFood(index)" class="trash-btn">X</button>
+                  <button @click="removeFood(index)" class="trash-btn">
+                    X
+                  </button>
                 </div>
               </div>
             </div>
@@ -87,7 +114,7 @@
 
         <div class="footer-actions">
           <button @click="saveMeal" class="retro-btn-lg">
-            <span class="btn-text">SAVE TO DATABASE</span>
+            <span class="btn-text">SAVE</span>
           </button>
         </div>
       </div>
@@ -210,10 +237,12 @@ function loadMealDataFromProps() {
 
   if (currentMeal && currentMeal.foods) {
     // 깊은 복사로 가져와야 수정 시 부모 데이터에 즉시 영향주지 않음
-    selectedFoodList.value = JSON.parse(JSON.stringify(currentMeal.foods)).map((f) => ({
-      ...f,
-      servings: f.servings || 1, // servings 누락 대비
-    }));
+    selectedFoodList.value = JSON.parse(JSON.stringify(currentMeal.foods)).map(
+      (f) => ({
+        ...f,
+        servings: f.servings || 1, // servings 누락 대비
+      })
+    );
   } else {
     selectedFoodList.value = []; // 해당 시간에 기록된 게 없으면 빈 리스트
   }
@@ -231,7 +260,10 @@ async function fetchSuggestions(query) {
     if (Array.isArray(data)) {
       suggestionsList = data
         .filter((food) => food && food.name && food.name.includes(query.trim()))
-        .filter((food, index, self) => food.name && self.findIndex((f) => f.name === food.name) === index);
+        .filter(
+          (food, index, self) =>
+            food.name && self.findIndex((f) => f.name === food.name) === index
+        );
     }
   } catch (error) {
     console.error("Scan Failed:", error);
@@ -398,7 +430,12 @@ onUnmounted(() => {
   height: 100%;
   pointer-events: none;
   background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
-    linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+    linear-gradient(
+      90deg,
+      rgba(255, 0, 0, 0.06),
+      rgba(0, 255, 0, 0.02),
+      rgba(0, 0, 255, 0.06)
+    );
   background-size: 100% 4px, 6px 100%;
   z-index: 1;
 }

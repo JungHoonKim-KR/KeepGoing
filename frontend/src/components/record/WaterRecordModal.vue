@@ -4,7 +4,7 @@
 
     <div class="retro-modal" @click.stop>
       <div class="modal-header">
-        <h2 class="modal-title blink-text">MANA RECOVERY</h2>
+        <h2 class="modal-title blink-text">수분 섭취</h2>
         <button @click="closeModal" class="close-btn pixel-btn">✕</button>
       </div>
 
@@ -12,9 +12,14 @@
         <div class="potion-section">
           <div class="potion-bottle-container">
             <div class="potion-bottle">
-              <div class="potion-liquid" :style="{ height: waterPercentage + '%' }">
+              <div
+                class="potion-liquid"
+                :style="{ height: waterPercentage + '%' }"
+              >
                 <div class="potion-surface"></div>
-                <div class="bubbles"><span></span><span></span><span></span><span></span></div>
+                <div class="bubbles">
+                  <span></span><span></span><span></span><span></span>
+                </div>
               </div>
               <div class="bottle-shine"></div>
             </div>
@@ -23,22 +28,34 @@
               <span class="divider">/</span>
               <span class="max">{{ goalAmount.toFixed(1) }} L</span>
             </div>
-            <div class="mp-label">MP (Hydration) {{ waterPercentage }}%</div>
+            <div class="mp-label">달성률 {{ waterPercentage }}%</div>
           </div>
         </div>
 
         <div class="inventory-section">
           <h3 class="pixel-subtitle">SELECT ITEM</h3>
           <div class="item-grid">
-            <button @click="addWater(100)" class="item-slot" title="Small Potion">
+            <button
+              @click="addWater(100)"
+              class="item-slot"
+              title="Small Potion"
+            >
               <div class="item-icon">💧</div>
               <div class="item-name">Small<br />+100</div>
             </button>
-            <button @click="addWater(200)" class="item-slot" title="Medium Potion">
+            <button
+              @click="addWater(200)"
+              class="item-slot"
+              title="Medium Potion"
+            >
               <div class="item-icon">🧪</div>
               <div class="item-name">Medium<br />+200</div>
             </button>
-            <button @click="addWater(300)" class="item-slot" title="Large Potion">
+            <button
+              @click="addWater(300)"
+              class="item-slot"
+              title="Large Potion"
+            >
               <div class="item-icon">🏺</div>
               <div class="item-name">Large<br />+300</div>
             </button>
@@ -63,7 +80,9 @@
         </div>
 
         <div class="action-footer">
-          <button @click="saveWater" class="retro-btn save-btn">SAVE GAME</button>
+          <button @click="saveWater" class="retro-btn save-btn">
+            SAVE GAME
+          </button>
         </div>
       </div>
     </div>
@@ -265,7 +284,12 @@ onUnmounted(() => {
   height: 100%;
   pointer-events: none;
   background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
-    linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+    linear-gradient(
+      90deg,
+      rgba(255, 0, 0, 0.06),
+      rgba(0, 255, 0, 0.02),
+      rgba(0, 0, 255, 0.06)
+    );
   background-size: 100% 4px, 6px 100%;
 }
 
