@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import keepgoing.demo.domain.ai.dto.AiAnalyzeDto;
 import keepgoing.demo.domain.ai.dto.AiRequestDto; // 만능 DTO import
 import keepgoing.demo.domain.diet.dto.*;
+import keepgoing.demo.domain.diet.entity.AiReport;
 import keepgoing.demo.domain.diet.entity.Diet;
 import keepgoing.demo.domain.diet.service.DietService;
 import lombok.RequiredArgsConstructor;
@@ -37,6 +38,23 @@ public class DietController {
         return ResponseEntity.ok(dietService.analyzeDailyDiet(memberId, date));
     }
 
+    @GetMapping("/report/check")
+    @Operation(summary = "기존 분석 결과 확인", description = "이미 해당 날짜에 분석한 결과가 있는지 확인합니다.")
+    public ResponseEntity<?> checkExistingReport(
+            @RequestParam Long memberId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
+    ) {
+        AiReport report = dietService.getExistingReport(memberId, date);
+
+        if (report != null) {
+            // 결과가 있으면 데이터를 보냄
+            return ResponseEntity.ok(report);
+        } else {
+            // 결과가 없으면 204(No Content) 혹은 빈 객체 보냄
+            return ResponseEntity.noContent().build();
+        }
+    }
+
     // -------------------------------------------------------------------------
     // [New] 1. AI 맞춤형 식단 생성
     // -------------------------------------------------------------------------
@@ -46,6 +64,8 @@ public class DietController {
         // Service로 요청 전달 -> Service가 AiClient 호출
         return ResponseEntity.ok(dietService.createDietPlan(request));
     }
+
+
 
     // -------------------------------------------------------------------------
     // [New] 2. RPG 바디 스캔 (캐릭터 분석)

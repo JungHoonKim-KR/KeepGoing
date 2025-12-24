@@ -13,7 +13,10 @@
             <span class="val">{{ currentEnergy }} / {{ maxEnergy }}</span>
           </div>
           <div class="retro-progress-container" @click="triggerLevelUp">
-            <div class="retro-progress-bar hp-bar" :style="{ width: hpPercent + '%' }"></div>
+            <div
+              class="retro-progress-bar hp-bar"
+              :style="{ width: hpPercent + '%' }"
+            ></div>
             <div class="click-hint">CLICK BAR TO LEVEL UP!</div>
           </div>
         </div>
@@ -21,7 +24,10 @@
         <div class="game-screen-container" @click="handleScreenClick">
           <div class="pixel-border">
             <div class="screen-bg">
-              <div class="level-badge" :class="{ 'level-up-anim': isLevelingUp }">
+              <div
+                class="level-badge"
+                :class="{ 'level-up-anim': isLevelingUp }"
+              >
                 {{ isLevelingUp ? "LEVEL UP!" : `Lv.${currentLevel}` }}
               </div>
 
@@ -35,7 +41,10 @@
               <div class="screen-xp-area">
                 <div class="screen-xp-label">EXP</div>
                 <div class="screen-xp-bar">
-                  <div class="screen-xp-fill" :style="{ width: currentLevelExpPercent + '%' }"></div>
+                  <div
+                    class="screen-xp-fill"
+                    :style="{ width: currentLevelExpPercent + '%' }"
+                  ></div>
                 </div>
               </div>
 
@@ -50,7 +59,11 @@
             <div class="stat-icon">{{ stat.label }}</div>
             <div class="stat-bar-group">
               <div class="retro-bar-bg">
-                <div class="retro-bar-fill" :class="stat.class" :style="{ width: stat.percent }"></div>
+                <div
+                  class="retro-bar-fill"
+                  :class="stat.class"
+                  :style="{ width: stat.percent }"
+                ></div>
               </div>
               <span class="stat-val">{{ stat.val }}</span>
             </div>
@@ -61,21 +74,42 @@
 
     <section class="page meal-page">
       <div class="page-content">
-        <button v-if="recommendedMeals.length > 0" class="quest-trigger-btn" @click="showQuestModal = true">
+        <button
+          v-if="recommendedMeals.length > 0"
+          class="quest-trigger-btn"
+          @click="showQuestModal = true"
+        >
           >
           <span>📜</span> VIEW DAILY QUEST
         </button>
 
         <Teleport to="body">
-          <div v-if="showQuestModal" class="quest-modal-overlay" @click.self="showQuestModal = false">
+          <div
+            v-if="showQuestModal"
+            class="quest-modal-overlay"
+            @click.self="showQuestModal = false"
+          >
             <div class="quest-paper pixel-box">
-              <div class="retro-header-sm" style="border-color: #5d4037; color: #3e2723; margin-bottom: 15px">
+              <div
+                class="retro-header-sm"
+                style="
+                  border-color: #5d4037;
+                  color: #3e2723;
+                  margin-bottom: 15px;
+                "
+              >
                 <span style="font-weight: bold">📜 DAILY QUEST LOG</span>
-                <button class="close-quest-btn" @click="showQuestModal = false">✖</button>
+                <button class="close-quest-btn" @click="showQuestModal = false">
+                  ✖
+                </button>
               </div>
 
               <div class="rec-list">
-                <div v-for="(rec, idx) in recommendedMeals" :key="idx" class="rec-item dark-mode">
+                <div
+                  v-for="(rec, idx) in recommendedMeals"
+                  :key="idx"
+                  class="rec-item dark-mode"
+                >
                   <div class="rec-icon-badge">{{ rec.icon }}</div>
                   <div class="rec-info">
                     <div class="rec-type">{{ rec.type }}</div>
@@ -84,20 +118,32 @@
                   <div class="rec-cal">{{ rec.cal }}kcal</div>
                 </div>
 
-                <div v-if="recommendedMeals.length === 0" class="rec-empty dark-text">
+                <div
+                  v-if="recommendedMeals.length === 0"
+                  class="rec-empty dark-text"
+                >
                   <span>오늘의 추천 식단은 없습니다!</span>
                 </div>
               </div>
 
               <div v-if="recommendedMeals.length != 0" class="quest-footer">
                 <p>"이대로 먹으면 경험치 보너스!"</p>
-                <button class="retro-btn sm-btn quest-confirm-btn" @click="showQuestModal = false">확인 (OK)</button>
+                <button
+                  class="retro-btn sm-btn quest-confirm-btn"
+                  @click="showQuestModal = false"
+                >
+                  확인 (OK)
+                </button>
               </div>
             </div>
           </div>
         </Teleport>
 
-        <div v-if="todayMeals.length === 0" class="pixel-card interactive" @click="handleMealClick">
+        <div
+          v-if="todayMeals.length === 0"
+          class="pixel-card interactive"
+          @click="handleMealClick"
+        >
           <div class="card-inner">
             <h2>식단 기록</h2>
             <div class="icon-8bit">🍗</div>
@@ -109,11 +155,19 @@
         <div v-else class="meal-log-container">
           <div class="retro-header-sm">
             <span>INVENTORY (MEALS)</span>
-            <span class="total-xp">TOTAL XP: {{ todayMeals.reduce((acc, cur) => acc + cur.cal, 0) }}</span>
+            <span class="total-xp"
+              >TOTAL XP:
+              {{ todayMeals.reduce((acc, cur) => acc + cur.cal, 0) }}</span
+            >
           </div>
 
           <div class="meal-list">
-            <div v-for="meal in todayMeals" :key="meal.id" class="meal-slot" @click="handleMealClick(meal.type)">
+            <div
+              v-for="meal in todayMeals"
+              :key="meal.id"
+              class="meal-slot"
+              @click="handleMealClick(meal.type)"
+            >
               <div class="slot-icon-box">{{ meal.icon }}</div>
               <div class="slot-info">
                 <div class="slot-top">
@@ -124,7 +178,11 @@
               </div>
             </div>
 
-            <div v-if="!isAllMealsRecorded" class="meal-slot add-slot" @click="handleMealClick">
+            <div
+              v-if="!isAllMealsRecorded"
+              class="meal-slot add-slot"
+              @click="handleMealClick"
+            >
               <span class="plus-icon">+</span>
               <span class="add-text">ADD NEW ITEM</span>
             </div>
@@ -133,25 +191,35 @@
 
         <div class="ai-btn-container">
           <button
+            v-if="hasAiReport"
+            class="ai-analyze-btn active result-view-mode"
+            @click="openSavedResult"
+          >
+            <div class="btn-content">
+              <span class="btn-icon">📊</span>
+              <span class="btn-text">분석 결과 보기</span>
+            </div>
+          </button>
+
+          <button
+            v-else
             class="ai-analyze-btn"
             :class="{ active: isAllMealsRecorded }"
             :disabled="!isAllMealsRecorded"
             @click="startAIAnalysis"
           >
-            <div class="btn-shimmer" v-if="isAllMealsRecorded"></div>
-
             <div class="btn-content">
-              <span class="btn-icon">
-                <template v-if="isAllMealsRecorded">⚡</template>
-                <template v-else>🔒</template>
-              </span>
+              <span class="btn-icon">{{
+                isAllMealsRecorded ? "⚡" : "🔒"
+              }}</span>
               <span class="btn-text">
-                {{ isAllMealsRecorded ? "AI STRATEGY ANALYSIS" : `LOCKED (${recordedCount}/4)` }}
+                {{
+                  isAllMealsRecorded
+                    ? "AI 분석 시작"
+                    : `잠김 (${recordedCount}/4)`
+                }}
               </span>
             </div>
-
-            <div class="corner-line top-left"></div>
-            <div class="corner-line bottom-right"></div>
           </button>
         </div>
       </div>
@@ -159,7 +227,10 @@
 
     <section class="page water-page">
       <div class="page-content split-layout">
-        <div class="pixel-card interactive blue-theme half-card" @click="handleWaterClick">
+        <div
+          class="pixel-card interactive blue-theme half-card"
+          @click="handleWaterClick"
+        >
           <template v-if="waterData.water === 0">
             <h1 class="page-title pixel-font">수분 섭취</h1>
             <div class="empty-state-icon">💧</div>
@@ -174,20 +245,28 @@
               <div
                 class="mana-bar-fill"
                 :style="{
-                  width: Math.min((waterData.water / waterData.goal) * 100, 100) + '%',
+                  width:
+                    Math.min((waterData.water / waterData.goal) * 100, 100) +
+                    '%',
                 }"
               >
                 <div class="glare-effect"></div>
               </div>
               <div class="mana-text-overlay">
-                {{ waterData.water }}L <span class="divider">/</span> {{ waterData.goal }}L
+                {{ waterData.water }}L <span class="divider">/</span>
+                {{ waterData.goal }}L
               </div>
             </div>
-            <button class="retro-btn blue-btn sm-btn" style="margin-top: auto">DRINK</button>
+            <button class="retro-btn blue-btn sm-btn" style="margin-top: auto">
+              DRINK
+            </button>
           </template>
         </div>
 
-        <div class="pixel-card interactive green-theme half-card" @click="handleWeightClick">
+        <div
+          class="pixel-card interactive green-theme half-card"
+          @click="handleWeightClick"
+        >
           <template v-if="weightData.weight == 0.0">
             <h1 class="page-title pixel-font">체중 기록</h1>
             <div class="empty-state-icon">⚖️</div>
@@ -201,20 +280,33 @@
               <div class="score-display">
                 <span class="score-val">{{ weightData.weight }}</span>
                 <span class="score-unit">KG</span>
-                <div class="score-change" :class="weightData.diff > 0 ? 'bad' : 'good'">
-                  <span class="change-icon">{{ weightData.diff > 0 ? "▲" : "▼" }}</span>
+                <div
+                  class="score-change"
+                  :class="weightData.diff > 0 ? 'bad' : 'good'"
+                >
+                  <span class="change-icon">{{
+                    weightData.diff > 0 ? "▲" : "▼"
+                  }}</span>
                   {{ Math.abs(weightData.diff) }}kg
-                  <span class="change-text">{{ weightData.diff > 0 ? "(WARN)" : "(GOOD)" }}</span>
+                  <span class="change-text">{{
+                    weightData.diff > 0 ? "(WARN)" : "(GOOD)"
+                  }}</span>
                 </div>
               </div>
             </div>
-            <button class="retro-btn green-btn sm-btn" style="margin-top: auto">UPDATE</button>
+            <button class="retro-btn green-btn sm-btn" style="margin-top: auto">
+              UPDATE
+            </button>
           </template>
         </div>
       </div>
     </section>
 
-    <div v-if="showCharModal" class="modal-overlay" @click.self="showCharModal = false">
+    <div
+      v-if="showCharModal"
+      class="modal-overlay"
+      @click.self="showCharModal = false"
+    >
       <div class="pixel-card char-select-modal" @click.stop>
         <div class="retro-header-sm">SELECT CHARACTER</div>
         <div class="char-grid">
@@ -275,87 +367,109 @@
     <template>
       <Teleport to="body">
         <Transition name="retro-modal">
-          <div v-if="isResultModalOpen" class="ai-result-overlay" @click.self="closeResultModal">
+          <div
+            v-if="isResultModalOpen"
+            class="ai-result-overlay"
+            @click.self="closeResultModal"
+          >
             <div class="ai-result-modal retro-pixel-border">
               <div class="modal-header-section">
-                <h2 class="modal-main-title">
-                  <span class="glitch" :data-text="analysisResult?.dailyTitle">{{ analysisResult?.dailyTitle }}</span>
-                </h2>
+                <div class="header-left">
+                  <div
+                    class="rank-visual-mega"
+                    :class="'rank-' + analysisResult?.rank"
+                  >
+                    {{ analysisResult?.rank }}
+                  </div>
+                  <div class="rank-label-sub">RANK_CLASS</div>
+                </div>
+                <div class="header-right">
+                  <h2 class="modal-main-title">
+                    <span
+                      class="glitch-text"
+                      :data-text="analysisResult?.dailyTitle"
+                    >
+                      {{ analysisResult?.dailyTitle }}
+                    </span>
+                  </h2>
+                  <div class="score-display">
+                    <span class="score-label">GAINED_XP:</span>
+                    <span class="score-value">{{ analysisResult?.score }}</span>
+                  </div>
+                </div>
               </div>
 
               <div class="modal-body-scroll">
-                <div class="score-card-retro premium-border">
-                  <div class="rank-aura-container">
-                    <div class="rank-aura" :class="'aura-' + analysisResult?.rank"></div>
-                    <div class="rank-container">
-                      <div class="rank-label">CLASS</div>
-                      <div class="rank-visual-mega" :class="'rank-' + analysisResult?.rank">
-                        {{ analysisResult?.rank }}
+                <div class="energy-dashboard">
+                  <div class="calorie-gauge pixel-box">
+                    <span class="gauge-label">TOTAL ENERGY</span>
+                    <div class="gauge-val blink-text">
+                      🔥 {{ analysisResult?.totalCalories || 0 }}
+                      <span class="unit">kcal</span>
+                    </div>
+                  </div>
+
+                  <div class="physical-stats-retro">
+                    <div class="training-grid">
+                      <div
+                        v-for="(ex, i) in analysisResult?.recommendedExercises"
+                        :key="i"
+                        class="training-card interactive-card"
+                        :class="{
+                          'active-card':
+                            currentPlayingIndex === i && currentVideoId,
+                        }"
+                        @click="searchAndPlayYoutube(ex.name, ex.time, i)"
+                      >
+                        <div class="card-icon floating">{{ ex.emoji }}</div>
+                        <div class="card-info">
+                          <div class="card-name">{{ ex.name }}</div>
+                          <div class="card-time">{{ ex.time }}분</div>
+                        </div>
+                        <div class="youtube-hint">
+                          {{
+                            currentPlayingIndex === i && currentVideoId
+                              ? "NOW PLAYING"
+                              : "▶ Play"
+                          }}
+                        </div>
                       </div>
                     </div>
                   </div>
 
-                  <div class="score-container-mega">
-                    <div class="score-label-neon">TOTAL GAINED XP</div>
-                    <div class="score-number-glitch" :data-text="analysisResult?.score">
-                      {{ analysisResult?.score }}
-                    </div>
-                    <div class="xp-bar-mini">
-                      <div class="xp-bar-fill"></div>
+                  <div
+                    v-if="currentVideoId || isVideoLoading"
+                    class="video-player-section"
+                  >
+                    <div class="pixel-box video-box">
+                      <div v-if="isVideoLoading" class="video-loading">
+                        <span class="blink-text">SEARCHING SATELLITE...</span>
+                      </div>
+
+                      <iframe
+                        v-else
+                        width="100%"
+                        height="315"
+                        :src="`https://www.youtube.com/embed/${currentVideoId}?autoplay=1`"
+                        title="YouTube video player"
+                        frameborder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowfullscreen
+                      ></iframe>
+
+                      <button class="close-video-btn" @click="closeVideo">
+                        ✖ CLOSE VIDEO
+                      </button>
                     </div>
                   </div>
                 </div>
 
-                <div class="physical-stats-retro">
-                  <h3 class="section-title-retro">▶ ENERGY_METRICS</h3>
-
-                  <div class="energy-dashboard">
-                    <div class="calorie-gauge pixel-box">
-                      <span class="gauge-label">TOTAL ENERGY</span>
-                      <div class="gauge-val blink-text">
-                        🔥 {{ analysisResult?.totalCalories || 0 }}
-                        <span class="unit">kcal</span>
-                      </div>
-                    </div>
-
-                    <div class="physical-stats-retro">
-                      <div class="training-grid">
-                        <div
-                          v-for="(ex, i) in analysisResult?.recommendedExercises"
-                          :key="i"
-                          class="training-card interactive-card"
-                          @click="searchAndPlayYoutube(ex.name, ex.time, i)"
-                        >
-                          <div class="card-icon floating">{{ ex.emoji }}</div>
-                          <div class="card-info">
-                            <div class="card-name">{{ ex.name }}</div>
-                            <div class="card-time">{{ ex.time }}분</div>
-                          </div>
-                          <div class="youtube-hint">▶ Play</div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div v-if="currentVideoId || isVideoLoading" class="video-player-section">
-                      <div class="pixel-box video-box">
-                        <div v-if="isVideoLoading" class="video-loading">
-                          <span class="blink-text">SEARCHING SATELLITE...</span>
-                        </div>
-
-                        <iframe
-                          v-else
-                          width="100%"
-                          height="315"
-                          :src="`https://www.youtube.com/embed/${currentVideoId}?autoplay=1`"
-                          title="YouTube video player"
-                          frameborder="0"
-                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                          allowfullscreen
-                        ></iframe>
-
-                        <button class="close-video-btn" @click="closeVideo">✖ CLOSE VIDEO</button>
-                      </div>
-                    </div>
+                <div class="npc-summary-box">
+                  <div class="npc-avatar">🤖</div>
+                  <div class="bubble-content">
+                    <p class="summary-text">
+                      {{ analysisResult?.oneLineSummary }}
+                    </p>
                   </div>
                 </div>
 
@@ -370,22 +484,17 @@
                     >
                       <div class="insight-header">
                         <span class="status-dot"></span>
-                        <h4 class="insight-title">[{{ item.title }}]</h4>
+                        <h4 class="insight-title">총평</h4>
                       </div>
                       <p class="insight-description">{{ item.description }}</p>
                     </div>
                   </div>
                 </div>
-
-                <div class="summary-box-retro">
-                  <div class="npc-thumb">🤖</div>
-                  <p class="summary-text">
-                    {{ analysisResult?.oneLineSummary }}
-                  </p>
-                </div>
               </div>
 
-              <button class="retro-confirm-btn" @click="closeResultModal">RETURN TO MENU (A)</button>
+              <button class="retro-confirm-btn" @click="closeResultModal">
+                RETURN TO MENU (A)
+              </button>
             </div>
           </div>
         </Transition>
@@ -401,7 +510,7 @@ import { useConfigStore } from "@/stores/configStore";
 import { useAuthStore } from "@/stores/authStore";
 import { useRoute } from "vue-router";
 import { useDietStore } from "@/stores/dietStore"; // import 추가
-import { analyzeDiet } from "@/api/diet/dietApi";
+import { analyzeDiet, getAiReportApi } from "@/api/diet/dietApi";
 import Footer from "@/components/utils/Footer.vue";
 import dayjs from "dayjs";
 import confetti from "canvas-confetti";
@@ -410,6 +519,54 @@ import axios from "axios";
 import WaterRecordModal from "@/components/record/WaterRecordModal.vue";
 import WeightRecordModal from "@/components/record/WeightRecordModal.vue";
 import MealRecordModal from "@/components/record/MealRecordModal.vue";
+
+const hasAiReport = ref(false); // 분석 결과 존재 여부
+const savedReport = ref(null); // 가져온 결과 저장
+
+// 데이터 유무 체크 함수
+const checkExistingReport = async () => {
+  const data = await getAiReportApi(MEMBER_ID, formattedDate.value);
+  if (data) {
+    hasAiReport.value = true;
+    savedReport.value = data;
+  } else {
+    hasAiReport.value = false;
+  }
+};
+const openSavedResult = () => {
+  if (savedReport.value) {
+    const data = savedReport.value;
+    let details = null;
+
+    try {
+      // feedbackText 내부에 들어있는 JSON(score, insights, dailyTitle 등)을 파싱
+      details = JSON.parse(data.feedbackText);
+    } catch (e) {
+      // 파싱 실패 시(구형 데이터) 기본 구조 생성
+      details = {
+        dailyTitle:
+          data.score >= 80 ? "준수한 식단입니다" : "식단 개선이 필요합니다",
+        oneLineSummary: data.feedbackText, // 단순 문자열일 경우
+        insights: [
+          { type: "info", title: "분석", description: data.feedbackText },
+        ],
+      };
+    }
+
+    // UI 바인딩
+    analysisResult.value = {
+      score: data.score,
+      rank: data.rank,
+      dailyTitle: details.dailyTitle,
+      oneLineSummary: details.oneLineSummary,
+      insights: details.insights, // 이제 여기서 AI가 준 상세 insights가 배열로 잘 나옵니다.
+      totalCalories: data.totalCalories,
+      recommendedExercises: JSON.parse(data.exerciseJson || "[]"),
+    };
+
+    isResultModalOpen.value = true;
+  }
+};
 
 const YOUTUBE_API_KEY = "AIzaSyBwl61AGUcuiXLBjEv6d9I8cHsCPtJpU94";
 const dietStore = useDietStore(); // 스토어 사용
@@ -498,9 +655,24 @@ const showQuestModal = ref(false);
 const fetchRecommendedDietToday = async () => {
   try {
     recommendedMeals.value = [
-      { type: "아침", menu: "통밀빵 샌드위치 & 아메리카노", cal: 450, icon: "🥪" },
-      { type: "점심", menu: "현미밥, 닭가슴살 장조림, 김치", cal: 700, icon: "🍱" },
-      { type: "저녁", menu: "연어 샐러드 & 오리엔탈 드레싱", cal: 500, icon: "🥗" },
+      {
+        type: "아침",
+        menu: "통밀빵 샌드위치 & 아메리카노",
+        cal: 450,
+        icon: "🥪",
+      },
+      {
+        type: "점심",
+        menu: "현미밥, 닭가슴살 장조림, 김치",
+        cal: 700,
+        icon: "🍱",
+      },
+      {
+        type: "저녁",
+        menu: "연어 샐러드 & 오리엔탈 드레싱",
+        cal: 500,
+        icon: "🥗",
+      },
     ];
   } catch (e) {
     console.error("추천 식단 로드 실패", e);
@@ -520,15 +692,18 @@ const searchAndPlayYoutube = async (name, time, index) => {
 
   const query = `${name} ${time}분 운동`;
   try {
-    const response = await axios.get("https://www.googleapis.com/youtube/v3/search", {
-      params: {
-        part: "snippet",
-        q: query,
-        type: "video",
-        maxResults: 1,
-        key: YOUTUBE_API_KEY,
-      },
-    });
+    const response = await axios.get(
+      "https://www.googleapis.com/youtube/v3/search",
+      {
+        params: {
+          part: "snippet",
+          q: query,
+          type: "video",
+          maxResults: 1,
+          key: YOUTUBE_API_KEY,
+        },
+      }
+    );
     if (response.data.items.length > 0) {
       currentVideoId.value = response.data.items[0].id.videoId;
     } else {
@@ -554,7 +729,9 @@ const loadingText = ref("AI 분석 서버 연결 중...");
 
 const formattedDate = computed(() => {
   const routeDate = route.query.date;
-  return routeDate ? dayjs(routeDate).format("YYYY-MM-DD") : dayjs().format("YYYY-MM-DD");
+  return routeDate
+    ? dayjs(routeDate).format("YYYY-MM-DD")
+    : dayjs().format("YYYY-MM-DD");
 });
 
 const todayMealMap = ref({ 아침: null, 점심: null, 저녁: null, 간식: null });
@@ -592,13 +769,20 @@ const closeResultModal = () => {
 
 const startAIAnalysis = async () => {
   if (!isAllMealsRecorded.value) {
-    alert("오늘의 4가지 식단(아침, 점심, 저녁, 간식)을 모두 기록해야 분석이 가능합니다!");
+    alert(
+      "오늘의 4가지 식단(아침, 점심, 저녁, 간식)을 모두 기록해야 분석이 가능합니다!"
+    );
     return;
   }
   if (isAiLoading.value) return;
 
   isAiLoading.value = true;
-  const messages = ["🎯 데이터 스캔 중...", "🥩 영양 분석 중...", "🤖 AI 전략 수립 중...", "✨ 결과 정리 중..."];
+  const messages = [
+    "🎯 데이터 스캔 중...",
+    "🥩 영양 분석 중...",
+    "🤖 AI 전략 수립 중...",
+    "✨ 결과 정리 중...",
+  ];
   let msgIndex = 0;
   loadingText.value = messages[0];
   const msgInterval = setInterval(() => {
@@ -632,7 +816,8 @@ const startAIAnalysis = async () => {
       score: 85,
       rank: "A",
       dailyTitle: "균형잡힌 하루였습니다!",
-      oneLineSummary: "단백질 섭취가 우수하고, 전체적인 영양 밸런스가 좋습니다. 내일도 화이팅!",
+      oneLineSummary:
+        "단백질 섭취가 우수하고, 전체적인 영양 밸런스가 좋습니다. 내일도 화이팅!",
       insights: [
         {
           type: "good",
@@ -646,7 +831,12 @@ const startAIAnalysis = async () => {
           title: "탄수화물 다소 높음",
           description: "권장량보다 15% 높습니다. 저녁 식사량을 조절해보세요.",
         },
-        { type: "good", iconType: "check", title: "수분 섭취 적정", description: "하루 2L 목표를 달성했습니다." },
+        {
+          type: "good",
+          iconType: "check",
+          title: "수분 섭취 적정",
+          description: "하루 2L 목표를 달성했습니다.",
+        },
       ],
       totalCalories: 2150,
       recommendedExercises: [
@@ -671,7 +861,9 @@ const getCharImage = (id) => {
   return new URL(`../assets/images/characters/${id}.png`, import.meta.url).href;
 };
 
-const currentCharacterImage = computed(() => getCharImage(selectedCharId.value));
+const currentCharacterImage = computed(() =>
+  getCharImage(selectedCharId.value)
+);
 
 const characterList = computed(() => {
   return Array.from({ length: 16 }, (_, i) => {
@@ -729,18 +921,44 @@ const currentEnergy = computed(() => {
     .reduce((acc, meal) => acc + (meal ? meal.energy : 0), 0)
     .toFixed(0);
 });
-const hpPercent = computed(() => Math.min((currentEnergy.value / maxEnergy) * 100, 100).toFixed(0));
+const hpPercent = computed(() =>
+  Math.min((currentEnergy.value / maxEnergy) * 100, 100).toFixed(0)
+);
 
 const stats = computed(() => {
-  const tProtein = Object.values(todayMealMap.value).reduce((acc, meal) => acc + (meal ? meal.protein : 0), 0);
-  const tCarb = Object.values(todayMealMap.value).reduce((acc, meal) => acc + (meal ? meal.carbohydrate : 0), 0);
-  const tFat = Object.values(todayMealMap.value).reduce((acc, meal) => acc + (meal ? meal.fat : 0), 0);
+  const tProtein = Object.values(todayMealMap.value).reduce(
+    (acc, meal) => acc + (meal ? meal.protein : 0),
+    0
+  );
+  const tCarb = Object.values(todayMealMap.value).reduce(
+    (acc, meal) => acc + (meal ? meal.carbohydrate : 0),
+    0
+  );
+  const tFat = Object.values(todayMealMap.value).reduce(
+    (acc, meal) => acc + (meal ? meal.fat : 0),
+    0
+  );
   const total = tProtein + tCarb + tFat;
   const getP = (v) => (total > 0 ? ((v / total) * 100).toFixed(0) : 0);
   return [
-    { label: "⚡탄수화물", class: "carb", percent: `${getP(tCarb)}%`, val: `${tCarb.toFixed(1)}g` },
-    { label: "🛡️단백질", class: "protein", percent: `${getP(tProtein)}%`, val: `${tProtein.toFixed(1)}g` },
-    { label: "🔮지방", class: "fat", percent: `${getP(tFat)}%`, val: `${tFat.toFixed(1)}g` },
+    {
+      label: "⚡탄수화물",
+      class: "carb",
+      percent: `${getP(tCarb)}%`,
+      val: `${tCarb.toFixed(1)}g`,
+    },
+    {
+      label: "🛡️단백질",
+      class: "protein",
+      percent: `${getP(tProtein)}%`,
+      val: `${tProtein.toFixed(1)}g`,
+    },
+    {
+      label: "🔮지방",
+      class: "fat",
+      percent: `${getP(tFat)}%`,
+      val: `${tFat.toFixed(1)}g`,
+    },
   ];
 });
 
@@ -774,7 +992,8 @@ const closeWaterModal = () => (showWaterModal.value = false);
 const closeWeightModal = () => (showWeightModal.value = false);
 const handleWaterClick = () => (showWaterModal.value = true);
 const handleWeightClick = () => (showWeightModal.value = true);
-const handleWaterUpdate = async (newAmount) => (waterData.value.water = newAmount);
+const handleWaterUpdate = async (newAmount) =>
+  (waterData.value.water = newAmount);
 const handleWeightUpdate = async (newWeight) => {
   if (newWeight) weightData.value.weight = newWeight;
   await fetchWeightData();
@@ -818,7 +1037,9 @@ async function fetchWeightData() {
 // [API] 식단 스케쥴 조회 (수정됨: 객체 매핑)
 async function fetchSchedules() {
   try {
-    const response = await fetch(`${API_ENDPOINT}/diets/schedule?memberId=${MEMBER_ID}`);
+    const response = await fetch(
+      `${API_ENDPOINT}/diets/schedule?memberId=${MEMBER_ID}`
+    );
     if (!response.ok) throw new Error("Failed to fetch schedules");
 
     const data = await response.json();
@@ -846,7 +1067,7 @@ onMounted(async () => {
   await fetchHydrationData();
   await fetchWeightData();
   await fetchSchedules();
-  // await fetchRecommendedDiet(); // 추천 식단
+  await checkExistingReport();
 });
 </script>
 
@@ -1262,7 +1483,8 @@ onMounted(async () => {
   overflow: hidden;
 }
 .screen-bg {
-  background: url("https://i.pinimg.com/originals/10/78/3f/10783f947938361b02390a382c44843b.png") repeat-x bottom;
+  background: url("https://i.pinimg.com/originals/10/78/3f/10783f947938361b02390a382c44843b.png")
+    repeat-x bottom;
   background-size: cover;
   width: 100%;
   height: 150px;
@@ -1659,7 +1881,12 @@ onMounted(async () => {
   left: -100%;
   width: 50%;
   height: 100%;
-  background: linear-gradient(120deg, transparent, rgba(0, 229, 255, 0.2), transparent);
+  background: linear-gradient(
+    120deg,
+    transparent,
+    rgba(0, 229, 255, 0.2),
+    transparent
+  );
   transition: all 0.6s;
   animation: shimmer 3s infinite;
 }
@@ -2010,10 +2237,25 @@ onMounted(async () => {
   gap: 5px;
   transition: transform 0.2s;
 }
-.training-card:hover {
+.training-card:hover, .training-card.active-card {
   background: rgba(0, 255, 0, 0.15);
   transform: translateY(-2px);
   border-style: solid;
+}
+
+/* 재생 중일 때 카드 내의 텍스트 색상 강조 */
+.active-card .card-name {
+  color: #00ff88 !important;
+}
+
+.active-card .card-time {
+  color: #fff !important;
+}
+
+/* 재생 중일 때 아이콘 애니메이션을 유지하거나 더 강조 */
+.active-card .card-icon.floating {
+  animation: floating 1s infinite ease-in-out; /* 재생 중엔 조금 더 역동적으로 */
+  filter: drop-shadow(0 0 5px #00ff88);
 }
 .card-icon {
   font-size: 1.8rem;
@@ -2221,5 +2463,231 @@ onMounted(async () => {
     width: 90px;
     height: 90px;
   }
+}
+
+/* AI 결과 모달 베이스 */
+.ai-result-modal {
+  background: #121212;
+  color: #fff;
+  width: 95%;
+  max-width: 480px;
+  max-height: 85vh;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 4px solid #fff;
+  box-shadow: 10px 10px 0px rgba(0, 0, 0, 0.8);
+}
+
+.modal-top-deco {
+  background: #333;
+  padding: 5px 10px;
+  display: flex;
+  gap: 5px;
+  border-bottom: 2px solid #444;
+}
+
+.modal-top-deco .dot {
+  width: 6px;
+  height: 6px;
+  background: #555;
+}
+
+/* 헤더 섹션 */
+.modal-header-section {
+  padding: 20px;
+  background: linear-gradient(180deg, #1a1a1a 0%, #121212 100%);
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  border-bottom: 2px dashed #333;
+}
+
+.rank-visual-mega {
+  font-size: 3.5rem;
+  font-weight: 900;
+  line-height: 1;
+  text-shadow: 3px 3px 0px #000;
+}
+
+.rank-A {
+  color: #00ff88;
+}
+.rank-B {
+  color: #00ccff;
+}
+.rank-C {
+  color: #ffcc00;
+}
+.rank-D {
+  color: #ff4444;
+}
+
+.rank-label-sub {
+  font-size: 0.6rem;
+  color: #666;
+  text-align: center;
+  margin-top: 5px;
+}
+
+.header-right {
+  flex: 1;
+}
+
+.glitch-text {
+  font-size: 1.1rem;
+  color: #fff;
+  display: block;
+  margin-bottom: 10px;
+}
+
+.score-display {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.score-label {
+  font-size: 0.7rem;
+  color: #888;
+}
+.score-value {
+  font-size: 1.4rem;
+  color: #00ff88;
+  font-weight: bold;
+}
+
+/* NPC 말풍선 */
+.npc-summary-box {
+  margin: 10px 20px 20px;
+  display: flex;
+  gap: 15px;
+  background: #222;
+  padding: 15px;
+  border-radius: 4px;
+  position: relative;
+}
+
+.npc-avatar {
+  font-size: 2rem;
+}
+.bubble-label {
+  font-size: 0.6rem;
+  color: #00ff88;
+  margin-bottom: 5px;
+  font-weight: bold;
+}
+.summary-text {
+  font-size: 0.85rem;
+  color: #ccc;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* 인사이트 카드 */
+.insight-card-retro {
+  background: #1a1a1a;
+  border-left: 4px solid #444;
+  margin-bottom: 10px;
+  padding: 12px;
+}
+
+.insight-card-retro.positive {
+  border-left-color: #00ff88;
+}
+.insight-card-retro.negative {
+  border-left-color: #ff4444;
+}
+
+.status-indicator {
+  width: 8px;
+  height: 8px;
+  display: inline-block;
+  margin-right: 8px;
+  background: currentColor;
+}
+
+.card-icon.floating {
+  font-size: 1.8rem;
+  animation: floating 2s infinite ease-in-out;
+}
+
+.card-info .card-name {
+  font-size: 0.9rem;
+  color: #fff;
+  font-weight: bold;
+}
+
+.card-info .card-time {
+  font-size: 0.8rem;
+  color: #00ff88;
+}
+
+.youtube-hint {
+  position: absolute;
+  right: 8px;
+  bottom: 5px;
+  font-size: 0.6rem;
+  color: #555;
+}
+
+/* ❗ 비디오 플레이어 디자인 (원복된 스타일) */
+.video-player-section {
+  margin-top: 20px;
+  width: 100%;
+}
+
+.video-box {
+  background: #000;
+  position: relative;
+  padding: 5px;
+}
+
+.close-video-btn {
+  width: 100%;
+  background: #ff4444;
+  color: white;
+  border: none;
+  padding: 8px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  font-family: "DungGeunMo";
+}
+
+@keyframes floating {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+/* 나머지 상단 리포트용 새 스타일은 그대로 유지... */
+.rank-visual-mega {
+  font-size: 3.5rem;
+  font-weight: 900;
+}
+.glitch-text {
+  font-size: 1.1rem;
+  color: #fff;
+}
+
+/* 하단 버튼 */
+.retro-confirm-btn {
+  margin: 20px;
+  padding: 15px;
+  background: #fff;
+  color: #000;
+  border: none;
+  font-weight: bold;
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+
+.retro-confirm-btn:active {
+  transform: scale(0.98);
 }
 </style>

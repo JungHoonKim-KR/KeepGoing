@@ -44,4 +44,5 @@ public interface DietMapper {
     );
     // [유지] 2. AI 결과 저장 (이건 내 담당)
     void saveAiReport(AiReport aiReport);
+    AiReport findByMemberIdAndDate(@Param("memberId") Long memberId, @Param("date") LocalDate date);
 }
