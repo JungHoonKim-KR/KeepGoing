@@ -161,7 +161,9 @@ import { useRouter, useRoute } from "vue-router";
 import { useAuthStore } from "@/stores/authStore";
 import { useConfigStore } from "@/stores/configStore";
 import Footer from "../components/utils/Footer.vue";
+import { useDietStore } from "@/stores/dietStore"; // import
 
+const dietStore = useDietStore();
 const router = useRouter();
 const route = useRoute();
 const config = useConfigStore();
@@ -406,7 +408,7 @@ onMounted(() => {
 }
 
 .header {
-  padding: 2rem 1rem 0 1rem;
+  padding: 1rem 1rem 0 1rem;
 }
 .retro-box {
   background: #000;

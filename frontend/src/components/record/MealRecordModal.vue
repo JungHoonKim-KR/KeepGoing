@@ -34,6 +34,7 @@
               :value="foodName"
               @input="handleInput"
               @keydown="handleKeydown"
+              @keydown.enter.prevent
               type="text"
               class="retro-input"
               placeholder="Enter item name..."
@@ -41,7 +42,7 @@
             />
 
             <div v-if="isLoading" class="loading-status">[PROCESSING...]</div>
-            <button @click="manualAdd" class="retro-btn-sm">ADD</button>
+            <!-- <button @click="manualAdd" class="retro-btn-sm">ADD</button> -->
 
             <ul v-if="suggestions.length > 0" class="retro-dropdown">
               <li
@@ -334,6 +335,7 @@ function handleKeydown(event) {
     selectedFoodIndex.value = Math.max(0, selectedFoodIndex.value - 1);
   } else if (event.key === "Enter") {
     event.preventDefault();
+    return;
     if (suggestions.value.length > 0 && selectedFoodIndex.value >= 0) {
       selectFood(suggestions.value[selectedFoodIndex.value]);
     } else if (foodName.value.trim() !== "") {

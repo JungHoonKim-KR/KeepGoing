@@ -341,6 +341,7 @@ public class DietService {
                 .carbohydrate(nutritionTotalsDTO.getTotalCarbohydrate())
                 .sugars(nutritionTotalsDTO.getTotalSugars())
                 .sodium(nutritionTotalsDTO.getTotalSodium())
+                .fat(nutritionTotalsDTO.getTotalFat())
                 .build();
     }
     private NutritionTotalsDTO calculateNutritionTotals(List<FoodRecordDTO> foods) {

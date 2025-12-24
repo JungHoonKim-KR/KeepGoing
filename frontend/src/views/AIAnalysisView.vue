@@ -424,7 +424,8 @@ const confirmDietPlan = async () => {
       </div>
 
       <div v-else class="dashboard-container">
-        <div class="ai-avatar-container" @click="fetchAnalysis">
+        <!-- <div class="ai-avatar-container" @click="fetchAnalysis"> -->
+        <div class="ai-avatar-container" >
           <div class="cyber-eye-wrapper" :class="{ analyzing: isAnalyzing }">
             <div class="ring outer"></div>
             <div class="ring inner"></div>
