@@ -394,7 +394,7 @@
                     </span>
                   </h2>
                   <div class="score-display">
-                    <span class="score-label">GAINED_XP:</span>
+                    <span class="score-label">흭득 경험치:</span>
                     <span class="score-value">{{ analysisResult?.score }}</span>
                   </div>
                 </div>
@@ -494,7 +494,7 @@
               </div>
 
               <button class="retro-confirm-btn" @click="closeResultModal">
-                RETURN TO MENU (A)
+                RETURN TO MENU
               </button>
             </div>
           </div>

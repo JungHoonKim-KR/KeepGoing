@@ -614,7 +614,7 @@ const confirmDietPlan = async () => {
               <div class="cal-info">⚡ {{ p.cal }} kcal</div>
             </div>
           </div>
-          <button class="apply-btn" @click="confirmDietPlan">시스템 적용</button>
+          <button class="apply-btn" @click="confirmDietPlan">식단 적용</button>
         </div>
       </div>
     </div>
