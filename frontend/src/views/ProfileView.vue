@@ -14,7 +14,10 @@ const config = useConfigStore();
 // 회원가입 데이터 구조와 동일하게 매핑
 const characterImage = computed(() => {
   const charNum = authStore.profileCharacter || 1; // 값이 없으면 기본값 1
-  return new URL(`../assets/images/gifCharacters/${charNum}.gif`, import.meta.url).href;
+  return new URL(
+    `../assets/images/gifCharacters/${charNum}.gif`,
+    import.meta.url
+  ).href;
 });
 
 const profile = ref({
@@ -101,7 +104,10 @@ const saveProfile = async () => {
   playSound("save");
 
   // 비밀번호 변경 시도 시 확인
-  if (profile.value.password && profile.value.password !== profile.value.confirmPassword) {
+  if (
+    profile.value.password &&
+    profile.value.password !== profile.value.confirmPassword
+  ) {
     alert("비밀번호가 일치하지 않습니다.");
     return;
   }
@@ -165,8 +171,20 @@ const saveProfile = async () => {
     <div class="scanlines"></div>
 
     <Teleport to="#header-extra-actions">
-      <button v-if="!isEditing" @click="startEdit" class="retro-header-btn edit">EDIT</button>
-      <button v-if="isEditing" @click="cancelEdit" class="retro-header-btn cancel">CANCEL</button>
+      <button
+        v-if="!isEditing"
+        @click="startEdit"
+        class="retro-header-btn edit"
+      >
+        EDIT
+      </button>
+      <button
+        v-if="isEditing"
+        @click="cancelEdit"
+        class="retro-header-btn cancel"
+      >
+        CANCEL
+      </button>
     </Teleport>
 
     <div class="content">
@@ -179,51 +197,58 @@ const saveProfile = async () => {
 
       <div class="stats-container">
         <template v-if="!isEditing">
-          <div class="section-title pixel-font">PLAYER STATS</div>
+          <div class="section-title pixel-font">회원 정보</div>
 
           <div class="stats-grid">
             <div class="stat-box">
-              <span class="label">AGE</span>
+              <span class="label">나이</span>
               <span class="val">{{ profile.age }}</span>
             </div>
             <div class="stat-box">
-              <span class="label">SEX</span>
-              <span class="val">{{ profile.gender === "M" ? "MALE" : "FEMALE" }}</span>
+              <span class="label">성별</span>
+              <span class="val">{{
+                profile.gender === "M" ? "남" : "여"
+              }}</span>
             </div>
             <div class="stat-box">
-              <span class="label">HEIGHT</span>
+              <span class="label">키</span>
               <span class="val">{{ profile.height }}<small>cm</small></span>
             </div>
             <div class="stat-box">
-              <span class="label">WEIGHT</span>
+              <span class="label">체중</span>
               <span class="val">{{ profile.weight }}<small>kg</small></span>
             </div>
             <div class="stat-box">
-              <span class="label">TARGET W.</span>
-              <span class="val">{{ profile.target_weight }}<small>kg</small></span>
+              <span class="label">목표 체중</span>
+              <span class="val"
+                >{{ profile.target_weight }}<small>kg</small></span
+              >
             </div>
             <div class="stat-box">
-              <span class="label">WATER</span>
-              <span class="val">{{ profile.target_water }}<small>L</small></span>
+              <span class="label">목표 수분량</span>
+              <span class="val"
+                >{{ profile.target_water }}<small>L</small></span
+              >
             </div>
           </div>
-
-          <div class="section-title pixel-font">PLAY STYLE & TRAITS</div>
 
           <div class="traits-list">
             <div class="trait-row">
               <div class="trait-icon">⚡</div>
               <div class="trait-info">
-                <div class="trait-label">ACTIVITY</div>
+                <div class="trait-label">활동습관</div>
                 <div class="trait-val">
-                  {{ activityOptions.find((o) => o.value === profile.activity)?.label }}
+                  {{
+                    activityOptions.find((o) => o.value === profile.activity)
+                      ?.label
+                  }}
                 </div>
               </div>
             </div>
             <div class="trait-row">
               <div class="trait-icon">🏆</div>
               <div class="trait-info">
-                <div class="trait-label">GOAL</div>
+                <div class="trait-label">식단목표</div>
                 <div class="trait-val">
                   {{ goalOptions.find((o) => o.value === profile.goal)?.label }}
                 </div>
@@ -232,15 +257,15 @@ const saveProfile = async () => {
 
             <div class="trait-text-group">
               <div class="text-block">
-                <span class="sub-label">HEALTH CONDITION</span>
+                <span class="sub-label">기저질환</span>
                 <p>{{ profile.health_condition || "" }}</p>
               </div>
               <div class="text-block">
-                <span class="sub-label">ALLERGIES</span>
+                <span class="sub-label">알레르기</span>
                 <p>{{ profile.allergies || "" }}</p>
               </div>
               <div class="text-block">
-                <span class="sub-label">BANNED FOOD</span>
+                <span class="sub-label">기피 음식</span>
                 <p>{{ profile.disliked_food || "" }}</p>
               </div>
             </div>
@@ -252,11 +277,16 @@ const saveProfile = async () => {
 
           <div class="edit-form">
             <div class="form-group">
-              <label>EMAIL (ID)</label>
-              <input type="text" v-model="profile.email" class="retro-input disabled" disabled />
+              <label>이메일</label>
+              <input
+                type="text"
+                v-model="profile.email"
+                class="retro-input disabled"
+                disabled
+              />
             </div>
             <div class="form-group">
-              <label>CHARACTER NAME</label>
+              <label>이름</label>
               <input type="text" v-model="profile.name" class="retro-input" />
             </div>
 
@@ -264,17 +294,39 @@ const saveProfile = async () => {
 
             <div class="form-row">
               <div class="form-group">
-                <label>AGE</label>
-                <input type="number" v-model.number="profile.age" class="retro-input" />
+                <label>나이</label>
+                <input
+                  type="number"
+                  v-model.number="profile.age"
+                  class="retro-input"
+                />
               </div>
               <div class="form-group">
-                <label>SEX</label>
+                <label>성별</label>
                 <div class="radio-pill-group">
-                  <label class="pill" :class="{ active: profile.gender === 'M' }">
-                    <input type="radio" value="M" v-model="profile.gender" hidden /> M
+                  <label
+                    class="pill"
+                    :class="{ active: profile.gender === 'M' }"
+                  >
+                    <input
+                      type="radio"
+                      value="M"
+                      v-model="profile.gender"
+                      hidden
+                    />
+                    남
                   </label>
-                  <label class="pill" :class="{ active: profile.gender === 'F' }">
-                    <input type="radio" value="F" v-model="profile.gender" hidden /> F
+                  <label
+                    class="pill"
+                    :class="{ active: profile.gender === 'F' }"
+                  >
+                    <input
+                      type="radio"
+                      value="F"
+                      v-model="profile.gender"
+                      hidden
+                    />
+                    여
                   </label>
                 </div>
               </div>
@@ -282,22 +334,34 @@ const saveProfile = async () => {
 
             <div class="form-row">
               <div class="form-group">
-                <label>HEIGHT (cm)</label>
-                <input type="number" v-model.number="profile.height" class="retro-input" />
+                <label>키 (cm)</label>
+                <input
+                  type="number"
+                  v-model.number="profile.height"
+                  class="retro-input"
+                />
               </div>
               <div class="form-group">
-                <label>WEIGHT (kg)</label>
-                <input type="number" v-model.number="profile.weight" class="retro-input" />
+                <label>현재 체중 (kg)</label>
+                <input
+                  type="number"
+                  v-model.number="profile.weight"
+                  class="retro-input"
+                />
               </div>
             </div>
 
             <div class="form-row">
               <div class="form-group">
-                <label class="highlight">TARGET WEIGHT</label>
-                <input type="number" v-model.number="profile.target_weight" class="retro-input highlight-input" />
+                <label class="highlight">목표 체중 (kg)</label>
+                <input
+                  type="number"
+                  v-model.number="profile.target_weight"
+                  class="retro-input highlight-input"
+                />
               </div>
               <div class="form-group">
-                <label class="highlight">WATER GOAL (L)</label>
+                <label class="highlight">목표 수분량 (L)</label>
                 <input
                   type="number"
                   step="0.1"
@@ -310,37 +374,56 @@ const saveProfile = async () => {
             <div class="separator"></div>
 
             <div class="form-group">
-              <label>ACTIVITY LEVEL</label>
+              <label>활동 습관</label>
               <select v-model="profile.activity" class="retro-select">
-                <option v-for="opt in activityOptions" :key="opt.value" :value="opt.value">
+                <option
+                  v-for="opt in activityOptions"
+                  :key="opt.value"
+                  :value="opt.value"
+                >
                   {{ opt.icon }} {{ opt.label }}
                 </option>
               </select>
             </div>
 
             <div class="form-group">
-              <label>MAIN GOAL</label>
+              <label>식단 목표</label>
               <select v-model="profile.goal" class="retro-select">
-                <option v-for="opt in goalOptions" :key="opt.value" :value="opt.value">
+                <option
+                  v-for="opt in goalOptions"
+                  :key="opt.value"
+                  :value="opt.value"
+                >
                   {{ opt.icon }} {{ opt.label }}
                 </option>
               </select>
             </div>
 
             <div class="form-group">
-              <label>HEALTH CONDITION</label>
-              <textarea v-model="profile.health_condition" class="retro-textarea"></textarea>
+              <label>기저질환</label>
+              <textarea
+                v-model="profile.health_condition"
+                class="retro-textarea"
+              ></textarea>
             </div>
             <div class="form-group">
-              <label>ALLERGIES</label>
-              <textarea v-model="profile.allergies" class="retro-textarea"></textarea>
+              <label>알레르기</label>
+              <textarea
+                v-model="profile.allergies"
+                class="retro-textarea"
+              ></textarea>
             </div>
             <div class="form-group">
-              <label>BANNED FOOD</label>
-              <textarea v-model="profile.disliked_food" class="retro-textarea"></textarea>
+              <label>기피음식</label>
+              <textarea
+                v-model="profile.disliked_food"
+                class="retro-textarea"
+              ></textarea>
             </div>
 
-            <button @click="saveProfile" class="retro-btn full-btn">변경하기</button>
+            <button @click="saveProfile" class="retro-btn full-btn">
+              변경하기
+            </button>
           </div>
         </template>
       </div>
@@ -381,7 +464,12 @@ const saveProfile = async () => {
   height: 100%;
   pointer-events: none;
   background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%),
-    linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+    linear-gradient(
+      90deg,
+      rgba(255, 0, 0, 0.03),
+      rgba(0, 255, 0, 0.01),
+      rgba(0, 0, 255, 0.03)
+    );
   background-size: 100% 4px, 6px 100%;
   z-index: 1;
 }
