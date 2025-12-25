@@ -388,9 +388,8 @@ const confirmDietPlan = async () => {
     // 2. LocalStorage 동기화 로직 추가 (날짜 변환)
     // -----------------------------------------------------------
 
-    // (1) 기존에 저장된 스케줄 가져오기 (기존 기록 유지하려면 필요)
-    const existingScheduleStr = localStorage.getItem("schedule");
-    const scheduleMap = existingScheduleStr ? JSON.parse(existingScheduleStr) : {};
+    // (1) 새로운 스케줄을 담을 빈 객체 생성
+    const scheduleMap = {};
 
     // (2) 기준일 설정 (내일부터 시작한다고 가정)
     const startDate = new Date();
@@ -412,6 +411,7 @@ const confirmDietPlan = async () => {
       scheduleMap[dateKey] = {
         menu: plan.menu,
         cal: plan.cal || 0, // cal이 혹시 없으면 0 처리
+        isIncludeFavorite: plan.isIncludeFavorite || false,
       };
     });
 
@@ -585,8 +585,11 @@ const confirmDietPlan = async () => {
         <div v-if="dietPlanStep === 'result'" class="modal-body result">
           <div class="summary">{{ selectedDuration }}일 식단 생성 완료!</div>
           <div class="plan-list">
-            <div v-for="p in generatedPlan" :key="p.day" class="plan-item">
-              <div class="day">DAY {{ p.day }}</div>
+            <div v-for="p in generatedPlan" :key="p.day" class="plan-item" :class="{ 'favorite-day': p.isIncludeFavorite }">
+              <div class="day-header">
+                <div class="day">DAY {{ p.day }}</div>
+                <div v-if="p.isIncludeFavorite" class="favorite-badge">⭐ 특식 포함</div>
+              </div>
 
               <div class="menu-container" v-if="p.menu && typeof p.menu === 'object'">
                 <div class="meal-row">
@@ -1364,12 +1367,37 @@ const confirmDietPlan = async () => {
   padding: 12px;
   margin-bottom: 10px;
   border-radius: 5px;
+  transition: all 0.3s ease;
 }
+
+.plan-item.favorite-day {
+  border: 2px solid #ffd700;
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+  background: rgba(255, 215, 0, 0.1);
+}
+
+.day-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.favorite-badge {
+  background: linear-gradient(45deg, #ffd700, #ffc700);
+  color: #2c2c2c;
+  padding: 3px 8px;
+  font-size: 0.75rem;
+  font-weight: bold;
+  border-radius: 5px;
+  text-shadow: none;
+}
+
 .plan-item .day {
   color: #00e5ff;
   font-weight: bold;
   font-size: 0.9rem;
-  margin-bottom: 5px;
+  margin-bottom: 0; /* Replaced by day-header margin */
 }
 .plan-item .menu {
   color: #fff;

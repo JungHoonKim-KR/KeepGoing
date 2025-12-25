@@ -3,14 +3,15 @@
     <section class="page daily-page">
       <div class="page-content">
         <div class="retro-header">
-          <span class="blinking-cursor">▶ 날짜 : </span>
+          <span class="blinking-cursor">날짜 : </span>
           {{ formattedDate }}
         </div>
 
         <div class="pixel-box main-stat-box">
           <div class="stat-header">
-            <span class="label">(Kal)</span>
             <span class="val">{{ currentEnergy }} / {{ maxEnergy }}</span>
+            <span class="label">(kcal)</span>
+
           </div>
           <div class="retro-progress-container" @click="triggerLevelUp">
             <div
@@ -569,7 +570,6 @@ const openSavedResult = () => {
 };
 
 const YOUTUBE_API_KEY = "AIzaSyBwl61AGUcuiXLBjEv6d9I8cHsCPtJpU94";
-const dietStore = useDietStore(); // 스토어 사용
 const authStore = useAuthStore();
 const config = useConfigStore();
 const route = useRoute();
@@ -1448,7 +1448,7 @@ onMounted(async () => {
   font-size: 1.1rem;
 }
 .blinking-cursor {
-  animation: blink 1s step-end infinite;
+  /* animation: blink 1s step-end infinite; */
 }
 @keyframes blink {
   50% {
@@ -2023,7 +2023,7 @@ onMounted(async () => {
   border: 1px solid #fff;
 }
 .modal-header-section {
-  padding: 15px 15px 10px;
+  padding: 15px 15px 15px 10px;
   border-bottom: 2px dashed #444;
   flex-shrink: 0;
   text-align: center;
@@ -2038,7 +2038,7 @@ onMounted(async () => {
   border: none;
   font-family: "NeoDunggeunmo";
   cursor: pointer;
-  box-shadow: 0 4px 0 #990033;
+  box-shadow: 0 4px 0;
   transition: all 0.1s;
 }
 .retro-confirm-btn:active {
@@ -2477,8 +2477,8 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border: 4px solid #fff;
-  box-shadow: 10px 10px 0px rgba(0, 0, 0, 0.8);
+  border: 4px solid #00e5ff; /* 변경: 흰색 -> 네온 블루 */
+  box-shadow: 0 0 20px rgba(0, 229, 255, 0.4); /* 추가: 네온 글로우 */
 }
 
 .modal-top-deco {
@@ -2498,11 +2498,11 @@ onMounted(async () => {
 /* 헤더 섹션 */
 .modal-header-section {
   padding: 20px;
-  background: linear-gradient(180deg, #1a1a1a 0%, #121212 100%);
+  background: linear-gradient(180deg, #001f2e 0%, #001a24 100%); /* 변경: 어두운 네온 블루 그라데이션 */
   display: flex;
   align-items: center;
   gap: 20px;
-  border-bottom: 2px dashed #333;
+  border-bottom: 4px solid #00e5ff; /* 변경: 파선 회색 -> 실선 네온 블루 */
 }
 
 .rank-visual-mega {

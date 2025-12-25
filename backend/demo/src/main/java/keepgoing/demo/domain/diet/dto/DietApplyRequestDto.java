@@ -21,6 +21,7 @@ public class DietApplyRequestDto {
         private int cal;
         private String difficulty;
         private String quest;
+        private Boolean isIncludeFavorite;
     }
 
     // [추가] 아침/점심/저녁을 담을 내부 클래스

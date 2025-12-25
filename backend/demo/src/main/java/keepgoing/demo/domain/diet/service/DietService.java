@@ -172,6 +172,7 @@ public class DietService {
                 jsonMap.put("cal", item.getCal());
                 jsonMap.put("difficulty", item.getDifficulty());
                 jsonMap.put("quest", item.getQuest());
+                jsonMap.put("isIncludeFavorite", item.getIsIncludeFavorite());
 
                 // 3. Map -> JSON String 변환
                 String jsonString = objectMapper.writeValueAsString(jsonMap);
@@ -223,6 +224,7 @@ public class DietService {
             if (json.get("cal") instanceof Number) {
                 calories = ((Number) json.get("cal")).intValue();
             }
+            Boolean isIncludeFavorite = (Boolean) json.get("isIncludeFavorite");
 
             // Builder 패턴으로 반환
             return DietScheduleResponseDto.builder()
@@ -230,6 +232,7 @@ public class DietService {
                     .menu(menuDetail) // 객체 그대로 넣기
                     .totalCal(calories)
                     .quest(quest)
+                    .isIncludeFavorite(isIncludeFavorite)
                     .build();
 
         }).collect(Collectors.toList());

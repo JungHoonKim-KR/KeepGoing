@@ -48,6 +48,7 @@
                 'is-selected': day.isSelected,
                 'has-record': !!getDayRank(day.dateKey),
                 'has-plan': !!getDayPlan(day.dateKey),
+                'is-favorite-plan': getDayPlan(day.dateKey)?.isIncludeFavorite,
               }"
               @click="handleDateClick(day)"
             >
@@ -80,6 +81,9 @@
           <div v-if="getDayPlan(modalTargetDay?.dateKey)" class="mission-log-box">
             <div class="box-header">
               <span class="pixel-label-xs">▼ TODAY'S MENU</span>
+              <span v-if="getDayPlan(modalTargetDay?.dateKey)?.isIncludeFavorite" class="favorite-badge"
+                >⭐ 특식 포함</span
+              >
               <span class="total-cal">{{ getDayPlan(modalTargetDay?.dateKey).totalCal }} kcal</span>
             </div>
 
@@ -267,6 +271,7 @@ const fetchSchedules = async () => {
         menu: item.menu,
         quest: item.quest,
         totalCal: item.totalCal,
+        isIncludeFavorite: item.isIncludeFavorite || false,
       };
     });
 
@@ -875,5 +880,19 @@ onMounted(() => {
     transform: scale(1);
     opacity: 1;
   }
+}
+
+.date-tile.is-favorite-plan {
+  border: 2px solid #ffd700;
+  box-shadow: 0 0 5px rgba(255, 215, 0, 0.4);
+}
+
+.box-header .favorite-badge {
+  background: #ffd700;
+  color: #111;
+  padding: 1px 6px;
+  font-size: 0.6rem;
+  border-radius: 3px;
+  font-weight: bold;
 }
 </style>
