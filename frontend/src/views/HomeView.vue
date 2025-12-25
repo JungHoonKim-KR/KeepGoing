@@ -3,14 +3,15 @@
     <section class="page daily-page">
       <div class="page-content">
         <div class="retro-header">
-          <span class="blinking-cursor">▶ 날짜 : </span>
+          <span class="blinking-cursor">날짜 : </span>
           {{ formattedDate }}
         </div>
 
         <div class="pixel-box main-stat-box">
           <div class="stat-header">
-            <span class="label">(Kal)</span>
             <span class="val">{{ currentEnergy }} / {{ maxEnergy }}</span>
+            <span class="label">(kcal)</span>
+
           </div>
           <div class="retro-progress-container" @click="triggerLevelUp">
             <div
@@ -80,7 +81,7 @@
           @click="showQuestModal = true"
         >
           >
-          <span>📜</span> VIEW DAILY QUEST
+          <span>📜</span> 오늘의 목표 식단
         </button>
 
         <Teleport to="body">
@@ -98,7 +99,7 @@
                   margin-bottom: 15px;
                 "
               >
-                <span style="font-weight: bold">📜 DAILY QUEST LOG</span>
+                <span style="font-weight: bold">📜 오늘의 목표 식단</span>
                 <button class="close-quest-btn" @click="showQuestModal = false">
                   ✖
                 </button>
@@ -148,15 +149,15 @@
             <h2>식단 기록</h2>
             <div class="icon-8bit">🍗</div>
             <p class="pixel-text">오늘의 식사를<br />기록하지 않았습니다.</p>
-            <button class="retro-btn press-start">RECORD</button>
+            <button class="retro-btn press-start">기록하기</button>
           </div>
         </div>
 
         <div v-else class="meal-log-container">
           <div class="retro-header-sm">
-            <span>INVENTORY (MEALS)</span>
+            <span>식단 기록</span>
             <span class="total-xp"
-              >TOTAL XP:
+              >오늘의 칼로리:
               {{ todayMeals.reduce((acc, cur) => acc + cur.cal, 0) }}</span
             >
           </div>
@@ -172,7 +173,7 @@
               <div class="slot-info">
                 <div class="slot-top">
                   <span class="meal-type-badge">{{ meal.type }}</span>
-                  <span class="meal-cal">{{ meal.cal }} XP</span>
+                  <span class="meal-cal">{{ meal.cal }} kcal</span>
                 </div>
                 <div class="meal-name">{{ meal.name }}</div>
               </div>
@@ -184,7 +185,7 @@
               @click="handleMealClick"
             >
               <span class="plus-icon">+</span>
-              <span class="add-text">ADD NEW ITEM</span>
+              <span class="add-text">ADD NEW FOOD</span>
             </div>
           </div>
         </div>
@@ -235,7 +236,7 @@
             <h1 class="page-title pixel-font">수분 섭취</h1>
             <div class="empty-state-icon">💧</div>
             <p class="pixel-text-center">기록이 없습니다.</p>
-            <button class="retro-btn blue-btn sm-btn">RECORD</button>
+            <button class="retro-btn blue-btn sm-btn">기록하기</button>
           </template>
 
           <template v-else>
@@ -271,7 +272,7 @@
             <h1 class="page-title pixel-font">체중 기록</h1>
             <div class="empty-state-icon">⚖️</div>
             <p class="pixel-text-center">기록이 없습니다.</p>
-            <button class="retro-btn green-btn sm-btn">RECORD</button>
+            <button class="retro-btn green-btn sm-btn">기록하기</button>
           </template>
 
           <template v-else>
@@ -393,7 +394,7 @@
                     </span>
                   </h2>
                   <div class="score-display">
-                    <span class="score-label">GAINED_XP:</span>
+                    <span class="score-label">흭득 경험치:</span>
                     <span class="score-value">{{ analysisResult?.score }}</span>
                   </div>
                 </div>
@@ -493,7 +494,7 @@
               </div>
 
               <button class="retro-confirm-btn" @click="closeResultModal">
-                RETURN TO MENU (A)
+                RETURN TO MENU
               </button>
             </div>
           </div>
@@ -569,7 +570,6 @@ const openSavedResult = () => {
 };
 
 const YOUTUBE_API_KEY = "AIzaSyBwl61AGUcuiXLBjEv6d9I8cHsCPtJpU94";
-const dietStore = useDietStore(); // 스토어 사용
 const authStore = useAuthStore();
 const config = useConfigStore();
 const route = useRoute();
@@ -1448,7 +1448,7 @@ onMounted(async () => {
   font-size: 1.1rem;
 }
 .blinking-cursor {
-  animation: blink 1s step-end infinite;
+  /* animation: blink 1s step-end infinite; */
 }
 @keyframes blink {
   50% {
@@ -2023,7 +2023,7 @@ onMounted(async () => {
   border: 1px solid #fff;
 }
 .modal-header-section {
-  padding: 15px 15px 10px;
+  padding: 15px 15px 15px 10px;
   border-bottom: 2px dashed #444;
   flex-shrink: 0;
   text-align: center;
@@ -2038,7 +2038,7 @@ onMounted(async () => {
   border: none;
   font-family: "NeoDunggeunmo";
   cursor: pointer;
-  box-shadow: 0 4px 0 #990033;
+  box-shadow: 0 4px 0;
   transition: all 0.1s;
 }
 .retro-confirm-btn:active {
@@ -2477,8 +2477,8 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border: 4px solid #fff;
-  box-shadow: 10px 10px 0px rgba(0, 0, 0, 0.8);
+  border: 4px solid #00e5ff; /* 변경: 흰색 -> 네온 블루 */
+  box-shadow: 0 0 20px rgba(0, 229, 255, 0.4); /* 추가: 네온 글로우 */
 }
 
 .modal-top-deco {
@@ -2498,11 +2498,11 @@ onMounted(async () => {
 /* 헤더 섹션 */
 .modal-header-section {
   padding: 20px;
-  background: linear-gradient(180deg, #1a1a1a 0%, #121212 100%);
+  background: linear-gradient(180deg, #001f2e 0%, #001a24 100%); /* 변경: 어두운 네온 블루 그라데이션 */
   display: flex;
   align-items: center;
   gap: 20px;
-  border-bottom: 2px dashed #333;
+  border-bottom: 4px solid #00e5ff; /* 변경: 파선 회색 -> 실선 네온 블루 */
 }
 
 .rank-visual-mega {

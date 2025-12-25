@@ -149,9 +149,21 @@ def generate_diet_plan(request: DietGenerationRequest):
         - 선호 음식: {request.favorite} (건강하게 변형해서 포함할 것)
 
         [중요 지침]
-        1. "cal" (칼로리) 필드는 절대 1500으로 고정하지 마.
-        2. 그 날짜의 아침, 점심, 저녁 메뉴 구성을 보고 실제 대략적인 총 칼로리를 계산해서 정수값으로 넣어. (예: 1450, 1620, 1800 등 다양하게)
-        3. 메뉴의 키 값은 반드시 영어 소문자("breakfast", "lunch", "dinner")를 사용해. (한글 "아침" 금지)
+        1. "cal" (칼로리) 필드는 절대 1500으로 고정하지 말고, 메뉴 구성에 따라 현실적으로 계산된 정수값(예: 1450, 1620)을 넣어.
+        2. 메뉴의 키 값은 반드시 영어 소문자("breakfast", "lunch", "dinner")를 사용해.
+        3. [중요] 사용자가 입력한 '선호 음식(favorite_food)'은 7일 중 "단 한 끼"에만 포함시켜야 해. (희소성 유지)
+        4. '선호 음식'이 포함된 날짜만 "isIncludeFavorite": true로 설정하고, 나머지 날짜는 무조건 false로 설정해.
+
+        5. [핵심 로직] "isIncludeFavorite" 판별 기준:d
+        - 단순히 재료 이름이 같다고 true로 설정하지 마.
+        - 예: 선호 음식이 "치킨(Fried Chicken)"일 때, "닭가슴살 샐러드(Chicken Breast Salad)"는 다이어트 식단이므로 false여야 함.
+        - 선호 음식은 '보상(Cheat Meal)' 개념의 메뉴로 구성하고, 그 메뉴가 들어간 날만 true로 마킹해.
+
+        6. 선호 음식이 포함된 날의 식단 예시:
+        - 입력값이 "치킨"이라면, 해당 날짜의 저녁 메뉴를 "양념 치킨" 혹은 "후라이드 치킨" 등으로 명확히 '특식'처럼 구성해.
+        7. 특식이 너무 초반에 몰리지 않도록 기간 내에 고르게 분포시켜줘. 예를 들어 7일이면 적어도 5일 이후에 배치되게 해줘
+
+        8. JSON 출력 형식을 엄격히 지켜.
 
         [응답 포맷 (JSON Only)]
         반드시 최상위 키 "plans" 안에 배열을 담아서 반환해.
@@ -167,6 +179,7 @@ def generate_diet_plan(request: DietGenerationRequest):
                     "cal": 1450,
                     "difficulty": "EASY",
                     "quest": "식전 물 한 컵 마시기"
+                    "isIncludeFavorite": true
                 }},
                 {{
                     "day": 2,
@@ -178,6 +191,7 @@ def generate_diet_plan(request: DietGenerationRequest):
                     "cal": 1620,
                     "difficulty": "NORMAL",
                     "quest": "스쿼트 20회 하기"
+                    "isIncludeFavorite": false
                 }}
             ]
         }}

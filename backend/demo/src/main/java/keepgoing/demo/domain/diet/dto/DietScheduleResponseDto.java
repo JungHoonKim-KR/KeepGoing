@@ -14,7 +14,7 @@ public class DietScheduleResponseDto {
     private MenuDetail menu; // 프론트엔드 v-for 대응용 리스트
     private String quest;
     private int totalCal;
-
+    private Boolean isIncludeFavorite;
     // 아침/점심/저녁 구조체
     @Data
     @Builder
