@@ -752,7 +752,7 @@ const saveProfile = async () => {
 
 .full-btn {
   width: 100%;
-  background: var(--neon-green);
+  background: rgba(0, 229, 255, 0.2);
   color: white;
   font-weight: bold;
   border: none;
@@ -760,7 +760,6 @@ const saveProfile = async () => {
   font-size: 1.1rem;
   margin-top: 1rem;
   cursor: pointer;
-  box-shadow: 4px 4px 0 #000;
   transition: all 0.1s;
 }
 .full-btn:active {
