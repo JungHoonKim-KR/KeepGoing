@@ -81,7 +81,7 @@
           @click="showQuestModal = true"
         >
           >
-          <span>📜</span> VIEW DAILY QUEST
+          <span>📜</span> 오늘의 목표 식단
         </button>
 
         <Teleport to="body">
@@ -99,7 +99,7 @@
                   margin-bottom: 15px;
                 "
               >
-                <span style="font-weight: bold">📜 DAILY QUEST LOG</span>
+                <span style="font-weight: bold">📜 오늘의 목표 식단</span>
                 <button class="close-quest-btn" @click="showQuestModal = false">
                   ✖
                 </button>
@@ -149,15 +149,15 @@
             <h2>식단 기록</h2>
             <div class="icon-8bit">🍗</div>
             <p class="pixel-text">오늘의 식사를<br />기록하지 않았습니다.</p>
-            <button class="retro-btn press-start">RECORD</button>
+            <button class="retro-btn press-start">기록하기</button>
           </div>
         </div>
 
         <div v-else class="meal-log-container">
           <div class="retro-header-sm">
-            <span>INVENTORY (MEALS)</span>
+            <span>식단 기록</span>
             <span class="total-xp"
-              >TOTAL XP:
+              >오늘의 칼로리:
               {{ todayMeals.reduce((acc, cur) => acc + cur.cal, 0) }}</span
             >
           </div>
@@ -173,7 +173,7 @@
               <div class="slot-info">
                 <div class="slot-top">
                   <span class="meal-type-badge">{{ meal.type }}</span>
-                  <span class="meal-cal">{{ meal.cal }} XP</span>
+                  <span class="meal-cal">{{ meal.cal }} kcal</span>
                 </div>
                 <div class="meal-name">{{ meal.name }}</div>
               </div>
@@ -185,7 +185,7 @@
               @click="handleMealClick"
             >
               <span class="plus-icon">+</span>
-              <span class="add-text">ADD NEW ITEM</span>
+              <span class="add-text">ADD NEW FOOD</span>
             </div>
           </div>
         </div>
@@ -236,7 +236,7 @@
             <h1 class="page-title pixel-font">수분 섭취</h1>
             <div class="empty-state-icon">💧</div>
             <p class="pixel-text-center">기록이 없습니다.</p>
-            <button class="retro-btn blue-btn sm-btn">RECORD</button>
+            <button class="retro-btn blue-btn sm-btn">기록하기</button>
           </template>
 
           <template v-else>
@@ -272,7 +272,7 @@
             <h1 class="page-title pixel-font">체중 기록</h1>
             <div class="empty-state-icon">⚖️</div>
             <p class="pixel-text-center">기록이 없습니다.</p>
-            <button class="retro-btn green-btn sm-btn">RECORD</button>
+            <button class="retro-btn green-btn sm-btn">기록하기</button>
           </template>
 
           <template v-else>
